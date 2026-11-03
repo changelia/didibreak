@@ -15,17 +15,16 @@ Before any task, read these pages with the Notion MCP tools:
 If the Notion tools are not available, stop and tell the owner. Do not work from memory of the spec.
 
 ## Non-negotiable rules (summary — Notion has the full list)
-1. Never invent. If something is missing or ambiguous, stop and ask the owner, and record the
-   question under "Open questions" on the Working Rules page.
-2. One task at a time, only the task the owner named, following the Autonomy policy in Notion:
-   read task → implement end to end on its feature branch (no plan approval needed) → run checks
-   → open a PR → fill Completion evidence → stop and report. Decide implementation details,
-   consistency fixes and commit splitting yourself. Stop and ask only when: Notion has no answer
-   or contradicts itself on something user-visible or architectural; a new dependency is needed;
-   the work would deviate from Spec, Architecture or Detailed Design; a push to main, merge, tag,
-   release, publish or repository-setting change is needed; checks still fail after 3 fix
-   attempts; an action is irreversible or outside the task. Ask in one message, questions
-   numbered, each with a recommended answer.
+1. Never hide a decision. If something is missing or ambiguous, do not stop: choose the option
+   you would recommend, record it in the Decision log as "Agent (pending owner review)" with the
+   alternatives, and list it under "Decisions to review" in the final report.
+2. One prompt = one task, following the Autonomy policy in Notion: read Notion → implement the
+   whole task on its feature branch → run checks → open a PR → fill Completion evidence → send
+   one final report (Done, Checks, Decisions to review, Limitations, Notion). No questions during
+   the task. Hard stops only: push to main, merge, tag, release, publish or repository settings;
+   a new runtime dependency; breaking a product invariant; deleting or rewriting anything outside
+   the task or any irreversible action; checks still failing after 3 fix attempts (open the PR
+   as draft); missing credentials or access.
 3. Feature branch per task (task-NN-short-name). Small commits: one logical change each,
    about 200 changed lines max (excluding lock files), tests in the same commit, every commit
    passes all checks. Semantic commit messages: type(scope): subject — types feat, fix, refactor,
@@ -37,7 +36,8 @@ If the Notion tools are not available, stop and tell the owner. Do not work from
    uv run ruff format --check ., uv run mypy src (strict mode is configured in
    python/pyproject.toml via [tool.mypy] strict = true, added in task 03).
    Report exact commands and real output.
-5. No new dependencies without owner approval. Runtime dependency: httpx only.
+5. Runtime dependency: httpx only; any other runtime dependency is a hard stop. Dev-only or
+   CI-only tools may be added pinned, as a decision pending owner review.
 6. Product invariants: no server, no database, users bring their own API key, the tool never edits
    user code, LLM output is never executed as code.
 7. Honest reporting: separate verified results from assumptions; never claim a check ran if it did not.

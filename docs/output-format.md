@@ -2,4 +2,12 @@
 
 The text report, the JSON report schema, finding labels and exit codes.
 
-This page is a placeholder; content is added together with the features it describes.
+The report formats are documented together with the reports themselves.
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | No failing findings. |
+| `1` | Failing findings: `unexpected` or `unclear` with the default `--fail-on unclear`; only `unexpected` with `--fail-on unexpected`. |
+| `2` | Tool or configuration error: not a git repository, git missing, invalid flag or config value, missing API key. |

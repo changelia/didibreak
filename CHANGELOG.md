@@ -13,6 +13,10 @@ the Python package and `js-v*` for the JS/TS package.
 
 - Package skeleton: `didibreak --version` and `python -m didibreak --version`.
 - The MIT license text is included in the wheel and sdist.
+- `didibreak check` with all flags and `[tool.didibreak]` config keys, validation
+  errors with exit code 2, and exit codes 0/1/2 (the analysis is not implemented
+  yet, so `check` reports no findings).
+- `didibreak init-agents` prints the agent snippet.
 
 ## JS/TS package
 
