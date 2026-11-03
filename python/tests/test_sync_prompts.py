@@ -82,6 +82,13 @@ def test_missing_copy_folder_is_reported(spec_dir: Path, tmp_path: Path) -> None
     ]
 
 
+@pytest.mark.skipif(
+    not sync_prompts.SPEC_PROMPTS.is_dir(),
+    reason=(
+        f"{sync_prompts.SPEC_PROMPTS} not found: this test needs the full "
+        "repository checkout (e.g. it cannot run from an unpacked sdist)"
+    ),
+)
 def test_repository_package_copy_matches_spec() -> None:
     result = subprocess.run(
         [sys.executable, str(SCRIPT), "--check"],

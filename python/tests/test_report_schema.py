@@ -8,7 +8,17 @@ import json
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 SCHEMA_PATH = Path(__file__).resolve().parents[2] / "spec" / "report.schema.json"
+
+pytestmark = pytest.mark.skipif(
+    not SCHEMA_PATH.is_file(),
+    reason=(
+        f"{SCHEMA_PATH} not found: these tests need the full repository "
+        "checkout (e.g. they cannot run from an unpacked sdist)"
+    ),
+)
 
 
 def _load_schema() -> dict[str, Any]:
