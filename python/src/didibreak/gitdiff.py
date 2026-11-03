@@ -47,10 +47,17 @@ class ChangedFile:
 
 @dataclass(frozen=True)
 class ChangedFiles:
-    """Changed Python files, sorted by path, plus deleted ones (ignored in v0.1)."""
+    """Changed Python files, sorted by path.
+
+    Attributes:
+        changed: Files to check.
+        deleted: Deleted Python files (ignored in v0.1).
+        excluded: Changed Python files left out by exclusion patterns.
+    """
 
     changed: tuple[ChangedFile, ...]
     deleted: tuple[str, ...]
+    excluded: tuple[str, ...]
 
 
 def _git(directory: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
@@ -207,7 +214,7 @@ def changed_python_files(
         exclude: User patterns, applied after DEFAULT_EXCLUDES.
 
     Returns:
-        The changed and deleted Python files that are not excluded.
+        The changed, deleted and excluded Python files.
 
     Raises:
         GitError: If git fails.
@@ -226,8 +233,11 @@ def changed_python_files(
     ]
     patterns = (*DEFAULT_EXCLUDES, *exclude)
     python_files: list[ChangedFile] = []
+    excluded: list[str] = []
     for item in changed:
         if is_excluded(item.path, patterns):
+            if _is_python(item.path):
+                excluded.append(item.path)
             continue
         old_is_python = _is_python(item.old_path)
         if not _is_python(item.path):
@@ -248,6 +258,7 @@ def changed_python_files(
                 if _is_python(path) and not is_excluded(path, patterns)
             )
         ),
+        excluded=tuple(sorted(excluded)),
     )
 
 

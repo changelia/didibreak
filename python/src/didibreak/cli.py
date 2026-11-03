@@ -181,6 +181,17 @@ def load_config(cli_values: Mapping[str, object], working_directory: Path) -> Co
     return config
 
 
+def _report_excluded(excluded: Sequence[str], verbose: bool) -> None:
+    # Owner decision (task 05 review): exclusions are never silent.
+    if not excluded:
+        return
+    noun = "file" if len(excluded) == 1 else "files"
+    print(f"{len(excluded)} {noun} excluded", file=sys.stderr)
+    if verbose:
+        for path in excluded:
+            print(f"  excluded: {path}", file=sys.stderr)
+
+
 def _run_check(arguments: argparse.Namespace) -> int:
     cli_values = {
         key: getattr(arguments, key) for key in CONFIG_KEYS if hasattr(arguments, key)
@@ -194,6 +205,8 @@ def _run_check(arguments: argparse.Namespace) -> int:
     except (GitError, ConfigError) as error:
         print(f"didibreak: error: {error}", file=sys.stderr)
         return EXIT_ERROR
+    if config.format == "text":
+        _report_excluded(files.excluded, verbose=arguments.verbose)
     if not files.changed:
         print(
             f"Nothing to check: no changed Python files compared with {config.base}",

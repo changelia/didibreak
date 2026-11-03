@@ -66,3 +66,4 @@ def test_excluded_files_are_left_out_of_changed_files(
     result = changed_python_files(git_repository.path, base, exclude=["scripts/*"])
 
     assert [item.path for item in result.changed] == ["app/core.py"]
+    assert result.excluded == ("scripts/run.py", "tests/test_core.py")

@@ -206,3 +206,42 @@ def test_check_in_a_repository_without_commits_exits_with_error(
 
     assert main(["check"]) == EXIT_ERROR
     assert "has no commits yet" in capsys.readouterr().err
+
+
+def _change_with_exclusions(repository: Path) -> None:
+    for path in ("tests/test_app.py", "conftest.py"):
+        target = repository / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("X = 1\n", encoding="utf-8")
+
+
+def test_check_reports_the_number_of_excluded_files(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _change_with_exclusions(repository)
+
+    assert main(["check"]) == EXIT_OK
+
+    error_output = capsys.readouterr().err
+    assert "2 files excluded" in error_output
+    assert "excluded: conftest.py" not in error_output
+
+
+def test_verbose_check_lists_excluded_files(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _change_with_exclusions(repository)
+
+    assert main(["check", "-v"]) == EXIT_OK
+
+    error_output = capsys.readouterr().err
+    assert "  excluded: conftest.py\n  excluded: tests/test_app.py" in error_output
+
+
+def test_json_format_does_not_print_the_exclusion_line(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _change_with_exclusions(repository)
+
+    assert main(["check", "--format", "json"]) == EXIT_OK
+    assert "excluded" not in capsys.readouterr().err

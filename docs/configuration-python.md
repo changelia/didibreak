@@ -70,6 +70,9 @@ These changed files are never checked, in addition to your `exclude` patterns:
   (`scripts/*`).
 - Any other pattern matches the file name (`test_*.py`).
 
+Excluded files are never dropped silently: the text report shows how many
+files were excluded, and `-v` lists them.
+
 ## API keys
 
 didibreak reads the key from `OPENAI_API_KEY` for `openai`,
