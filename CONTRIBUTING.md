@@ -60,7 +60,7 @@ GitHub Actions workflows in `.github/workflows/`:
 | Workflow | Runs on changes in | What it does |
 | --- | --- | --- |
 | `python.yml` | `python/`, `spec/`, `LICENSE` | The four checks, build and package content check on Python 3.11–3.13, Linux and macOS. |
-| `spec.yml` | `spec/`, prompt-copy code | Report schema is valid JSON with the expected structure; packaged prompts match `spec/prompts/`. |
+| `spec.yml` | `spec/`, prompt-copy code | Report schema is valid JSON, a valid JSON Schema (draft 2020-12, checked with `check-jsonschema`) and has the expected structure; packaged prompts match `spec/prompts/`. |
 
 `js.yml` is added together with the JS package. Pull requests use the template
 in `.github/pull_request_template.md`, which carries the Definition of Done.
