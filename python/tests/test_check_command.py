@@ -1,9 +1,10 @@
 """Tests for the check and init-agents commands, config precedence and exit codes."""
 
-import subprocess
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
+from conftest import GitRepository
 
 from didibreak.cli import (
     AGENT_SNIPPET,
@@ -16,15 +17,15 @@ from didibreak.cli import (
     main,
 )
 from didibreak.config import CONFIG_KEYS, Config
+from didibreak.gitdiff import repository_root
 
 
 @pytest.fixture
-def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    path = tmp_path / "repo"
-    path.mkdir()
-    subprocess.run(["git", "init", "-q", str(path)], check=True)
-    monkeypatch.chdir(path)
-    return path
+def repository(git_repository: GitRepository, monkeypatch: pytest.MonkeyPatch) -> Path:
+    git_repository.write("app.py", "VALUE = 1\n")
+    git_repository.commit("initial")
+    monkeypatch.chdir(git_repository.path)
+    return git_repository.path
 
 
 def _cli_values(argv: list[str]) -> dict[str, object]:
@@ -37,10 +38,12 @@ def _cli_values(argv: list[str]) -> dict[str, object]:
 def test_check_without_pyproject_uses_defaults_and_succeeds(
     repository: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assert load_config({}, repository) == Config()
+    root = repository_root(repository)
+    expected = replace(Config(), output_dir=str(root / ".didibreak"))
+    assert load_config({}, repository) == expected
 
     assert main(["check"]) == EXIT_OK
-    assert "configuration OK" in capsys.readouterr().err
+    assert "Nothing to check" in capsys.readouterr().err
 
 
 def test_flags_override_pyproject_which_overrides_defaults(repository: Path) -> None:
@@ -52,6 +55,50 @@ def test_flags_override_pyproject_which_overrides_defaults(repository: Path) -> 
 
     assert (config.cases, config.max_functions, config.no_cache) == (5, 3, True)
     assert config.refine_rounds == 1
+
+
+def test_relative_paths_in_pyproject_are_relative_to_that_file(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    package = repository / "python"
+    (package / "src").mkdir(parents=True)
+    (package / "pyproject.toml").write_text(
+        '[tool.didibreak]\noutput_dir = "out"\npython = ".venv/bin/python"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(package / "src")
+
+    config = load_config({}, package / "src")
+
+    assert config.output_dir == str(package / "out")
+    assert config.python == str(package / ".venv/bin/python")
+
+
+def test_relative_paths_in_flags_are_relative_to_the_working_directory(
+    repository: Path,
+) -> None:
+    (repository / "pyproject.toml").write_text(
+        '[tool.didibreak]\noutput_dir = "from-file"\n', encoding="utf-8"
+    )
+    working_directory = repository / "app"
+    working_directory.mkdir()
+
+    config = load_config(
+        _cli_values(["--output-dir", "out", "--python", "/usr/bin/python3"]),
+        working_directory,
+    )
+
+    assert config.output_dir == str(working_directory / "out")
+    assert config.python == "/usr/bin/python3"
+
+
+def test_default_output_dir_is_at_the_repository_root(repository: Path) -> None:
+    subdirectory = repository / "deep" / "inside"
+    subdirectory.mkdir(parents=True)
+
+    config = load_config({}, subdirectory)
+
+    assert config.output_dir == str(repository_root(repository) / ".didibreak")
 
 
 def test_only_given_flags_become_overrides() -> None:
@@ -132,3 +179,30 @@ def test_exit_code_follows_labels_and_fail_on(
     labels: list[str], fail_on: str, expected: int
 ) -> None:
     assert exit_code_for(labels, fail_on) == expected
+
+
+def test_check_counts_changed_python_files(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (repository / "app.py").write_text("VALUE = 2\n", encoding="utf-8")
+    (repository / "new.py").write_text("NEW = 1\n", encoding="utf-8")
+
+    assert main(["check"]) == EXIT_OK
+    assert "2 changed Python file(s) compared with HEAD" in capsys.readouterr().err
+
+
+def test_check_with_unknown_base_exits_with_error(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["check", "--base", "no-such-branch"]) == EXIT_ERROR
+    assert "unknown base ref 'no-such-branch'" in capsys.readouterr().err
+
+
+def test_check_in_a_repository_without_commits_exits_with_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    empty = GitRepository(tmp_path / "empty")
+    monkeypatch.chdir(empty.path)
+
+    assert main(["check"]) == EXIT_ERROR
+    assert "has no commits yet" in capsys.readouterr().err

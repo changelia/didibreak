@@ -17,6 +17,10 @@ the Python package and `js-v*` for the JS/TS package.
   errors with exit code 2, and exit codes 0/1/2 (the analysis is not implemented
   yet, so `check` reports no findings).
 - `didibreak init-agents` prints the agent snippet.
+- `didibreak check` resolves `--base` and finds changed Python files, including
+  untracked ones, skipping the default exclusions and `exclude` patterns.
+- Relative `output_dir` and `python` paths are resolved against the
+  `pyproject.toml` folder (config file) or the current directory (flags).
 
 ## JS/TS package
 

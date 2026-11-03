@@ -18,6 +18,14 @@ cases = 8
 exclude = ["scripts/*"]
 ```
 
+## Relative paths
+
+`output_dir` and `python` may be relative:
+
+- in `pyproject.toml`, they are relative to the folder that contains that file;
+- in a CLI flag, they are relative to the current directory;
+- the default `.didibreak` is at the root of the git repository.
+
 ## `didibreak check` flags and config keys
 
 Every flag except `--yes`, `-v` and `-q` has a config key with the same name
@@ -49,6 +57,18 @@ in snake_case.
 | --- | --- | --- | --- |
 | `exclude` | list of glob patterns | `[]` | Extra files to skip, added to the default exclusions. |
 | `api_key_env` | string | provider default | Name of the environment variable that holds the API key. `""` disables the key check for local servers that need none. |
+
+## Excluded files
+
+These changed files are never checked, in addition to your `exclude` patterns:
+`tests/`, `test_*.py`, `*_test.py`, `conftest.py`, `migrations/`,
+`alembic/versions/`, `setup.py`, `docs/`.
+
+- A pattern ending in `/` matches that folder at any depth (`tests/` also
+  matches `app/tests/`).
+- A pattern containing `/` matches the whole path from the repository root
+  (`scripts/*`).
+- Any other pattern matches the file name (`test_*.py`).
 
 ## API keys
 
