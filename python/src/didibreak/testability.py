@@ -10,13 +10,37 @@ Names are resolved through the module's imports and aliases, so
 import ast
 from collections.abc import Mapping
 from dataclasses import dataclass
+from fnmatch import fnmatchcase
 
 # Everything treated as obvious I/O, in one place (documented in limitations.md).
 OBVIOUS_IO = {
-    # Calls to these fully qualified names.
-    "calls": ("open", "os.remove"),
+    # Calls to these fully qualified names; `*` is a glob (fnmatch) wildcard.
+    "calls": (
+        "open",
+        "os.remove",
+        "os.unlink",
+        "os.rmdir",
+        "shutil.rmtree",
+        "shutil.move",
+        "shutil.copy*",
+        "urllib.request.*",
+        "sqlite3.connect",
+    ),
     # Any use of these modules.
     "modules": ("subprocess", "requests", "httpx", "socket"),
+    # pathlib.Path methods, matched by method name on any object because the
+    # type of a variable is not known from the source.
+    "path_methods": (
+        "open",
+        "read_bytes",
+        "read_text",
+        "write_bytes",
+        "write_text",
+        "unlink",
+        "rmdir",
+        "mkdir",
+        "touch",
+    ),
     # Database sessions: a call `<receiver>.<method>(...)` such as session.commit().
     "database_receivers": ("session", "db", "cursor", "conn", "connection"),
     "database_methods": (
@@ -137,13 +161,27 @@ def _is_database_call(name: str) -> bool:
 def _io_in_call(call: ast.Call, aliases: Mapping[str, str]) -> str | None:
     name = _dotted_name(call.func)
     if name is None:
-        return None
+        return _path_method_call(call, aliases)
     canonical = _canonical(name, aliases)
-    if canonical in OBVIOUS_IO["calls"]:
+    if any(fnmatchcase(canonical, pattern) for pattern in OBVIOUS_IO["calls"]):
         return canonical
     if canonical.split(".")[0] in OBVIOUS_IO["modules"]:
         return canonical
-    return name if _is_database_call(name) else None
+    if _is_database_call(name):
+        return name
+    return _path_method_call(call, aliases)
+
+
+def _path_method_call(call: ast.Call, aliases: Mapping[str, str]) -> str | None:
+    if not (
+        isinstance(call.func, ast.Attribute)
+        and call.func.attr in OBVIOUS_IO["path_methods"]
+    ):
+        return None
+    receiver = _dotted_name(call.func.value)
+    if receiver is None:  # e.g. Path("x").write_text(...)
+        return f"pathlib.Path.{call.func.attr}"
+    return f"{_canonical(receiver, aliases)}.{call.func.attr}"
 
 
 def find_obvious_io(function: _FunctionNode, context: ModuleContext) -> str | None:

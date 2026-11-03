@@ -120,7 +120,17 @@ def test_first_rule_wins_async_before_instance_method() -> None:
 
 
 def test_io_list_is_one_constant_with_the_task_categories() -> None:
-    assert set(OBVIOUS_IO["calls"]) == {"open", "os.remove"}
+    assert set(OBVIOUS_IO["calls"]) == {
+        "open",
+        "os.remove",
+        "os.unlink",
+        "os.rmdir",
+        "shutil.rmtree",
+        "shutil.move",
+        "shutil.copy*",
+        "urllib.request.*",
+        "sqlite3.connect",
+    }
     assert set(OBVIOUS_IO["modules"]) == {"subprocess", "requests", "httpx", "socket"}
     assert "session" in OBVIOUS_IO["database_receivers"]
     assert "commit" in OBVIOUS_IO["database_methods"]
@@ -173,5 +183,65 @@ def test_a_local_function_with_an_io_like_name_is_not_io() -> None:
         def work(items):
             return remove(items, 1)
     """
+
+    assert _reason(source, qualname="work") is None
+
+
+@pytest.mark.parametrize(
+    ("imports", "statement", "reason"),
+    [
+        ("import os", "os.unlink(path)", "obvious I/O: os.unlink"),
+        ("import os", "os.rmdir(path)", "obvious I/O: os.rmdir"),
+        ("import shutil as sh", "sh.rmtree(path)", "obvious I/O: shutil.rmtree"),
+        ("import shutil", "shutil.move(path, path)", "obvious I/O: shutil.move"),
+        ("import shutil", "shutil.copy2(path, path)", "obvious I/O: shutil.copy2"),
+        (
+            "from shutil import copytree",
+            "copytree(path, path)",
+            "obvious I/O: shutil.copytree",
+        ),
+        (
+            "import urllib.request",
+            "urllib.request.urlopen(path)",
+            "obvious I/O: urllib.request.urlopen",
+        ),
+        (
+            "from urllib.request import urlopen",
+            "urlopen(path)",
+            "obvious I/O: urllib.request.urlopen",
+        ),
+        ("import sqlite3", "sqlite3.connect(path)", "obvious I/O: sqlite3.connect"),
+        (
+            "from pathlib import Path",
+            "Path(path).write_text('x')",
+            "obvious I/O: pathlib.Path.write_text",
+        ),
+        (
+            "from pathlib import Path",
+            "Path(path).read_bytes()",
+            "obvious I/O: pathlib.Path.read_bytes",
+        ),
+        ("", "path.unlink()", "obvious I/O: path.unlink"),
+        ("", "path.mkdir(parents=True)", "obvious I/O: path.mkdir"),
+        ("", "path.rmdir()", "obvious I/O: path.rmdir"),
+        ("", "path.touch()", "obvious I/O: path.touch"),
+        ("", "path.open()", "obvious I/O: path.open"),
+    ],
+)
+def test_extended_io_list_is_detected(
+    imports: str, statement: str, reason: str
+) -> None:
+    source = f"{imports}\n\n\ndef work(path):\n    return {statement}\n"
+
+    assert _reason(source, qualname="work") == reason
+
+
+@pytest.mark.parametrize(
+    "statement",
+    ["shutil.which('git')", "os.path.exists(path)", "urllib.parse.quote(path)"],
+)
+def test_harmless_functions_of_the_same_modules_are_not_io(statement: str) -> None:
+    imports = "import os, shutil, urllib.parse"
+    source = f"{imports}\n\n\ndef work(path):\n    return {statement}\n"
 
     assert _reason(source, qualname="work") is None

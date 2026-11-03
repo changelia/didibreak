@@ -40,18 +40,23 @@ v0.1 does not run these functions; the report lists each one with its reason.
 | `generator` | The function itself contains `yield` or `yield from`. |
 | `obvious I/O: <name>` | The body (including helpers defined inside it) uses one of the I/O names below. |
 
-Obvious I/O, matched in the source code as written:
+Obvious I/O. Names are resolved through the module's imports and aliases, so
+`from subprocess import run` and `import shutil as sh` are recognized:
 
-- calls to `open` and `os.remove`;
+- calls to `open`, `os.remove`, `os.unlink`, `os.rmdir`, `shutil.rmtree`,
+  `shutil.move`, `shutil.copy*` (any `shutil` function starting with `copy`),
+  `urllib.request.*` (any function in `urllib.request`) and `sqlite3.connect`;
 - any use or import of the modules `subprocess`, `requests`, `httpx`, `socket`;
+- `pathlib.Path` methods `open`, `read_bytes`, `read_text`, `write_bytes`,
+  `write_text`, `unlink`, `rmdir`, `mkdir`, `touch`, matched by method name on
+  any object, because the type of a variable is not known from the source;
 - database calls `<receiver>.<method>(...)` where the receiver is `session`,
   `db`, `cursor`, `conn` or `connection` and the method is `add`, `commit`,
   `delete`, `execute`, `executemany`, `flush`, `merge`, `query`, `refresh`,
   `rollback` or `scalars` (for example `session.commit()`).
 
-The check is a simple scan of names, so it can miss I/O (for example
-`from subprocess import run` at module level, or `Path.write_text`) and it
-can skip a function that only looks like I/O. Rules are checked in the order
-of the table; the first match is the reason.
+The check is a scan of names in the source, so it can miss I/O that is not
+on this list, and it can skip a function that only looks like I/O. Rules are
+checked in the order of the table; the first match is the reason.
 
 The rest of this page is written together with the analysis features.
