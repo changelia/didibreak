@@ -92,16 +92,41 @@ def test_method_qualified_names_types_and_dedented_source() -> None:
         .replace(b"return 1", b"return 2")
     )
 
-    functions = _detect(BASE, changed)
+    detection = detect_changed_functions(
+        [SourceFile("app/phone.py", BASE, changed)], max_functions=10
+    )
+    functions = list(detection.functions)
 
     assert [(f.module, f.qualname, f.function_type, f.is_async) for f in functions] == [
         ("app.phone", "Phone.clean", "staticmethod", False),
         ("app.phone", "Phone.parse", "classmethod", False),
-        ("app.phone", "Phone.format", "method", False),
-        ("app.phone", "Phone.fetch", "method", True),
+    ]
+    assert [(f.qualname, f.skip_reason) for f in detection.skipped] == [
+        ("Phone.format", "instance method"),
+        ("Phone.fetch", "async function"),
     ]
     assert functions[0].new_source.startswith("@staticmethod\ndef clean(number):")
     assert functions[0].line == 10
+
+
+def test_untestable_functions_do_not_count_toward_the_limit() -> None:
+    source = (
+        b"def gen():\n    yield 1\n\n\n"
+        b"def first():\n    return 1\n\n\n"
+        b"def second():\n    return 2\n"
+    )
+
+    detection = detect_changed_functions(
+        [SourceFile("app.py", None, source)], max_functions=1
+    )
+
+    assert [f.qualname for f in detection.functions] == ["first"]
+    assert [(f.qualname, f.skip_reason) for f in detection.skipped] == [
+        ("gen", "generator")
+    ]
+    assert [(f.qualname, f.skip_reason) for f in detection.limited] == [
+        ("second", "limit")
+    ]
 
 
 def test_new_file_makes_every_function_new() -> None:

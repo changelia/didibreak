@@ -15,6 +15,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from pathlib import PurePosixPath
 
+from didibreak.testability import skip_reason
+
 _FunctionNode = ast.FunctionDef | ast.AsyncFunctionDef
 
 
@@ -83,13 +85,15 @@ class Detection:
     """Result of comparing all changed files.
 
     Attributes:
-        functions: Changed and new functions to check, by file then line.
-        limited: Functions cut by ``max_functions`` (skip reason ``limit``).
+        functions: Testable changed and new functions, by file then line.
+        skipped: Functions v0.1 cannot test, with ``skip_reason`` set.
+        limited: Testable functions cut by ``max_functions`` (``limit``).
         removed: ``path::qualname`` of functions that no longer exist.
         skipped_files: Files that could not be parsed, with the reason.
     """
 
     functions: tuple[ChangedFunction, ...]
+    skipped: tuple[ChangedFunction, ...]
     limited: tuple[ChangedFunction, ...]
     removed: tuple[str, ...]
     skipped_files: tuple[SkippedFile, ...]
@@ -298,7 +302,8 @@ def detect_changed_functions(
         max_functions: How many functions to keep; the rest are ``limited``.
 
     Returns:
-        The detection result, ordered by file path, then line.
+        The detection result, ordered by file path, then line. Testability
+        rules are applied before ``max_functions``.
     """
     found: list[ChangedFunction] = []
     removed: list[str] = []
@@ -311,10 +316,23 @@ def detect_changed_functions(
         found.extend(result[0])
         removed.extend(result[1])
     found.sort(key=lambda function: (function.file, function.line))
+    marked = [
+        replace(
+            function,
+            skip_reason=skip_reason(
+                function.new_source, function.function_type, function.is_async
+            ),
+        )
+        for function in found
+    ]
+    # The limit counts only functions that will actually be tested.
+    testable = [function for function in marked if function.skip_reason is None]
     return Detection(
-        functions=tuple(found[:max_functions]),
+        functions=tuple(testable[:max_functions]),
+        skipped=tuple(function for function in marked if function.skip_reason),
         limited=tuple(
-            replace(function, skip_reason="limit") for function in found[max_functions:]
+            replace(function, skip_reason="limit")
+            for function in testable[max_functions:]
         ),
         removed=tuple(sorted(removed)),
         skipped_files=tuple(sorted(skipped, key=lambda item: item.path)),

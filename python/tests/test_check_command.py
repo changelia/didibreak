@@ -343,3 +343,35 @@ def test_json_format_does_not_print_the_exclusion_line(
 
     assert main(["check", "--format", "json"]) == EXIT_OK
     assert "excluded" not in capsys.readouterr().err
+
+
+def test_check_reports_skipped_functions_with_reasons_in_verbose_mode(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (repository / "mixed.py").write_text(
+        "import subprocess\n\n\ndef pure():\n    return 1\n\n\n"
+        "def run():\n    return subprocess.run(['ls'])\n",
+        encoding="utf-8",
+    )
+
+    assert main(["check", "-v"]) == EXIT_OK
+
+    error_output = capsys.readouterr().err
+    assert "1 function(s) skipped: not testable in v0.1" in error_output
+    assert "  skipped: mixed.py::run (obvious I/O: subprocess.run)" in error_output
+    assert "  new: mixed.py::pure" in error_output
+
+
+def test_check_warns_when_all_changed_functions_are_skipped(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (repository / "gen.py").write_text(
+        "def numbers():\n    yield 1\n", encoding="utf-8"
+    )
+
+    assert main(["check"]) == EXIT_OK
+
+    error_output = capsys.readouterr().err
+    assert "Warning: checked 0 functions" in error_output
+    assert "  skipped: gen.py::numbers (generator)" in error_output
+    assert "Nothing to check" not in error_output

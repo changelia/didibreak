@@ -256,12 +256,29 @@ def _report_detection(detection: Detection, max_functions: int, verbose: bool) -
         f"{len(detection.functions)} changed function(s) to check ({new} new)",
         file=sys.stderr,
     )
+    if detection.skipped:
+        print(
+            f"{len(detection.skipped)} function(s) skipped: not testable in v0.1",
+            file=sys.stderr,
+        )
     if detection.limited:
         print(
             f"{len(detection.limited)} more not checked "
             f"(max_functions = {max_functions})",
             file=sys.stderr,
         )
+    all_skipped = bool(detection.skipped) and not detection.functions
+    if all_skipped:
+        print(
+            "Warning: checked 0 functions; all changed functions were skipped",
+            file=sys.stderr,
+        )
+    if verbose or all_skipped:
+        for function in detection.skipped:
+            print(
+                f"  skipped: {function.report_name} ({function.skip_reason})",
+                file=sys.stderr,
+            )
     if verbose:
         for function in detection.functions:
             print(f"  {function.kind}: {function.report_name}", file=sys.stderr)
@@ -288,13 +305,14 @@ def _run_check(arguments: argparse.Namespace) -> int:
         _report_excluded(files.excluded, verbose=arguments.verbose)
         _report_detection(detection, config.max_functions, verbose=arguments.verbose)
     if not detection.functions:
-        print(
-            "Nothing to check: no changed Python functions compared with "
-            f"{config.base}",
-            file=sys.stderr,
-        )
+        if not detection.skipped:
+            print(
+                "Nothing to check: no changed Python functions compared with "
+                f"{config.base}",
+                file=sys.stderr,
+            )
         return EXIT_OK
-    # TODO(task 07): apply testability rules, then run the pipeline.
+    # TODO(task 09): run the harness on the testable functions.
     print("didibreak: the analysis is not implemented yet", file=sys.stderr)
     return exit_code_for([], config.fail_on)
 
