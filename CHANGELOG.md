@@ -25,6 +25,10 @@ the Python package and `js-v*` for the JS/TS package.
   and docstrings are ignored), reports files it cannot parse, applies
   `max_functions`, and shows excluded files; `-v` lists them.
 - A `python` value without `/` is looked up on `PATH`.
+- Async functions, instance methods, generators and functions with obvious
+  I/O are skipped with a reason; `-v` lists them.
+- The import root is the folder of the nearest `pyproject.toml` (or its
+  `src/`).
 
 ## JS/TS package
 
