@@ -1,0 +1,53 @@
+name: python
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "python/**"
+      - "spec/**"
+      - "LICENSE"
+      - ".github/workflows/python.yml"
+  pull_request:
+    paths:
+      - "python/**"
+      - "spec/**"
+      - "LICENSE"
+      - ".github/workflows/python.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Linux and macOS only in v0.1 (owner decision Q8).
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.11", "3.12", "3.13"]
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          python-version: ${{ matrix.python-version }}
+          working-directory: python
+      - name: Install
+        run: uv sync --locked
+      - name: Tests
+        run: uv run pytest
+      - name: Lint
+        run: uv run ruff check .
+      - name: Format
+        run: uv run ruff format --check .
+      - name: Types
+        run: uv run mypy src
+      - name: Build
+        run: uv build
+      - name: Package contents
+        run: uv run python scripts/check_dist.py dist

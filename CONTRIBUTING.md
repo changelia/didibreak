@@ -25,7 +25,8 @@ uv sync
 ```
 
 `uv sync` installs the package in editable mode with the dev tools (pytest,
-ruff, mypy) and copies `spec/prompts/` into `src/didibreak/prompts/`.
+ruff, mypy), copies `spec/prompts/` into `src/didibreak/prompts/` and the root
+`LICENSE` into `python/LICENSE`. Both copies are git-ignored.
 
 ## Checks
 
@@ -38,7 +39,31 @@ uv run ruff format --check .
 uv run mypy src
 ```
 
-Ruff rules and mypy strict mode are configured in task 03.
+Configuration lives in `python/pyproject.toml`:
+
+- Ruff rules `E`, `F`, `W`, `I`, `B`, `UP`, `SIM`, `RUF`, `D` (Google
+  docstring convention); tests are exempt from the missing-docstring rules.
+- mypy in strict mode for Python 3.11.
+- pytest with strict markers and config.
+
+To check the built packages the same way CI does:
+
+```bash
+uv build
+uv run python scripts/check_dist.py dist
+```
+
+## Continuous integration
+
+GitHub Actions workflows in `.github/workflows/`:
+
+| Workflow | Runs on changes in | What it does |
+| --- | --- | --- |
+| `python.yml` | `python/`, `spec/`, `LICENSE` | The four checks, build and package content check on Python 3.11–3.13, Linux and macOS. |
+| `spec.yml` | `spec/`, prompt-copy code | Report schema is valid JSON with the expected structure; packaged prompts match `spec/prompts/`. |
+
+`js.yml` is added together with the JS package. Pull requests use the template
+in `.github/pull_request_template.md`, which carries the Definition of Done.
 
 ## Prompt templates
 
