@@ -1,0 +1,22 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+
+# Build output
+build/
+dist/
+*.egg-info/
+
+# didibreak output when run on this repository
+.didibreak/
+
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/
