@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/changelia/didibreak/spec/report.schema.json",
+  "title": "didibreak JSON report",
+  "description": "Output of `didibreak check --format json`, schema_version 1 (Detailed Design section 6).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "tool", "base", "intent", "findings", "summary", "usage"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"const": "didibreak"},
+        "version": {"type": "string"}
+      }
+    },
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ref", "sha"],
+      "properties": {
+        "ref": {"type": "string", "description": "Git ref given with --base, e.g. HEAD."},
+        "sha": {"type": "string", "description": "Commit the ref resolved to."}
+      }
+    },
+    "intent": {
+      "type": ["string", "null"],
+      "description": "Intent text used for labelling; null when none was available."
+    },
+    "findings": {"type": "array", "items": {"$ref": "#/$defs/finding"}},
+    "summary": {"$ref": "#/$defs/summary"},
+    "usage": {"$ref": "#/$defs/usage"}
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "function", "label", "reason", "confidence",
+        "args", "kwargs", "before", "after", "test_file"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{12}$",
+          "description": "First 12 hex chars of SHA-256 over function qualified name + normalized args + kwargs."
+        },
+        "function": {"type": "string", "description": "path/to/file.py::qualified_name"},
+        "label": {"enum": ["expected", "unexpected", "unclear", "new_function"]},
+        "reason": {"type": "string"},
+        "confidence": {
+          "enum": ["high", "low"],
+          "description": "high when both outcomes have a normalized value; low when compared by type only."
+        },
+        "args": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Python literal expressions."
+        },
+        "kwargs": {
+          "type": "object",
+          "additionalProperties": {"type": "string"},
+          "description": "Argument name to Python literal expression."
+        },
+        "before": {
+          "oneOf": [{"$ref": "#/$defs/outcome"}, {"type": "null"}],
+          "description": "Outcome on the base version; null for new functions."
+        },
+        "after": {"$ref": "#/$defs/outcome"},
+        "test_file": {
+          "type": ["string", "null"],
+          "description": "Reproducing pytest file; null when no test was generated (base timeout)."
+        }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "type_name", "repr"],
+      "properties": {
+        "kind": {"enum": ["return", "exception", "timeout"]},
+        "type_name": {"type": "string", "description": "Qualified type name, e.g. builtins.str."},
+        "repr": {"type": "string", "maxLength": 2000},
+        "message": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Exception message; present only when kind is exception."
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "functions_checked", "cases_run", "findings", "flaky_dropped",
+        "invalid_cases_dropped", "skipped", "removed"
+      ],
+      "properties": {
+        "functions_checked": {"type": "integer", "minimum": 0},
+        "cases_run": {"type": "integer", "minimum": 0},
+        "findings": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["expected", "unexpected", "unclear", "new_function"],
+          "properties": {
+            "expected": {"type": "integer", "minimum": 0},
+            "unexpected": {"type": "integer", "minimum": 0},
+            "unclear": {"type": "integer", "minimum": 0},
+            "new_function": {"type": "integer", "minimum": 0}
+          }
+        },
+        "flaky_dropped": {"type": "integer", "minimum": 0},
+        "invalid_cases_dropped": {"type": "integer", "minimum": 0},
+        "skipped": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["function", "reason"],
+            "properties": {
+              "function": {"type": "string"},
+              "reason": {"type": "string"}
+            }
+          }
+        },
+        "removed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["function"],
+            "properties": {"function": {"type": "string"}}
+          }
+        }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["calls", "input_tokens", "output_tokens", "cost_usd"],
+      "properties": {
+        "calls": {"type": "integer", "minimum": 0},
+        "input_tokens": {"type": "integer", "minimum": 0},
+        "output_tokens": {"type": "integer", "minimum": 0},
+        "cost_usd": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "null when the model has no known price."
+        }
+      }
+    }
+  }
+}
