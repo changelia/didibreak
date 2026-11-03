@@ -21,8 +21,15 @@ dev = ["pytest", "ruff", "mypy"]
 [tool.hatch.version]
 path = "src/didibreak/__init__.py"
 
+[tool.hatch.build]
+# The prompt copies are generated (git-ignored) but must be packaged.
+artifacts = ["src/didibreak/prompts/"]
+
+[tool.hatch.build.hooks.custom]
+# hatch_build.py copies spec/prompts/ into src/didibreak/prompts/.
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/didibreak"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/didibreak", "tests", "README.md"]
+include = ["src/didibreak", "tests", "scripts", "hatch_build.py", "README.md"]
