@@ -17,8 +17,15 @@ If the Notion tools are not available, stop and tell the owner. Do not work from
 ## Non-negotiable rules (summary — Notion has the full list)
 1. Never invent. If something is missing or ambiguous, stop and ask the owner, and record the
    question under "Open questions" on the Working Rules page.
-2. One task at a time, only the task the owner named: read task → propose plan → wait for approval
-   → implement on a feature branch → run checks → report → update Notion.
+2. One task at a time, only the task the owner named, following the Autonomy policy in Notion:
+   read task → implement end to end on its feature branch (no plan approval needed) → run checks
+   → open a PR → fill Completion evidence → stop and report. Decide implementation details,
+   consistency fixes and commit splitting yourself. Stop and ask only when: Notion has no answer
+   or contradicts itself on something user-visible or architectural; a new dependency is needed;
+   the work would deviate from Spec, Architecture or Detailed Design; a push to main, merge, tag,
+   release, publish or repository-setting change is needed; checks still fail after 3 fix
+   attempts; an action is irreversible or outside the task. Ask in one message, questions
+   numbered, each with a recommended answer.
 3. Feature branch per task (task-NN-short-name). Small commits: one logical change each,
    about 200 changed lines max (excluding lock files), tests in the same commit, every commit
    passes all checks. Semantic commit messages: type(scope): subject — types feat, fix, refactor,
