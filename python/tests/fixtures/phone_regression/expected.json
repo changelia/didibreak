@@ -1,0 +1,30 @@
+{
+  "description": "The phone-number example from the Spec: support for international numbers breaks local numbers written with the country code but without a plus sign.",
+  "intent": "add international phone numbers",
+  "changed_functions": [
+    {"function": "app/utils/phone.py::normalize_phone", "kind": "changed"}
+  ],
+  "skipped_functions": [],
+  "findings": [
+    {
+      "function": "app/utils/phone.py::normalize_phone",
+      "label": "expected",
+      "args": ["'+1 202 555 0100'"],
+      "kwargs": {},
+      "before": {"kind": "return", "type_name": "builtins.str", "repr": "'+99512025550100'"},
+      "after": {"kind": "return", "type_name": "builtins.str", "repr": "'+12025550100'"}
+    },
+    {
+      "function": "app/utils/phone.py::normalize_phone",
+      "label": "unexpected",
+      "args": ["'995 555 12 34 56'"],
+      "kwargs": {},
+      "before": {"kind": "return", "type_name": "builtins.str", "repr": "'+995555123456'"},
+      "after": {"kind": "return", "type_name": "builtins.str", "repr": "'+995995555123456'"}
+    }
+  ],
+  "same_behavior": [
+    {"function": "app/utils/phone.py::normalize_phone", "args": ["'555 12 34 56'"], "kwargs": {}}
+  ],
+  "flaky_functions": []
+}

@@ -20,6 +20,9 @@ dev = ["pytest", "ruff", "mypy"]
 
 [tool.ruff]
 target-version = "py311"
+# Fixture repositories hold sample user code, some of it deliberately
+# unformatted; they are data, not project code.
+extend-exclude = ["tests/fixtures"]
 
 [tool.ruff.lint]
 # Rule set from the Code quality standards.
