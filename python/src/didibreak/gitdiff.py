@@ -4,8 +4,11 @@ All git calls run as subprocesses; this module is the only place that talks
 to git. Nothing here writes to the user's working tree or index.
 """
 
+import shutil
 import subprocess
-from collections.abc import Sequence
+import tempfile
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
 from pathlib import Path, PurePosixPath
@@ -241,3 +244,56 @@ def changed_python_files(
             )
         ),
     )
+
+
+@contextmanager
+def base_worktree(root: Path, base_sha: str) -> Iterator[Path]:
+    """Check out the base commit in a temporary git worktree.
+
+    The worktree lives in a new temporary folder, is detached (no branch is
+    created) and is removed on success, on error and on Ctrl-C. Git hooks are
+    disabled while it is created: ``git worktree add`` would otherwise run the
+    user's post-checkout hook. The user's working tree and index are not
+    touched; git only records the worktree under ``.git/worktrees`` until it
+    is removed.
+
+    Args:
+        root: Repository root.
+        base_sha: Commit to check out.
+
+    Yields:
+        Path of the checked-out base tree.
+
+    Raises:
+        GitError: If the worktree cannot be created.
+    """
+    temporary = Path(tempfile.mkdtemp(prefix="didibreak-base-"))
+    tree = temporary / "tree"
+    no_hooks = temporary / "no-hooks"
+    no_hooks.mkdir()
+    try:
+        result = _git(
+            root,
+            "-c",
+            f"core.hooksPath={no_hooks}",
+            "worktree",
+            "add",
+            "--detach",
+            "--quiet",
+            str(tree),
+            base_sha,
+        )
+        if result.returncode != 0:
+            raise GitError(
+                f"could not check out the base commit {base_sha[:12]} in a "
+                f"temporary worktree: {result.stderr.strip()}"
+            )
+        yield tree
+    finally:
+        _remove_worktree(root, tree)
+        shutil.rmtree(temporary, ignore_errors=True)
+
+
+def _remove_worktree(root: Path, tree: Path) -> None:
+    # Fails harmlessly when the worktree was never created.
+    _git(root, "worktree", "remove", "--force", str(tree))
