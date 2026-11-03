@@ -141,6 +141,9 @@ _VALIDATORS: dict[str, Callable[[str, object], object]] = {
 
 CONFIG_KEYS = tuple(_VALIDATORS)
 
+# Keys holding filesystem paths; relative values are resolved by resolve_paths().
+PATH_KEYS = ("python", "output_dir")
+
 
 def validate(key: str, value: object) -> object:
     """Validate one setting and return it in its stored form.
@@ -181,6 +184,29 @@ def find_pyproject(start: Path, stop: Path) -> Path | None:
     return None
 
 
+def resolve_paths(
+    values: Mapping[str, object], base_directory: Path
+) -> dict[str, object]:
+    """Make relative path values absolute against ``base_directory``.
+
+    Owner decision (task 04 review): paths from pyproject.toml are relative to
+    that file's directory, paths from CLI flags to the working directory.
+
+    Args:
+        values: Validated config values.
+        base_directory: Directory that relative paths are relative to.
+
+    Returns:
+        A copy of ``values`` with absolute paths for the keys in PATH_KEYS.
+    """
+    resolved = dict(values)
+    for key in PATH_KEYS:
+        value = resolved.get(key)
+        if isinstance(value, str) and not Path(value).is_absolute():
+            resolved[key] = str(base_directory / value)
+    return resolved
+
+
 def read_config_table(pyproject: Path) -> dict[str, object]:
     """Read and validate ``[tool.didibreak]`` from a pyproject.toml.
 
@@ -188,7 +214,8 @@ def read_config_table(pyproject: Path) -> dict[str, object]:
         pyproject: Path to the file.
 
     Returns:
-        The validated keys present in the table; empty if there is no table.
+        The validated keys present in the table, with relative paths resolved
+        against the file's directory; empty if there is no table.
 
     Raises:
         ConfigError: If the file is not valid TOML or a key is invalid.
@@ -207,7 +234,7 @@ def read_config_table(pyproject: Path) -> dict[str, object]:
             values[key] = validate(key, value)
         except ConfigError as error:
             raise ConfigError(f"[tool.didibreak] in {pyproject}: {error}") from error
-    return values
+    return resolve_paths(values, pyproject.parent)
 
 
 def build_config(

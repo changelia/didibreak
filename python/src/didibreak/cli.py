@@ -8,6 +8,7 @@ that has a config key is validated by ``config.validate`` so the CLI and
 import argparse
 import sys
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from dataclasses import replace
 from pathlib import Path
 
 from didibreak import __version__
@@ -21,6 +22,7 @@ from didibreak.config import (
     build_config,
     find_pyproject,
     read_config_table,
+    resolve_paths,
     validate,
 )
 from didibreak.gitdiff import GitError, repository_root
@@ -166,7 +168,12 @@ def load_config(cli_values: Mapping[str, object], working_directory: Path) -> Co
     root = repository_root(working_directory)
     pyproject = find_pyproject(working_directory, stop=root)
     file_values = read_config_table(pyproject) if pyproject else {}
-    return build_config(file_values, cli_values)
+    config = build_config(file_values, resolve_paths(cli_values, working_directory))
+    # The default output folder is not tied to a file or flag: keep it at the
+    # repository root wherever didibreak is started.
+    if not Path(config.output_dir).is_absolute():
+        config = replace(config, output_dir=str(root / config.output_dir))
+    return config
 
 
 def _run_check(arguments: argparse.Namespace) -> int:
