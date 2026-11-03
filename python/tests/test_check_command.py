@@ -1,5 +1,7 @@
 """Tests for the check and init-agents commands, config precedence and exit codes."""
 
+import os
+import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -62,6 +64,8 @@ def test_relative_paths_in_pyproject_are_relative_to_that_file(
 ) -> None:
     package = repository / "python"
     (package / "src").mkdir(parents=True)
+    (package / ".venv/bin").mkdir(parents=True)
+    (package / ".venv/bin/python").write_text("", encoding="utf-8")
     (package / "pyproject.toml").write_text(
         '[tool.didibreak]\noutput_dir = "out"\npython = ".venv/bin/python"\n',
         encoding="utf-8",
@@ -84,12 +88,63 @@ def test_relative_paths_in_flags_are_relative_to_the_working_directory(
     working_directory.mkdir()
 
     config = load_config(
-        _cli_values(["--output-dir", "out", "--python", "/usr/bin/python3"]),
+        _cli_values(["--output-dir", "out", "--python", sys.executable]),
         working_directory,
     )
 
     assert config.output_dir == str(working_directory / "out")
-    assert config.python == "/usr/bin/python3"
+    assert config.python == sys.executable
+
+
+def _fake_interpreter(directory: Path, name: str) -> Path:
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / name
+    path.write_text("#!/bin/sh\n", encoding="utf-8")
+    path.chmod(0o755)
+    return path
+
+
+def test_bare_python_name_is_looked_up_on_path(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    interpreter = _fake_interpreter(tmp_path / "bin", "python-for-didibreak")
+    monkeypatch.setenv("PATH", f"{interpreter.parent}{os.pathsep}{os.environ['PATH']}")
+
+    config = load_config(_cli_values(["--python", "python-for-didibreak"]), repository)
+
+    assert config.python == str(interpreter)
+
+
+def test_bare_python_name_in_pyproject_is_looked_up_on_path(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    interpreter = _fake_interpreter(tmp_path / "bin", "python-for-didibreak")
+    monkeypatch.setenv("PATH", f"{interpreter.parent}{os.pathsep}{os.environ['PATH']}")
+    (repository / "pyproject.toml").write_text(
+        '[tool.didibreak]\npython = "python-for-didibreak"\n', encoding="utf-8"
+    )
+
+    assert load_config({}, repository).python == str(interpreter)
+
+
+def test_python_name_missing_from_path_exits_with_error(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["check", "--python", "no-such-python-9"]) == EXIT_ERROR
+    assert "'no-such-python-9' was not found on PATH" in capsys.readouterr().err
+
+
+def test_python_path_that_does_not_exist_exits_with_error(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (repository / "pyproject.toml").write_text(
+        '[tool.didibreak]\npython = "venv/bin/python"\n', encoding="utf-8"
+    )
+
+    assert main(["check"]) == EXIT_ERROR
+    error_output = capsys.readouterr().err
+    assert "[tool.didibreak] in" in error_output
+    assert "venv/bin/python' does not exist" in error_output
 
 
 def test_default_output_dir_is_at_the_repository_root(repository: Path) -> None:

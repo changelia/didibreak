@@ -26,6 +26,10 @@ exclude = ["scripts/*"]
 - in a CLI flag, they are relative to the current directory;
 - the default `.didibreak` is at the root of the git repository.
 
+A `python` value without a `/` (for example `python3.12`) is looked up on your
+`PATH`. didibreak stops with exit code 2 if the interpreter is not found or the
+path does not exist.
+
 ## `didibreak check` flags and config keys
 
 Every flag except `--yes`, `-v` and `-q` has a config key with the same name
