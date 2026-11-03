@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "didibreak"
+dynamic = ["version"]
+description = "Find unintended behavior changes in Python code by running the old and new versions side by side."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = []
+
+[project.scripts]
+didibreak = "didibreak.cli:main"
+
+[dependency-groups]
+# Tool configuration (Ruff rules, mypy strict mode) is added in task 03.
+dev = ["pytest", "ruff", "mypy"]
+
+[tool.hatch.version]
+path = "src/didibreak/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/didibreak"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/didibreak", "tests", "README.md"]
