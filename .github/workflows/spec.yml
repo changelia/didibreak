@@ -1,0 +1,39 @@
+name: spec
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "spec/**"
+      - "python/scripts/sync_prompts.py"
+      - "python/hatch_build.py"
+      - ".github/workflows/spec.yml"
+  pull_request:
+    paths:
+      - "spec/**"
+      - "python/scripts/sync_prompts.py"
+      - "python/hatch_build.py"
+      - ".github/workflows/spec.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  spec:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          working-directory: python
+      - name: Install
+        run: uv sync --locked
+      - name: Report schema is valid JSON
+        run: uv run python -m json.tool ../spec/report.schema.json > /dev/null
+      - name: Report schema structure
+        run: uv run pytest tests/test_report_schema.py
+      - name: Packaged prompt copies match spec/prompts
+        run: uv run python scripts/sync_prompts.py --check
