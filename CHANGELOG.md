@@ -12,6 +12,7 @@ the Python package and `js-v*` for the JS/TS package.
 #### Added
 
 - Package skeleton: `didibreak --version` and `python -m didibreak --version`.
+- The MIT license text is included in the wheel and sdist.
 
 ## JS/TS package
 
