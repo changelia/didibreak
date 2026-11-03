@@ -33,6 +33,11 @@ jobs:
         run: uv sync --locked
       - name: Report schema is valid JSON
         run: uv run python -m json.tool ../spec/report.schema.json > /dev/null
+      - name: Report schema is a valid JSON Schema (draft 2020-12)
+        # CI-only tool, pinned (owner decision Q20); not a package dependency.
+        run: >-
+          uvx --from check-jsonschema==0.39.0
+          check-jsonschema --check-metaschema ../spec/report.schema.json
       - name: Report schema structure
         run: uv run pytest tests/test_report_schema.py
       - name: Packaged prompt copies match spec/prompts
