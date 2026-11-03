@@ -5,13 +5,21 @@ built-in default. Every key is validated the same way wherever it comes from,
 so the CLI and the config file produce identical error messages.
 """
 
-from collections.abc import Callable
+import tomllib
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
 from urllib.parse import urlparse
 
 FORMATS = ("text", "json")
 FAIL_ON = ("unclear", "unexpected")
 PROVIDERS = ("openai", "anthropic")
+
+_DEFAULT_API_KEY_VARIABLES = {
+    "openai": "OPENAI_API_KEY",
+    "anthropic": "ANTHROPIC_API_KEY",
+}
 
 
 class ConfigError(Exception):
@@ -152,3 +160,110 @@ def validate(key: str, value: object) -> object:
         allowed = ", ".join(CONFIG_KEYS)
         raise ConfigError(f"unknown key {key!r}; allowed keys: {allowed}")
     return validator(key, value)
+
+
+def find_pyproject(start: Path, stop: Path) -> Path | None:
+    """Find the nearest pyproject.toml from ``start`` up to ``stop``.
+
+    Args:
+        start: Directory to start in (the current directory).
+        stop: Last directory to look in (the git repository root).
+
+    Returns:
+        The path of the nearest pyproject.toml, or None if there is none.
+    """
+    for directory in (start, *start.parents):
+        candidate = directory / "pyproject.toml"
+        if candidate.is_file():
+            return candidate
+        if directory == stop:
+            break
+    return None
+
+
+def read_config_table(pyproject: Path) -> dict[str, object]:
+    """Read and validate ``[tool.didibreak]`` from a pyproject.toml.
+
+    Args:
+        pyproject: Path to the file.
+
+    Returns:
+        The validated keys present in the table; empty if there is no table.
+
+    Raises:
+        ConfigError: If the file is not valid TOML or a key is invalid.
+    """
+    try:
+        document = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as error:
+        raise ConfigError(f"{pyproject} is not valid TOML: {error}") from error
+    tool = document.get("tool", {})
+    table = tool.get("didibreak", {}) if isinstance(tool, dict) else {}
+    if not isinstance(table, dict):
+        raise ConfigError(f"[tool.didibreak] in {pyproject} must be a table")
+    values: dict[str, object] = {}
+    for key, value in table.items():
+        try:
+            values[key] = validate(key, value)
+        except ConfigError as error:
+            raise ConfigError(f"[tool.didibreak] in {pyproject}: {error}") from error
+    return values
+
+
+def build_config(
+    file_values: Mapping[str, object], cli_values: Mapping[str, object]
+) -> Config:
+    """Combine validated values: CLI flags override the file, which overrides defaults.
+
+    Args:
+        file_values: Validated values from ``[tool.didibreak]``.
+        cli_values: Validated values of the CLI flags the user gave.
+
+    Returns:
+        The effective configuration.
+    """
+    merged: dict[str, Any] = {**file_values, **cli_values}
+    return Config(**merged)
+
+
+def api_key_variable(config: Config) -> str | None:
+    """Name the environment variable that holds the provider's API key.
+
+    Args:
+        config: The effective configuration.
+
+    Returns:
+        ``api_key_env`` if set and non-empty, otherwise the provider's standard
+        variable. None when no key is needed (``api_key_env = ""``) or no
+        provider is configured.
+    """
+    if config.api_key_env is not None:
+        return config.api_key_env or None
+    if config.provider is None:
+        return None
+    return _DEFAULT_API_KEY_VARIABLES[config.provider]
+
+
+def read_api_key(config: Config, environment: Mapping[str, str]) -> str | None:
+    """Read the API key from the environment.
+
+    Args:
+        config: The effective configuration.
+        environment: Environment variables, usually ``os.environ``.
+
+    Returns:
+        The key, or None when no key is needed.
+
+    Raises:
+        ConfigError: If a key is needed but the variable is missing or empty.
+    """
+    variable = api_key_variable(config)
+    if variable is None:
+        return None
+    key = environment.get(variable, "")
+    if not key:
+        raise ConfigError(
+            f"missing API key: set the environment variable {variable}, "
+            'or set api_key_env = "" for a local server that needs no key'
+        )
+    return key
