@@ -1,0 +1,33 @@
+{
+  "description": "A change that does exactly what the intent says: every greeting gains an exclamation mark.",
+  "intent": "add an exclamation mark to greetings",
+  "changed_functions": [
+    {
+      "function": "app/greetings.py::greeting",
+      "kind": "changed"
+    }
+  ],
+  "skipped_functions": [],
+  "findings": [
+    {
+      "function": "app/greetings.py::greeting",
+      "label": "expected",
+      "args": [
+        "'Ada'"
+      ],
+      "kwargs": {},
+      "before": {
+        "kind": "return",
+        "type_name": "builtins.str",
+        "repr": "'Hello, Ada'"
+      },
+      "after": {
+        "kind": "return",
+        "type_name": "builtins.str",
+        "repr": "'Hello, Ada!'"
+      }
+    }
+  ],
+  "same_behavior": [],
+  "flaky_functions": []
+}

@@ -61,7 +61,15 @@ def _same(before: dict[str, str], after: dict[str, str]) -> bool:
 
 
 def test_the_required_cases_exist() -> None:
-    assert set(CASES) >= {"phone_regression"}
+    assert set(CASES) >= {
+        "phone_regression",
+        "intended_change",
+        "formatting_only",
+        "new_function",
+        "float_precision",
+        "nondeterministic",
+        "exception_type",
+    }
 
 
 @pytest.mark.parametrize("case", CASES)
