@@ -2,7 +2,7 @@
 
 import pytest
 
-from didibreak.functions import decode_source, definitions, module_name
+from didibreak.functions import decode_source, definitions, import_root, module_name
 
 SOURCE = """\
 import os
@@ -79,16 +79,34 @@ def test_syntax_error_is_raised() -> None:
 
 
 @pytest.mark.parametrize(
-    ("path", "module"),
+    ("path", "project_directory", "root", "module"),
     [
-        ("app/utils/phone.py", "app.utils.phone"),
-        ("src/pkg/core.py", "pkg.core"),
-        ("pkg/__init__.py", "pkg"),
-        ("script.py", "script"),
+        # This repository: python/pyproject.toml with a src layout.
+        ("python/src/didibreak/cli.py", "python", "python/src", "didibreak.cli"),
+        ("python/src/didibreak/__init__.py", "python", "python/src", "didibreak"),
+        ("python/tests/test_cli.py", "python", "python", "tests.test_cli"),
+        ("python/scripts/tool.py", "python", "python", "scripts.tool"),
+        # pyproject.toml at the repository root.
+        ("src/pkg/core.py", "", "src", "pkg.core"),
+        ("app/utils/phone.py", "", "", "app.utils.phone"),
+        # No pyproject.toml anywhere: git-root rule.
+        ("src/pkg/core.py", None, "src", "pkg.core"),
+        ("pkg/__init__.py", None, "", "pkg"),
+        ("services/api/src/api/main.py", None, "", "services.api.src.api.main"),
+        # Nearest pyproject.toml wins over one higher up.
+        (
+            "services/api/src/api/main.py",
+            "services/api",
+            "services/api/src",
+            "api.main",
+        ),
     ],
 )
-def test_module_names_follow_the_import_root(path: str, module: str) -> None:
-    assert module_name(path) == module
+def test_import_root_and_module_name(
+    path: str, project_directory: str | None, root: str, module: str
+) -> None:
+    assert import_root(path, project_directory) == root
+    assert module_name(path, root) == module
 
 
 def test_source_with_coding_declaration_is_decoded() -> None:

@@ -26,11 +26,13 @@ class SourceFile:
         path: Repository-relative path in the working tree.
         old_source: Content at the base commit; None for a new file.
         new_source: Content in the working tree; None for a deleted file.
+        import_root: Repository-relative import root from import_root().
     """
 
     path: str
     old_source: bytes | None
     new_source: bytes | None
+    import_root: str = ""
 
 
 @dataclass(frozen=True)
@@ -39,7 +41,7 @@ class ChangedFunction:
 
     Attributes:
         file: Repository-relative path in the working tree.
-        module: Importable module name (Detailed Design section 3).
+        module: Importable module name relative to the import root.
         qualname: ``name`` or ``Class.name``.
         kind: ``changed`` (exists in both versions) or ``new``.
         function_type: ``function``, ``staticmethod``, ``classmethod`` or
@@ -105,21 +107,43 @@ class FunctionDefinition:
     fingerprint: str
 
 
-def module_name(path: str) -> str:
-    """Return the importable module name for a repository-relative path.
+def import_root(path: str, project_directory: str | None) -> str:
+    """Return the import root for a file (owner decision, task 06 review).
 
-    A file under ``src/`` is imported relative to ``src``; otherwise relative to
-    the repository root. ``__init__.py`` maps to its package.
+    The import root is the directory of the nearest pyproject.toml above the
+    file, or that directory's ``src/`` when the file is inside it. Without a
+    pyproject.toml, the repository root is used, or its ``src/`` when the file
+    is inside it.
+
+    Args:
+        path: Repository-relative POSIX path of the file.
+        project_directory: Repository-relative directory of the nearest
+            pyproject.toml above the file (``""`` for the repository root), or
+            None if there is none.
+
+    Returns:
+        Repository-relative import root; ``""`` is the repository root.
+    """
+    base = project_directory or ""
+    source_folder = f"{base}/src" if base else "src"
+    if path.startswith(f"{source_folder}/"):
+        return source_folder
+    return base
+
+
+def module_name(path: str, root: str = "") -> str:
+    """Return the importable module name of a file relative to its import root.
 
     Args:
         path: Repository-relative POSIX path of a ``.py`` file.
+        root: Import root from import_root(); ``""`` is the repository root.
 
     Returns:
-        Dotted module name, e.g. ``app.utils.phone``.
+        Dotted module name, e.g. ``app.utils.phone``; ``__init__.py`` maps to
+        its package.
     """
-    parts = list(PurePosixPath(path).with_suffix("").parts)
-    if parts[0] == "src" and len(parts) > 1:
-        parts = parts[1:]
+    relative = PurePosixPath(path).relative_to(root) if root else PurePosixPath(path)
+    parts = list(relative.with_suffix("").parts)
     if parts[-1] == "__init__" and len(parts) > 1:
         parts = parts[:-1]
     return ".".join(parts)
@@ -241,7 +265,7 @@ def _compare_file(
     new = _parse_version(file.new_source, "current")
     if isinstance(new, str):
         return SkippedFile(file.path, new)
-    module = module_name(file.path)
+    module = module_name(file.path, file.import_root)
     changed: list[ChangedFunction] = []
     for qualname, current in new.items():
         previous = old.get(qualname)
