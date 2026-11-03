@@ -15,8 +15,30 @@ dependencies = []
 didibreak = "didibreak.cli:main"
 
 [dependency-groups]
-# Tool configuration (Ruff rules, mypy strict mode) is added in task 03.
 dev = ["pytest", "ruff", "mypy"]
+
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.lint]
+# Rule set from the Code quality standards.
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# Test names describe the behavior; docstrings on each test add nothing.
+"tests/**" = ["D1"]
+
+[tool.mypy]
+strict = true
+python_version = "3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+xfail_strict = true
 
 [tool.hatch.version]
 path = "src/didibreak/__init__.py"
