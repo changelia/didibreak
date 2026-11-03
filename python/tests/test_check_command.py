@@ -1,10 +1,10 @@
 """Tests for the check and init-agents commands, config precedence and exit codes."""
 
-import subprocess
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
+from conftest import GitRepository
 
 from didibreak.cli import (
     AGENT_SNIPPET,
@@ -21,12 +21,11 @@ from didibreak.gitdiff import repository_root
 
 
 @pytest.fixture
-def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    path = tmp_path / "repo"
-    path.mkdir()
-    subprocess.run(["git", "init", "-q", str(path)], check=True)
-    monkeypatch.chdir(path)
-    return path
+def repository(git_repository: GitRepository, monkeypatch: pytest.MonkeyPatch) -> Path:
+    git_repository.write("app.py", "VALUE = 1\n")
+    git_repository.commit("initial")
+    monkeypatch.chdir(git_repository.path)
+    return git_repository.path
 
 
 def _cli_values(argv: list[str]) -> dict[str, object]:
@@ -44,7 +43,7 @@ def test_check_without_pyproject_uses_defaults_and_succeeds(
     assert load_config({}, repository) == expected
 
     assert main(["check"]) == EXIT_OK
-    assert "configuration OK" in capsys.readouterr().err
+    assert "Nothing to check" in capsys.readouterr().err
 
 
 def test_flags_override_pyproject_which_overrides_defaults(repository: Path) -> None:
@@ -180,3 +179,30 @@ def test_exit_code_follows_labels_and_fail_on(
     labels: list[str], fail_on: str, expected: int
 ) -> None:
     assert exit_code_for(labels, fail_on) == expected
+
+
+def test_check_counts_changed_python_files(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (repository / "app.py").write_text("VALUE = 2\n", encoding="utf-8")
+    (repository / "new.py").write_text("NEW = 1\n", encoding="utf-8")
+
+    assert main(["check"]) == EXIT_OK
+    assert "2 changed Python file(s) compared with HEAD" in capsys.readouterr().err
+
+
+def test_check_with_unknown_base_exits_with_error(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["check", "--base", "no-such-branch"]) == EXIT_ERROR
+    assert "unknown base ref 'no-such-branch'" in capsys.readouterr().err
+
+
+def test_check_in_a_repository_without_commits_exits_with_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    empty = GitRepository(tmp_path / "empty")
+    monkeypatch.chdir(empty.path)
+
+    assert main(["check"]) == EXIT_ERROR
+    assert "has no commits yet" in capsys.readouterr().err

@@ -25,7 +25,12 @@ from didibreak.config import (
     resolve_paths,
     validate,
 )
-from didibreak.gitdiff import GitError, repository_root
+from didibreak.gitdiff import (
+    GitError,
+    changed_python_files,
+    repository_root,
+    resolve_base,
+)
 
 EXIT_OK = 0
 EXIT_FINDINGS = 1
@@ -181,13 +186,24 @@ def _run_check(arguments: argparse.Namespace) -> int:
         key: getattr(arguments, key) for key in CONFIG_KEYS if hasattr(arguments, key)
     }
     try:
-        config = load_config(cli_values, Path.cwd())
+        working_directory = Path.cwd()
+        config = load_config(cli_values, working_directory)
+        root = repository_root(working_directory)
+        base_sha = resolve_base(root, config.base)
+        files = changed_python_files(root, base_sha, config.exclude)
     except (GitError, ConfigError) as error:
         print(f"didibreak: error: {error}", file=sys.stderr)
         return EXIT_ERROR
-    # TODO(task 05): resolve the base and run the pipeline; no findings until then.
+    if not files.changed:
+        print(
+            f"Nothing to check: no changed Python files compared with {config.base}",
+            file=sys.stderr,
+        )
+        return EXIT_OK
+    # TODO(task 06): detect changed functions and run the pipeline.
     print(
-        "didibreak: configuration OK; the analysis is not implemented yet",
+        f"didibreak: {len(files.changed)} changed Python file(s) compared with "
+        f"{config.base}; the analysis is not implemented yet",
         file=sys.stderr,
     )
     return exit_code_for([], config.fail_on)
