@@ -4,13 +4,19 @@ import textwrap
 
 import pytest
 
-from didibreak.testability import OBVIOUS_IO, skip_reason
+from didibreak.testability import OBVIOUS_IO, module_context, skip_reason
 
 
 def _reason(
-    source: str, function_type: str = "function", is_async: bool = False
+    source: str,
+    function_type: str = "function",
+    is_async: bool = False,
+    qualname: str | None = None,
 ) -> str | None:
-    return skip_reason(textwrap.dedent(source), function_type, is_async)
+    """Skip reason of ``qualname`` (default: the first function in the module)."""
+    context = module_context(textwrap.dedent(source))
+    name = qualname or next(iter(context.functions))
+    return skip_reason(context, name, function_type, is_async)
 
 
 def test_pure_function_is_not_skipped() -> None:
@@ -118,3 +124,54 @@ def test_io_list_is_one_constant_with_the_task_categories() -> None:
     assert set(OBVIOUS_IO["modules"]) == {"subprocess", "requests", "httpx", "socket"}
     assert "session" in OBVIOUS_IO["database_receivers"]
     assert "commit" in OBVIOUS_IO["database_methods"]
+
+
+@pytest.mark.parametrize(
+    ("imports", "statement", "reason"),
+    [
+        ("from subprocess import run", "run(['ls'])", "obvious I/O: subprocess.run"),
+        (
+            "import subprocess as sp",
+            "sp.Popen(['ls'])",
+            "obvious I/O: subprocess.Popen",
+        ),
+        ("from os import remove", "remove(path)", "obvious I/O: os.remove"),
+        ("from os import remove as rm", "rm(path)", "obvious I/O: os.remove"),
+        ("import os as system", "system.remove(path)", "obvious I/O: os.remove"),
+        ("from requests import Session", "Session()", "obvious I/O: requests.Session"),
+        (
+            "try:\n    from httpx import get\nexcept ImportError:\n    get = None",
+            "get(path)",
+            "obvious I/O: httpx.get",
+        ),
+    ],
+)
+def test_module_level_imports_and_aliases_are_resolved(
+    imports: str, statement: str, reason: str
+) -> None:
+    source = f"{imports}\n\n\ndef work(path):\n    return {statement}\n"
+
+    assert _reason(source, qualname="work") == reason
+
+
+def test_function_level_aliases_are_resolved() -> None:
+    source = """
+        def work():
+            from subprocess import check_output as out
+            return out(["ls"])
+    """
+
+    assert _reason(source) == "obvious I/O: import subprocess"
+
+
+def test_a_local_function_with_an_io_like_name_is_not_io() -> None:
+    source = """
+        def remove(items, item):
+            return [i for i in items if i != item]
+
+
+        def work(items):
+            return remove(items, 1)
+    """
+
+    assert _reason(source, qualname="work") is None

@@ -1,15 +1,19 @@
 """Testability rules: which changed functions v0.1 cannot test safely, and why.
 
-Pure functions over a function's source. The categories come from task 07:
-async functions, instance methods, generators and obvious I/O. Each skip
-reason is a short string shown to the user.
+Pure functions over a module's source. The categories come from task 07:
+async functions, instance methods, generators and obvious I/O. These rules
+are the v0.1 safety boundary: a function that matches is never executed.
+Names are resolved through the module's imports and aliases, so
+``from subprocess import run`` and ``import shutil as sh`` are recognized.
 """
 
 import ast
+from collections.abc import Mapping
+from dataclasses import dataclass
 
 # Everything treated as obvious I/O, in one place (documented in limitations.md).
 OBVIOUS_IO = {
-    # Calls to these names.
+    # Calls to these fully qualified names.
     "calls": ("open", "os.remove"),
     # Any use of these modules.
     "modules": ("subprocess", "requests", "httpx", "socket"),
@@ -35,6 +39,72 @@ INSTANCE_METHOD_REASON = "instance method"
 GENERATOR_REASON = "generator"
 IO_REASON_PREFIX = "obvious I/O: "
 
+_FunctionNode = ast.FunctionDef | ast.AsyncFunctionDef
+
+
+@dataclass(frozen=True)
+class ModuleContext:
+    """What the testability rules need to know about one module version.
+
+    Attributes:
+        aliases: Local name to fully qualified name, from module-level imports
+            (``run`` -> ``subprocess.run``, ``sh`` -> ``shutil``).
+        functions: Module-level functions and methods of module-level classes
+            by qualified name (``name`` or ``Class.name``).
+    """
+
+    aliases: Mapping[str, str]
+    functions: Mapping[str, _FunctionNode]
+
+
+def _import_aliases(statements: list[ast.stmt]) -> dict[str, str]:
+    aliases: dict[str, str] = {}
+    pending = list(statements)
+    while pending:
+        node = pending.pop(0)
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.asname:
+                    aliases[alias.asname] = alias.name
+                else:
+                    top = alias.name.split(".")[0]
+                    aliases[top] = top
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+        elif not isinstance(node, _FunctionNode | ast.ClassDef):
+            # Imports inside module-level if/try blocks still bind module names.
+            pending.extend(
+                child
+                for child in ast.iter_child_nodes(node)
+                if isinstance(child, ast.stmt)
+            )
+    return aliases
+
+
+def module_context(source: str) -> ModuleContext:
+    """Collect imports, aliases and functions of a module.
+
+    Args:
+        source: Python source text of the whole module.
+
+    Returns:
+        The module context.
+
+    Raises:
+        SyntaxError: If the source does not parse.
+    """
+    tree = ast.parse(source)
+    functions: dict[str, _FunctionNode] = {}
+    for node in tree.body:
+        if isinstance(node, _FunctionNode):
+            functions[node.name] = node
+        elif isinstance(node, ast.ClassDef):
+            for member in node.body:
+                if isinstance(member, _FunctionNode):
+                    functions[f"{node.name}.{member.name}"] = member
+    return ModuleContext(aliases=_import_aliases(tree.body), functions=functions)
+
 
 def _dotted_name(node: ast.expr) -> str | None:
     """Return ``a.b.c`` for a Name/Attribute chain, otherwise None."""
@@ -48,58 +118,68 @@ def _dotted_name(node: ast.expr) -> str | None:
     return ".".join(reversed(parts))
 
 
-def _io_in_call(call: ast.Call) -> str | None:
-    name = _dotted_name(call.func)
-    if name is None:
-        return None
-    if name in OBVIOUS_IO["calls"]:
+def _canonical(name: str, aliases: Mapping[str, str]) -> str:
+    first, _, rest = name.partition(".")
+    if first not in aliases:
         return name
+    return f"{aliases[first]}.{rest}" if rest else aliases[first]
+
+
+def _is_database_call(name: str) -> bool:
     parts = name.split(".")
-    is_database_call = (
+    return (
         len(parts) >= 2
         and parts[-2] in OBVIOUS_IO["database_receivers"]
         and parts[-1] in OBVIOUS_IO["database_methods"]
     )
-    return name if is_database_call else None
 
 
-def find_obvious_io(function: ast.FunctionDef | ast.AsyncFunctionDef) -> str | None:
+def _io_in_call(call: ast.Call, aliases: Mapping[str, str]) -> str | None:
+    name = _dotted_name(call.func)
+    if name is None:
+        return None
+    canonical = _canonical(name, aliases)
+    if canonical in OBVIOUS_IO["calls"]:
+        return canonical
+    if canonical.split(".")[0] in OBVIOUS_IO["modules"]:
+        return canonical
+    return name if _is_database_call(name) else None
+
+
+def find_obvious_io(function: _FunctionNode, context: ModuleContext) -> str | None:
     """Return the first obvious I/O use in a function body, if any.
 
-    Nested functions count: I/O in a helper defined inside the function is
-    still I/O of the function.
+    Names are resolved through module-level imports and through imports
+    inside the function. Helpers nested inside the function count.
 
     Args:
         function: The function's AST.
+        context: The module the function belongs to.
 
     Returns:
-        The name as written in the code (e.g. ``subprocess.run``), or None.
+        The fully qualified name (e.g. ``subprocess.run``), or None.
     """
-    for node in ast.walk(function):
-        if isinstance(node, ast.Call) and (found := _io_in_call(node)):
-            return found
-        if isinstance(node, ast.Name) and node.id in OBVIOUS_IO["modules"]:
-            return _module_use(function, node.id)
+    aliases = {**context.aliases, **_import_aliases(list(function.body))}
+    nodes = list(ast.walk(function))
+    for node in nodes:
         if isinstance(node, ast.Import | ast.ImportFrom):
             module = node.module if isinstance(node, ast.ImportFrom) else None
             names = [module] if module else [alias.name for alias in node.names]
             for imported in names:
                 if imported and imported.split(".")[0] in OBVIOUS_IO["modules"]:
                     return f"import {imported}"
+    for node in nodes:
+        if isinstance(node, ast.Call) and (found := _io_in_call(node, aliases)):
+            return found
+    for node in nodes:
+        if isinstance(node, ast.Name):
+            canonical = _canonical(node.id, aliases)
+            if canonical.split(".")[0] in OBVIOUS_IO["modules"]:
+                return canonical
     return None
 
 
-def _module_use(function: ast.AST, module: str) -> str:
-    # Prefer the full call name (subprocess.run) over the bare module name.
-    for node in ast.walk(function):
-        if isinstance(node, ast.Call):
-            name = _dotted_name(node.func)
-            if name and name.split(".")[0] == module:
-                return name
-    return module
-
-
-def is_generator(function: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+def is_generator(function: _FunctionNode) -> bool:
     """Tell whether ``yield`` appears in the function's own body.
 
     Yields inside nested functions, lambdas or classes belong to those scopes.
@@ -115,21 +195,22 @@ def is_generator(function: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
         node = pending.pop()
         if isinstance(node, ast.Yield | ast.YieldFrom):
             return True
-        if isinstance(
-            node, ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda | ast.ClassDef
-        ):
+        if isinstance(node, _FunctionNode | ast.Lambda | ast.ClassDef):
             continue
         pending.extend(ast.iter_child_nodes(node))
     return False
 
 
-def skip_reason(source: str, function_type: str, is_async: bool) -> str | None:
+def skip_reason(
+    context: ModuleContext, qualname: str, function_type: str, is_async: bool
+) -> str | None:
     """Return why v0.1 cannot test a function, or None if it can.
 
     The first matching rule wins: async, instance method, generator, I/O.
 
     Args:
-        source: Dedented source of the function (current version).
+        context: The module version the function belongs to.
+        qualname: ``name`` or ``Class.name``.
         function_type: ``function``, ``staticmethod``, ``classmethod`` or ``method``.
         is_async: True for ``async def``.
 
@@ -140,10 +221,10 @@ def skip_reason(source: str, function_type: str, is_async: bool) -> str | None:
         return ASYNC_REASON
     if function_type == "method":
         return INSTANCE_METHOD_REASON
-    node = ast.parse(source).body[0]
-    if not isinstance(node, ast.FunctionDef):
+    function = context.functions.get(qualname)
+    if function is None:
         return None
-    if is_generator(node):
+    if is_generator(function):
         return GENERATOR_REASON
-    found = find_obvious_io(node)
+    found = find_obvious_io(function, context)
     return None if found is None else f"{IO_REASON_PREFIX}{found}"

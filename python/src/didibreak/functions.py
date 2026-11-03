@@ -15,7 +15,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from pathlib import PurePosixPath
 
-from didibreak.testability import skip_reason
+from didibreak.testability import ModuleContext, module_context, skip_reason
 
 _FunctionNode = ast.FunctionDef | ast.AsyncFunctionDef
 
@@ -240,19 +240,22 @@ def definitions(source: str) -> dict[str, FunctionDefinition]:
     return found
 
 
+_EMPTY = ModuleContext(aliases={}, functions={})
+
+
 def _parse_version(
     content: bytes | None, version: str
-) -> dict[str, FunctionDefinition] | str:
-    """Return definitions, or a skip reason when the version cannot be parsed."""
+) -> tuple[dict[str, FunctionDefinition], ModuleContext] | str:
+    """Return definitions and module context, or a reason the file is skipped."""
     if content is None:
-        return {}
+        return {}, _EMPTY
     try:
         source = decode_source(content)
     except (SyntaxError, UnicodeDecodeError) as error:
         # detect_encoding reports undecodable bytes as SyntaxError.
         return f"cannot read the {version} version as Python source text: {error}"
     try:
-        return definitions(source)
+        return definitions(source), module_context(source)
     except SyntaxError as error:
         where = f", line {error.lineno}" if error.lineno else ""
         return f"syntax error in the {version} version{where}: {error.msg}"
@@ -263,12 +266,14 @@ def _parse_version(
 def _compare_file(
     file: SourceFile,
 ) -> tuple[list[ChangedFunction], list[str]] | SkippedFile:
-    old = _parse_version(file.old_source, "base")
-    if isinstance(old, str):
-        return SkippedFile(file.path, old)
-    new = _parse_version(file.new_source, "current")
-    if isinstance(new, str):
-        return SkippedFile(file.path, new)
+    parsed_old = _parse_version(file.old_source, "base")
+    if isinstance(parsed_old, str):
+        return SkippedFile(file.path, parsed_old)
+    parsed_new = _parse_version(file.new_source, "current")
+    if isinstance(parsed_new, str):
+        return SkippedFile(file.path, parsed_new)
+    old, _ = parsed_old
+    new, new_context = parsed_new
     module = module_name(file.path, file.import_root)
     changed: list[ChangedFunction] = []
     for qualname, current in new.items():
@@ -286,6 +291,12 @@ def _compare_file(
                 line=current.line,
                 old_source=None if previous is None else previous.source,
                 new_source=current.source,
+                skip_reason=skip_reason(
+                    new_context,
+                    qualname,
+                    current.function_type,
+                    current.is_async,
+                ),
             )
         )
     removed = [f"{file.path}::{name}" for name in old if name not in new]
@@ -316,20 +327,11 @@ def detect_changed_functions(
         found.extend(result[0])
         removed.extend(result[1])
     found.sort(key=lambda function: (function.file, function.line))
-    marked = [
-        replace(
-            function,
-            skip_reason=skip_reason(
-                function.new_source, function.function_type, function.is_async
-            ),
-        )
-        for function in found
-    ]
     # The limit counts only functions that will actually be tested.
-    testable = [function for function in marked if function.skip_reason is None]
+    testable = [function for function in found if function.skip_reason is None]
     return Detection(
         functions=tuple(testable[:max_functions]),
-        skipped=tuple(function for function in marked if function.skip_reason),
+        skipped=tuple(function for function in found if function.skip_reason),
         limited=tuple(
             replace(function, skip_reason="limit")
             for function in testable[max_functions:]
