@@ -19,13 +19,15 @@ If the Notion tools are not available, stop and tell the owner. Do not work from
    question under "Open questions" on the Working Rules page.
 2. One task at a time, only the task the owner named: read task → propose plan → wait for approval
    → implement on a feature branch → run checks → report → update Notion.
-3. 3. Feature branch per task (task-NN-short-name). Small commits: one logical change each,
+3. Feature branch per task (task-NN-short-name). Small commits: one logical change each,
    about 200 changed lines max (excluding lock files), tests in the same commit, every commit
    passes all checks. Semantic commit messages: type(scope): subject — types feat, fix, refactor,
    test, docs, ci, build, chore, perf; scopes python, spec, docs, ci; imperative, max 72 chars;
    footer "Refs: task NN". See "Commit rules" in Notion.
    Never push to main, merge, tag, bump versions or publish without explicit owner approval.
-4. Every code change has tests; in python/ run: uv run pytest, uv run ruff check ., uv run ruff format --check ., uv run mypy src.
+4. Every code change: tests added; in python/ run uv run pytest, uv run ruff check .,
+   uv run ruff format --check ., uv run mypy src (strict mode is configured in
+   python/pyproject.toml via [tool.mypy] strict = true, added in task 03).
    Report exact commands and real output.
 5. No new dependencies without owner approval. Runtime dependency: httpx only.
 6. Product invariants: no server, no database, users bring their own API key, the tool never edits
