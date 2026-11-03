@@ -25,7 +25,12 @@ from didibreak.config import (
     resolve_paths,
     validate,
 )
-from didibreak.functions import Detection, SourceFile, detect_changed_functions
+from didibreak.functions import (
+    Detection,
+    SourceFile,
+    detect_changed_functions,
+    import_root,
+)
 from didibreak.gitdiff import (
     ChangedFiles,
     GitError,
@@ -195,7 +200,31 @@ def _report_excluded(excluded: Sequence[str], verbose: bool) -> None:
             print(f"  excluded: {path}", file=sys.stderr)
 
 
-def _source_files(root: Path, base_sha: str, files: ChangedFiles) -> list[SourceFile]:
+def _import_root(root: Path, path: str) -> str:
+    pyproject = find_pyproject((root / path).parent, stop=root)
+    project_directory = (
+        None if pyproject is None else pyproject.parent.relative_to(root).as_posix()
+    )
+    return import_root(path, "" if project_directory == "." else project_directory)
+
+
+def load_source_files(
+    root: Path, base_sha: str, files: ChangedFiles
+) -> list[SourceFile]:
+    """Read both versions of every changed and deleted file.
+
+    Args:
+        root: Repository root.
+        base_sha: Base commit.
+        files: Result of changed_python_files().
+
+    Returns:
+        One SourceFile per changed or deleted file, with its import root.
+
+    Raises:
+        GitError: If a base version cannot be read.
+        OSError: If a working-tree file cannot be read.
+    """
     sources = [
         SourceFile(
             path=item.path,
@@ -203,11 +232,17 @@ def _source_files(root: Path, base_sha: str, files: ChangedFiles) -> list[Source
                 read_base_file(root, base_sha, item.old_path) if item.old_path else None
             ),
             new_source=(root / item.path).read_bytes(),
+            import_root=_import_root(root, item.path),
         )
         for item in files.changed
     ]
     sources += [
-        SourceFile(path, read_base_file(root, base_sha, path), None)
+        SourceFile(
+            path,
+            read_base_file(root, base_sha, path),
+            None,
+            import_root=_import_root(root, path),
+        )
         for path in files.deleted
     ]
     return sources
@@ -221,12 +256,29 @@ def _report_detection(detection: Detection, max_functions: int, verbose: bool) -
         f"{len(detection.functions)} changed function(s) to check ({new} new)",
         file=sys.stderr,
     )
+    if detection.skipped:
+        print(
+            f"{len(detection.skipped)} function(s) skipped: not testable in v0.1",
+            file=sys.stderr,
+        )
     if detection.limited:
         print(
             f"{len(detection.limited)} more not checked "
             f"(max_functions = {max_functions})",
             file=sys.stderr,
         )
+    all_skipped = bool(detection.skipped) and not detection.functions
+    if all_skipped:
+        print(
+            "Warning: checked 0 functions; all changed functions were skipped",
+            file=sys.stderr,
+        )
+    if verbose or all_skipped:
+        for function in detection.skipped:
+            print(
+                f"  skipped: {function.report_name} ({function.skip_reason})",
+                file=sys.stderr,
+            )
     if verbose:
         for function in detection.functions:
             print(f"  {function.kind}: {function.report_name}", file=sys.stderr)
@@ -244,7 +296,7 @@ def _run_check(arguments: argparse.Namespace) -> int:
         root = repository_root(working_directory)
         base_sha = resolve_base(root, config.base)
         files = changed_python_files(root, base_sha, config.exclude)
-        sources = _source_files(root, base_sha, files)
+        sources = load_source_files(root, base_sha, files)
     except (GitError, ConfigError, OSError) as error:
         print(f"didibreak: error: {error}", file=sys.stderr)
         return EXIT_ERROR
@@ -253,13 +305,14 @@ def _run_check(arguments: argparse.Namespace) -> int:
         _report_excluded(files.excluded, verbose=arguments.verbose)
         _report_detection(detection, config.max_functions, verbose=arguments.verbose)
     if not detection.functions:
-        print(
-            "Nothing to check: no changed Python functions compared with "
-            f"{config.base}",
-            file=sys.stderr,
-        )
+        if not detection.skipped:
+            print(
+                "Nothing to check: no changed Python functions compared with "
+                f"{config.base}",
+                file=sys.stderr,
+            )
         return EXIT_OK
-    # TODO(task 07): apply testability rules, then run the pipeline.
+    # TODO(task 09): run the harness on the testable functions.
     print("didibreak: the analysis is not implemented yet", file=sys.stderr)
     return exit_code_for([], config.fail_on)
 

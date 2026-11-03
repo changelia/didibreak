@@ -15,6 +15,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from pathlib import PurePosixPath
 
+from didibreak.testability import skip_reason
+
 _FunctionNode = ast.FunctionDef | ast.AsyncFunctionDef
 
 
@@ -26,11 +28,13 @@ class SourceFile:
         path: Repository-relative path in the working tree.
         old_source: Content at the base commit; None for a new file.
         new_source: Content in the working tree; None for a deleted file.
+        import_root: Repository-relative import root from import_root().
     """
 
     path: str
     old_source: bytes | None
     new_source: bytes | None
+    import_root: str = ""
 
 
 @dataclass(frozen=True)
@@ -39,7 +43,7 @@ class ChangedFunction:
 
     Attributes:
         file: Repository-relative path in the working tree.
-        module: Importable module name (Detailed Design section 3).
+        module: Importable module name relative to the import root.
         qualname: ``name`` or ``Class.name``.
         kind: ``changed`` (exists in both versions) or ``new``.
         function_type: ``function``, ``staticmethod``, ``classmethod`` or
@@ -81,13 +85,15 @@ class Detection:
     """Result of comparing all changed files.
 
     Attributes:
-        functions: Changed and new functions to check, by file then line.
-        limited: Functions cut by ``max_functions`` (skip reason ``limit``).
+        functions: Testable changed and new functions, by file then line.
+        skipped: Functions v0.1 cannot test, with ``skip_reason`` set.
+        limited: Testable functions cut by ``max_functions`` (``limit``).
         removed: ``path::qualname`` of functions that no longer exist.
         skipped_files: Files that could not be parsed, with the reason.
     """
 
     functions: tuple[ChangedFunction, ...]
+    skipped: tuple[ChangedFunction, ...]
     limited: tuple[ChangedFunction, ...]
     removed: tuple[str, ...]
     skipped_files: tuple[SkippedFile, ...]
@@ -105,21 +111,43 @@ class FunctionDefinition:
     fingerprint: str
 
 
-def module_name(path: str) -> str:
-    """Return the importable module name for a repository-relative path.
+def import_root(path: str, project_directory: str | None) -> str:
+    """Return the import root for a file (owner decision, task 06 review).
 
-    A file under ``src/`` is imported relative to ``src``; otherwise relative to
-    the repository root. ``__init__.py`` maps to its package.
+    The import root is the directory of the nearest pyproject.toml above the
+    file, or that directory's ``src/`` when the file is inside it. Without a
+    pyproject.toml, the repository root is used, or its ``src/`` when the file
+    is inside it.
+
+    Args:
+        path: Repository-relative POSIX path of the file.
+        project_directory: Repository-relative directory of the nearest
+            pyproject.toml above the file (``""`` for the repository root), or
+            None if there is none.
+
+    Returns:
+        Repository-relative import root; ``""`` is the repository root.
+    """
+    base = project_directory or ""
+    source_folder = f"{base}/src" if base else "src"
+    if path.startswith(f"{source_folder}/"):
+        return source_folder
+    return base
+
+
+def module_name(path: str, root: str = "") -> str:
+    """Return the importable module name of a file relative to its import root.
 
     Args:
         path: Repository-relative POSIX path of a ``.py`` file.
+        root: Import root from import_root(); ``""`` is the repository root.
 
     Returns:
-        Dotted module name, e.g. ``app.utils.phone``.
+        Dotted module name, e.g. ``app.utils.phone``; ``__init__.py`` maps to
+        its package.
     """
-    parts = list(PurePosixPath(path).with_suffix("").parts)
-    if parts[0] == "src" and len(parts) > 1:
-        parts = parts[1:]
+    relative = PurePosixPath(path).relative_to(root) if root else PurePosixPath(path)
+    parts = list(relative.with_suffix("").parts)
     if parts[-1] == "__init__" and len(parts) > 1:
         parts = parts[:-1]
     return ".".join(parts)
@@ -241,7 +269,7 @@ def _compare_file(
     new = _parse_version(file.new_source, "current")
     if isinstance(new, str):
         return SkippedFile(file.path, new)
-    module = module_name(file.path)
+    module = module_name(file.path, file.import_root)
     changed: list[ChangedFunction] = []
     for qualname, current in new.items():
         previous = old.get(qualname)
@@ -274,7 +302,8 @@ def detect_changed_functions(
         max_functions: How many functions to keep; the rest are ``limited``.
 
     Returns:
-        The detection result, ordered by file path, then line.
+        The detection result, ordered by file path, then line. Testability
+        rules are applied before ``max_functions``.
     """
     found: list[ChangedFunction] = []
     removed: list[str] = []
@@ -287,10 +316,23 @@ def detect_changed_functions(
         found.extend(result[0])
         removed.extend(result[1])
     found.sort(key=lambda function: (function.file, function.line))
+    marked = [
+        replace(
+            function,
+            skip_reason=skip_reason(
+                function.new_source, function.function_type, function.is_async
+            ),
+        )
+        for function in found
+    ]
+    # The limit counts only functions that will actually be tested.
+    testable = [function for function in marked if function.skip_reason is None]
     return Detection(
-        functions=tuple(found[:max_functions]),
+        functions=tuple(testable[:max_functions]),
+        skipped=tuple(function for function in marked if function.skip_reason),
         limited=tuple(
-            replace(function, skip_reason="limit") for function in found[max_functions:]
+            replace(function, skip_reason="limit")
+            for function in testable[max_functions:]
         ),
         removed=tuple(sorted(removed)),
         skipped_files=tuple(sorted(skipped, key=lambda item: item.path)),
