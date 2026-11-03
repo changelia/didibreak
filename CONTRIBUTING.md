@@ -78,6 +78,22 @@ uv run python scripts/sync_prompts.py --check
 
 Builds refresh the copy automatically.
 
+## Fixture repositories
+
+`python/tests/fixtures/<case>/` holds small before/after code samples with
+known behavior changes, used by tests of every stage:
+
+- `before/` is committed as the base version, `after/` is left as the
+  uncommitted working tree (`tests/fixture_repos.py`,
+  `build_fixture_repository`);
+- `expected.json` documents what didibreak should report: changed and skipped
+  functions, findings with their outcomes, cases that must not differ, and
+  flaky functions. `tests/test_fixture_repos.py` runs both versions to check
+  that every documented outcome is true.
+
+To add a case, create the three entries and run the tests. Fixture code is
+excluded from ruff because it is sample user code.
+
 ## Adding a comparison rule or an LLM provider
 
 Documented here once the comparison and provider modules exist.
