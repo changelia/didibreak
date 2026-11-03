@@ -217,6 +217,55 @@ def find_obvious_io(function: _FunctionNode, context: ModuleContext) -> str | No
     return None
 
 
+def _called_functions(
+    function: _FunctionNode, qualname: str, context: ModuleContext
+) -> list[str]:
+    """Qualified names of same-module functions that ``function`` calls."""
+    class_name = qualname.split(".")[0] if "." in qualname else None
+    called: list[str] = []
+    for node in ast.walk(function):
+        if not isinstance(node, ast.Call):
+            continue
+        name = _dotted_name(node.func)
+        if name is None:
+            continue
+        owner, _, attribute = name.rpartition(".")
+        if owner in ("cls", "self") and class_name:
+            name = f"{class_name}.{attribute}"
+        if name in context.functions and name not in called:
+            called.append(name)
+    return called
+
+
+def find_io_through_calls(qualname: str, context: ModuleContext) -> str | None:
+    """Find obvious I/O in a function or in same-module functions it calls.
+
+    Calls are followed transitively, breadth first, so the reported path is
+    the shortest one. Calls into other modules are not followed.
+
+    Args:
+        qualname: The function to check.
+        context: Its module.
+
+    Returns:
+        ``name`` for I/O in the function itself, ``name (via helper)`` for
+        I/O reached through a call, or None.
+    """
+    visited = {qualname}
+    queue = [qualname]
+    while queue:
+        current = queue.pop(0)
+        function = context.functions[current]
+        found = find_obvious_io(function, context)
+        if found is not None:
+            return found if current == qualname else f"{found} (via {current})"
+        for callee in _called_functions(function, current, context):
+            if callee not in visited:
+                visited.add(callee)
+                queue.append(callee)
+    return None
+
+
 def is_generator(function: _FunctionNode) -> bool:
     """Tell whether ``yield`` appears in the function's own body.
 
@@ -264,5 +313,5 @@ def skip_reason(
         return None
     if is_generator(function):
         return GENERATOR_REASON
-    found = find_obvious_io(function, context)
+    found = find_io_through_calls(qualname, context)
     return None if found is None else f"{IO_REASON_PREFIX}{found}"

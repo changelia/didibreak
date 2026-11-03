@@ -245,3 +245,74 @@ def test_harmless_functions_of_the_same_modules_are_not_io(statement: str) -> No
     source = f"{imports}\n\n\ndef work(path):\n    return {statement}\n"
 
     assert _reason(source, qualname="work") is None
+
+
+def test_io_in_a_same_module_helper_is_followed() -> None:
+    source = """
+        import subprocess
+
+
+        def _git(*args):
+            return subprocess.run(["git", *args])
+
+
+        def repository_root():
+            return _git("rev-parse")
+    """
+
+    assert _reason(source, qualname="repository_root") == (
+        "obvious I/O: subprocess.run (via _git)"
+    )
+
+
+def test_helpers_are_followed_transitively_and_through_class_methods() -> None:
+    source = """
+        import shutil
+
+
+        def _remove(path):
+            shutil.rmtree(path)
+
+
+        class Cleaner:
+            @staticmethod
+            def wipe(path):
+                return _remove(path)
+
+            @classmethod
+            def reset(cls, path):
+                return cls.wipe(path)
+
+
+        def clean(path):
+            return Cleaner.reset(path)
+    """
+
+    assert _reason(source, qualname="clean") == (
+        "obvious I/O: shutil.rmtree (via _remove)"
+    )
+
+
+def test_recursive_and_mutually_recursive_helpers_terminate() -> None:
+    source = """
+        def even(n):
+            return True if n == 0 else odd(n - 1)
+
+
+        def odd(n):
+            return False if n == 0 else even(n - 1)
+    """
+
+    assert _reason(source, qualname="even") is None
+
+
+def test_calls_into_other_modules_are_not_followed() -> None:
+    source = """
+        from helpers import save
+
+
+        def store(value):
+            return save(value)
+    """
+
+    assert _reason(source, qualname="store") is None
