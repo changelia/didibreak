@@ -1,0 +1,45 @@
+{
+  "description": "mean switches to exact summation: results differ only within float tolerance, so no finding. price_with_tax loses a decimal place: a real difference the intent does not cover.",
+  "intent": "use exact summation for averages",
+  "changed_functions": [
+    {
+      "function": "app/stats.py::mean",
+      "kind": "changed"
+    },
+    {
+      "function": "app/stats.py::price_with_tax",
+      "kind": "changed"
+    }
+  ],
+  "skipped_functions": [],
+  "findings": [
+    {
+      "function": "app/stats.py::price_with_tax",
+      "label": "unexpected",
+      "args": [
+        "10.05"
+      ],
+      "kwargs": {},
+      "before": {
+        "kind": "return",
+        "type_name": "builtins.float",
+        "repr": "11.86"
+      },
+      "after": {
+        "kind": "return",
+        "type_name": "builtins.float",
+        "repr": "11.9"
+      }
+    }
+  ],
+  "same_behavior": [
+    {
+      "function": "app/stats.py::mean",
+      "args": [
+        "[0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]"
+      ],
+      "kwargs": {}
+    }
+  ],
+  "flaky_functions": []
+}

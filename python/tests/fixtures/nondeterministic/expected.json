@@ -1,0 +1,22 @@
+{
+  "description": "make_token returns a random suffix, so two runs of the same version differ; its cases are dropped as flaky and no finding is reported, even though the prefix changed.",
+  "intent": "upper-case token prefixes",
+  "changed_functions": [
+    {
+      "function": "app/tokens.py::make_token",
+      "kind": "changed"
+    }
+  ],
+  "skipped_functions": [],
+  "findings": [],
+  "same_behavior": [],
+  "flaky_functions": [
+    {
+      "function": "app/tokens.py::make_token",
+      "args": [
+        "'user'"
+      ],
+      "kwargs": {}
+    }
+  ]
+}

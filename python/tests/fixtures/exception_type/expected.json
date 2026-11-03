@@ -1,0 +1,48 @@
+{
+  "description": "An empty input used to raise ValueError and now raises IndexError: a different exception type is a behavior change. Invalid text still raises ValueError (message differs, type is the same), which is not a change.",
+  "intent": "accept ages followed by other text",
+  "changed_functions": [
+    {
+      "function": "app/parsing.py::parse_age",
+      "kind": "changed"
+    }
+  ],
+  "skipped_functions": [],
+  "findings": [
+    {
+      "function": "app/parsing.py::parse_age",
+      "label": "unexpected",
+      "args": [
+        "''"
+      ],
+      "kwargs": {},
+      "before": {
+        "kind": "exception",
+        "type_name": "builtins.ValueError",
+        "repr": "ValueError('empty age')"
+      },
+      "after": {
+        "kind": "exception",
+        "type_name": "builtins.IndexError",
+        "repr": "IndexError('list index out of range')"
+      }
+    }
+  ],
+  "same_behavior": [
+    {
+      "function": "app/parsing.py::parse_age",
+      "args": [
+        "'42'"
+      ],
+      "kwargs": {}
+    },
+    {
+      "function": "app/parsing.py::parse_age",
+      "args": [
+        "'abc'"
+      ],
+      "kwargs": {}
+    }
+  ],
+  "flaky_functions": []
+}

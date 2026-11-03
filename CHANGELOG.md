@@ -27,6 +27,9 @@ the Python package and `js-v*` for the JS/TS package.
 - A `python` value without `/` is looked up on `PATH`.
 - Async functions, instance methods, generators and functions with obvious
   I/O are skipped with a reason; `-v` lists them.
+- The obvious I/O rule resolves imports and aliases, follows calls to
+  functions in the same module, covers more file, network and database
+  calls, and applies to both the base and the current version.
 - The import root is the folder of the nearest `pyproject.toml` (or its
   `src/`).
 

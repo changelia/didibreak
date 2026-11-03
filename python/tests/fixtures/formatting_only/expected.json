@@ -1,0 +1,19 @@
+{
+  "description": "Only formatting, a comment and a docstring change; behavior is identical, so nothing is checked.",
+  "intent": null,
+  "changed_functions": [],
+  "skipped_functions": [],
+  "findings": [],
+  "same_behavior": [
+    {
+      "function": "app/limits.py::clamp",
+      "args": [
+        "5",
+        "0",
+        "3"
+      ],
+      "kwargs": {}
+    }
+  ],
+  "flaky_functions": []
+}

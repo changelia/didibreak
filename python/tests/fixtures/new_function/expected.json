@@ -1,0 +1,41 @@
+{
+  "description": "Two new functions: slugify is fine; initials crashes on an empty name, which a new-function check should report.",
+  "intent": "add slug and initials helpers",
+  "changed_functions": [
+    {
+      "function": "app/text.py::slugify",
+      "kind": "new"
+    },
+    {
+      "function": "app/text.py::initials",
+      "kind": "new"
+    }
+  ],
+  "skipped_functions": [],
+  "findings": [
+    {
+      "function": "app/text.py::initials",
+      "label": "new_function",
+      "args": [
+        "''"
+      ],
+      "kwargs": {},
+      "before": null,
+      "after": {
+        "kind": "exception",
+        "type_name": "builtins.ValueError",
+        "repr": "ValueError('not enough values to unpack (expected 2, got 0)')"
+      }
+    }
+  ],
+  "same_behavior": [
+    {
+      "function": "app/text.py::title_case",
+      "args": [
+        "'ada lovelace'"
+      ],
+      "kwargs": {}
+    }
+  ],
+  "flaky_functions": []
+}

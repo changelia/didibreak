@@ -1,18 +1,46 @@
 """Testability rules: which changed functions v0.1 cannot test safely, and why.
 
-Pure functions over a function's source. The categories come from task 07:
-async functions, instance methods, generators and obvious I/O. Each skip
-reason is a short string shown to the user.
+Pure functions over a module's source. The categories come from task 07:
+async functions, instance methods, generators and obvious I/O. These rules
+are the v0.1 safety boundary: a function that matches is never executed.
+Names are resolved through the module's imports and aliases, so
+``from subprocess import run`` and ``import shutil as sh`` are recognized.
 """
 
 import ast
+from collections.abc import Mapping
+from dataclasses import dataclass
+from fnmatch import fnmatchcase
 
 # Everything treated as obvious I/O, in one place (documented in limitations.md).
 OBVIOUS_IO = {
-    # Calls to these names.
-    "calls": ("open", "os.remove"),
+    # Calls to these fully qualified names; `*` is a glob (fnmatch) wildcard.
+    "calls": (
+        "open",
+        "os.remove",
+        "os.unlink",
+        "os.rmdir",
+        "shutil.rmtree",
+        "shutil.move",
+        "shutil.copy*",
+        "urllib.request.*",
+        "sqlite3.connect",
+    ),
     # Any use of these modules.
     "modules": ("subprocess", "requests", "httpx", "socket"),
+    # pathlib.Path methods, matched by method name on any object because the
+    # type of a variable is not known from the source.
+    "path_methods": (
+        "open",
+        "read_bytes",
+        "read_text",
+        "write_bytes",
+        "write_text",
+        "unlink",
+        "rmdir",
+        "mkdir",
+        "touch",
+    ),
     # Database sessions: a call `<receiver>.<method>(...)` such as session.commit().
     "database_receivers": ("session", "db", "cursor", "conn", "connection"),
     "database_methods": (
@@ -35,6 +63,72 @@ INSTANCE_METHOD_REASON = "instance method"
 GENERATOR_REASON = "generator"
 IO_REASON_PREFIX = "obvious I/O: "
 
+_FunctionNode = ast.FunctionDef | ast.AsyncFunctionDef
+
+
+@dataclass(frozen=True)
+class ModuleContext:
+    """What the testability rules need to know about one module version.
+
+    Attributes:
+        aliases: Local name to fully qualified name, from module-level imports
+            (``run`` -> ``subprocess.run``, ``sh`` -> ``shutil``).
+        functions: Module-level functions and methods of module-level classes
+            by qualified name (``name`` or ``Class.name``).
+    """
+
+    aliases: Mapping[str, str]
+    functions: Mapping[str, _FunctionNode]
+
+
+def _import_aliases(statements: list[ast.stmt]) -> dict[str, str]:
+    aliases: dict[str, str] = {}
+    pending = list(statements)
+    while pending:
+        node = pending.pop(0)
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.asname:
+                    aliases[alias.asname] = alias.name
+                else:
+                    top = alias.name.split(".")[0]
+                    aliases[top] = top
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+        elif not isinstance(node, _FunctionNode | ast.ClassDef):
+            # Imports inside module-level if/try blocks still bind module names.
+            pending.extend(
+                child
+                for child in ast.iter_child_nodes(node)
+                if isinstance(child, ast.stmt)
+            )
+    return aliases
+
+
+def module_context(source: str) -> ModuleContext:
+    """Collect imports, aliases and functions of a module.
+
+    Args:
+        source: Python source text of the whole module.
+
+    Returns:
+        The module context.
+
+    Raises:
+        SyntaxError: If the source does not parse.
+    """
+    tree = ast.parse(source)
+    functions: dict[str, _FunctionNode] = {}
+    for node in tree.body:
+        if isinstance(node, _FunctionNode):
+            functions[node.name] = node
+        elif isinstance(node, ast.ClassDef):
+            for member in node.body:
+                if isinstance(member, _FunctionNode):
+                    functions[f"{node.name}.{member.name}"] = member
+    return ModuleContext(aliases=_import_aliases(tree.body), functions=functions)
+
 
 def _dotted_name(node: ast.expr) -> str | None:
     """Return ``a.b.c`` for a Name/Attribute chain, otherwise None."""
@@ -48,58 +142,131 @@ def _dotted_name(node: ast.expr) -> str | None:
     return ".".join(reversed(parts))
 
 
-def _io_in_call(call: ast.Call) -> str | None:
-    name = _dotted_name(call.func)
-    if name is None:
-        return None
-    if name in OBVIOUS_IO["calls"]:
+def _canonical(name: str, aliases: Mapping[str, str]) -> str:
+    first, _, rest = name.partition(".")
+    if first not in aliases:
         return name
+    return f"{aliases[first]}.{rest}" if rest else aliases[first]
+
+
+def _is_database_call(name: str) -> bool:
     parts = name.split(".")
-    is_database_call = (
+    return (
         len(parts) >= 2
         and parts[-2] in OBVIOUS_IO["database_receivers"]
         and parts[-1] in OBVIOUS_IO["database_methods"]
     )
-    return name if is_database_call else None
 
 
-def find_obvious_io(function: ast.FunctionDef | ast.AsyncFunctionDef) -> str | None:
+def _io_in_call(call: ast.Call, aliases: Mapping[str, str]) -> str | None:
+    name = _dotted_name(call.func)
+    if name is None:
+        return _path_method_call(call, aliases)
+    canonical = _canonical(name, aliases)
+    if any(fnmatchcase(canonical, pattern) for pattern in OBVIOUS_IO["calls"]):
+        return canonical
+    if canonical.split(".")[0] in OBVIOUS_IO["modules"]:
+        return canonical
+    if _is_database_call(name):
+        return name
+    return _path_method_call(call, aliases)
+
+
+def _path_method_call(call: ast.Call, aliases: Mapping[str, str]) -> str | None:
+    if not (
+        isinstance(call.func, ast.Attribute)
+        and call.func.attr in OBVIOUS_IO["path_methods"]
+    ):
+        return None
+    receiver = _dotted_name(call.func.value)
+    if receiver is None:  # e.g. Path("x").write_text(...)
+        return f"pathlib.Path.{call.func.attr}"
+    return f"{_canonical(receiver, aliases)}.{call.func.attr}"
+
+
+def find_obvious_io(function: _FunctionNode, context: ModuleContext) -> str | None:
     """Return the first obvious I/O use in a function body, if any.
 
-    Nested functions count: I/O in a helper defined inside the function is
-    still I/O of the function.
+    Names are resolved through module-level imports and through imports
+    inside the function. Helpers nested inside the function count.
 
     Args:
         function: The function's AST.
+        context: The module the function belongs to.
 
     Returns:
-        The name as written in the code (e.g. ``subprocess.run``), or None.
+        The fully qualified name (e.g. ``subprocess.run``), or None.
     """
-    for node in ast.walk(function):
-        if isinstance(node, ast.Call) and (found := _io_in_call(node)):
-            return found
-        if isinstance(node, ast.Name) and node.id in OBVIOUS_IO["modules"]:
-            return _module_use(function, node.id)
+    aliases = {**context.aliases, **_import_aliases(list(function.body))}
+    nodes = list(ast.walk(function))
+    for node in nodes:
         if isinstance(node, ast.Import | ast.ImportFrom):
             module = node.module if isinstance(node, ast.ImportFrom) else None
             names = [module] if module else [alias.name for alias in node.names]
             for imported in names:
                 if imported and imported.split(".")[0] in OBVIOUS_IO["modules"]:
                     return f"import {imported}"
+    for node in nodes:
+        if isinstance(node, ast.Call) and (found := _io_in_call(node, aliases)):
+            return found
+    for node in nodes:
+        if isinstance(node, ast.Name):
+            canonical = _canonical(node.id, aliases)
+            if canonical.split(".")[0] in OBVIOUS_IO["modules"]:
+                return canonical
     return None
 
 
-def _module_use(function: ast.AST, module: str) -> str:
-    # Prefer the full call name (subprocess.run) over the bare module name.
+def _called_functions(
+    function: _FunctionNode, qualname: str, context: ModuleContext
+) -> list[str]:
+    """Qualified names of same-module functions that ``function`` calls."""
+    class_name = qualname.split(".")[0] if "." in qualname else None
+    called: list[str] = []
     for node in ast.walk(function):
-        if isinstance(node, ast.Call):
-            name = _dotted_name(node.func)
-            if name and name.split(".")[0] == module:
-                return name
-    return module
+        if not isinstance(node, ast.Call):
+            continue
+        name = _dotted_name(node.func)
+        if name is None:
+            continue
+        owner, _, attribute = name.rpartition(".")
+        if owner in ("cls", "self") and class_name:
+            name = f"{class_name}.{attribute}"
+        if name in context.functions and name not in called:
+            called.append(name)
+    return called
 
 
-def is_generator(function: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+def find_io_through_calls(qualname: str, context: ModuleContext) -> str | None:
+    """Find obvious I/O in a function or in same-module functions it calls.
+
+    Calls are followed transitively, breadth first, so the reported path is
+    the shortest one. Calls into other modules are not followed.
+
+    Args:
+        qualname: The function to check.
+        context: Its module.
+
+    Returns:
+        ``name`` for I/O in the function itself, ``name (via helper)`` for
+        I/O reached through a call, or None.
+    """
+    visited = {qualname}
+    queue = [qualname]
+    while queue:
+        current = queue.pop(0)
+        function = context.functions[current]
+        found = find_obvious_io(function, context)
+        if found is not None:
+            return found if current == qualname else f"{found} (via {current})"
+        for callee in _called_functions(function, current, context):
+            if callee not in visited:
+                visited.add(callee)
+                queue.append(callee)
+    return None
+
+
+def is_generator(function: _FunctionNode) -> bool:
     """Tell whether ``yield`` appears in the function's own body.
 
     Yields inside nested functions, lambdas or classes belong to those scopes.
@@ -115,21 +282,22 @@ def is_generator(function: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
         node = pending.pop()
         if isinstance(node, ast.Yield | ast.YieldFrom):
             return True
-        if isinstance(
-            node, ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda | ast.ClassDef
-        ):
+        if isinstance(node, _FunctionNode | ast.Lambda | ast.ClassDef):
             continue
         pending.extend(ast.iter_child_nodes(node))
     return False
 
 
-def skip_reason(source: str, function_type: str, is_async: bool) -> str | None:
+def skip_reason(
+    context: ModuleContext, qualname: str, function_type: str, is_async: bool
+) -> str | None:
     """Return why v0.1 cannot test a function, or None if it can.
 
     The first matching rule wins: async, instance method, generator, I/O.
 
     Args:
-        source: Dedented source of the function (current version).
+        context: The module version the function belongs to.
+        qualname: ``name`` or ``Class.name``.
         function_type: ``function``, ``staticmethod``, ``classmethod`` or ``method``.
         is_async: True for ``async def``.
 
@@ -140,10 +308,10 @@ def skip_reason(source: str, function_type: str, is_async: bool) -> str | None:
         return ASYNC_REASON
     if function_type == "method":
         return INSTANCE_METHOD_REASON
-    node = ast.parse(source).body[0]
-    if not isinstance(node, ast.FunctionDef):
+    function = context.functions.get(qualname)
+    if function is None:
         return None
-    if is_generator(node):
+    if is_generator(function):
         return GENERATOR_REASON
-    found = find_obvious_io(node)
+    found = find_io_through_calls(qualname, context)
     return None if found is None else f"{IO_REASON_PREFIX}{found}"

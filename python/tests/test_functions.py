@@ -209,3 +209,54 @@ def test_max_functions_keeps_the_first_by_file_then_line() -> None:
         ("b/module.py::second", "limit")
     ]
     assert reversed_detection == detection
+
+
+def test_module_level_import_makes_a_changed_function_untestable() -> None:
+    old = b"from subprocess import run\n\n\ndef list_files():\n    return run(['ls'])\n"
+    new = old.replace(b"['ls']", b"['ls', '-a']")
+
+    detection = detect_changed_functions([SourceFile("tool.py", old, new)], 10)
+
+    assert detection.functions == ()
+    assert [(f.qualname, f.skip_reason) for f in detection.skipped] == [
+        ("list_files", "obvious I/O: subprocess.run")
+    ]
+
+
+def test_rule_matching_only_in_the_base_version_skips_the_function() -> None:
+    old = b"import os\n\n\ndef tidy(path):\n    os.remove(path)\n    return path\n"
+    new = b"import os\n\n\ndef tidy(path):\n    return path\n"
+
+    detection = detect_changed_functions([SourceFile("tidy.py", old, new)], 10)
+
+    assert detection.functions == ()
+    assert [(f.qualname, f.skip_reason) for f in detection.skipped] == [
+        ("tidy", "obvious I/O: os.remove (base version)")
+    ]
+
+
+def test_base_version_generator_or_helper_io_also_skips() -> None:
+    old = (
+        b"import subprocess\n\n\ndef _run():\n    return subprocess.run(['ls'])\n\n\n"
+        b"def numbers():\n    yield 1\n\n\ndef listing():\n    return _run()\n"
+    )
+    new = (
+        b"import subprocess\n\n\ndef _run():\n    return subprocess.run(['ls'])\n\n\n"
+        b"def numbers():\n    return [1]\n\n\ndef listing():\n    return []\n"
+    )
+
+    detection = detect_changed_functions([SourceFile("mod.py", old, new)], 10)
+
+    assert [(f.qualname, f.skip_reason) for f in detection.skipped] == [
+        ("numbers", "generator (base version)"),
+        ("listing", "obvious I/O: subprocess.run (via _run) (base version)"),
+    ]
+
+
+def test_current_version_reason_wins_when_both_match() -> None:
+    old = b"import os\n\n\ndef tidy(path):\n    os.remove(path)\n"
+    new = b"import os\n\n\ndef tidy(path):\n    os.unlink(path)\n"
+
+    detection = detect_changed_functions([SourceFile("tidy.py", old, new)], 10)
+
+    assert [f.skip_reason for f in detection.skipped] == ["obvious I/O: os.unlink"]
