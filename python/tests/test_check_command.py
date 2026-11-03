@@ -1,6 +1,7 @@
 """Tests for the check and init-agents commands, config precedence and exit codes."""
 
 import os
+import subprocess
 import sys
 from dataclasses import replace
 from pathlib import Path
@@ -236,14 +237,56 @@ def test_exit_code_follows_labels_and_fail_on(
     assert exit_code_for(labels, fail_on) == expected
 
 
-def test_check_counts_changed_python_files(
+def test_check_counts_changed_and_new_functions(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (repository / "lib.py").write_text("def f():\n    return 1\n", encoding="utf-8")
+    subprocess.run(["git", "add", "lib.py"], cwd=repository, check=True)
+    subprocess.run(["git", "commit", "-qm", "lib"], cwd=repository, check=True)
+    (repository / "lib.py").write_text("def f():\n    return 2\n", encoding="utf-8")
+    (repository / "new.py").write_text("def g():\n    return 1\n", encoding="utf-8")
+
+    assert main(["check", "-v"]) == EXIT_OK
+
+    error_output = capsys.readouterr().err
+    assert "2 changed function(s) to check (1 new)" in error_output
+    assert "  changed: lib.py::f\n  new: new.py::g" in error_output
+
+
+def test_check_with_only_constant_changes_has_nothing_to_check(
     repository: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     (repository / "app.py").write_text("VALUE = 2\n", encoding="utf-8")
-    (repository / "new.py").write_text("NEW = 1\n", encoding="utf-8")
 
     assert main(["check"]) == EXIT_OK
-    assert "2 changed Python file(s) compared with HEAD" in capsys.readouterr().err
+    assert "no changed Python functions" in capsys.readouterr().err
+
+
+def test_check_reports_functions_cut_by_the_limit(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    body = "".join(f"def f{n}():\n    return {n}\n\n\n" for n in range(3))
+    (repository / "many.py").write_text(body, encoding="utf-8")
+
+    assert main(["check", "--max-functions", "2", "-v"]) == EXIT_OK
+
+    error_output = capsys.readouterr().err
+    assert "1 more not checked (max_functions = 2)" in error_output
+    assert "  limit: many.py::f2" in error_output
+
+
+def test_check_reports_files_with_syntax_errors_and_deleted_files(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (repository / "broken.py").write_text("def broken(:\n", encoding="utf-8")
+    (repository / "app.py").unlink()
+
+    assert main(["check"]) == EXIT_OK
+
+    error_output = capsys.readouterr().err
+    assert "skipped broken.py: syntax error in the current version, line 1" in (
+        error_output
+    )
 
 
 def test_check_with_unknown_base_exits_with_error(
