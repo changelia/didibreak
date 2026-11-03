@@ -47,10 +47,17 @@ class ChangedFile:
 
 @dataclass(frozen=True)
 class ChangedFiles:
-    """Changed Python files, sorted by path, plus deleted ones (ignored in v0.1)."""
+    """Changed Python files, sorted by path.
+
+    Attributes:
+        changed: Files to check.
+        deleted: Deleted Python files (ignored in v0.1).
+        excluded: Changed Python files left out by exclusion patterns.
+    """
 
     changed: tuple[ChangedFile, ...]
     deleted: tuple[str, ...]
+    excluded: tuple[str, ...]
 
 
 def _git(directory: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
@@ -207,7 +214,7 @@ def changed_python_files(
         exclude: User patterns, applied after DEFAULT_EXCLUDES.
 
     Returns:
-        The changed and deleted Python files that are not excluded.
+        The changed, deleted and excluded Python files.
 
     Raises:
         GitError: If git fails.
@@ -226,8 +233,11 @@ def changed_python_files(
     ]
     patterns = (*DEFAULT_EXCLUDES, *exclude)
     python_files: list[ChangedFile] = []
+    excluded: list[str] = []
     for item in changed:
         if is_excluded(item.path, patterns):
+            if _is_python(item.path):
+                excluded.append(item.path)
             continue
         old_is_python = _is_python(item.old_path)
         if not _is_python(item.path):
@@ -248,7 +258,38 @@ def changed_python_files(
                 if _is_python(path) and not is_excluded(path, patterns)
             )
         ),
+        excluded=tuple(sorted(excluded)),
     )
+
+
+def read_base_file(root: Path, base_sha: str, path: str) -> bytes:
+    """Read a file's content at the base commit without checking it out.
+
+    Args:
+        root: Repository root.
+        base_sha: Base commit.
+        path: Repository-relative POSIX path at the base commit.
+
+    Returns:
+        The raw file content.
+
+    Raises:
+        GitError: If the file does not exist at the base commit.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "cat-file", "blob", f"{base_sha}:{path}"],
+            cwd=root,
+            capture_output=True,
+            check=False,
+        )
+    except FileNotFoundError as error:
+        raise GitError(
+            "git is not installed or not on PATH; install git and try again"
+        ) from error
+    if result.returncode != 0:
+        raise GitError(f"{path} does not exist at base commit {base_sha[:12]}")
+    return result.stdout
 
 
 @contextmanager

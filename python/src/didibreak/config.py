@@ -5,6 +5,8 @@ built-in default. Every key is validated the same way wherever it comes from,
 so the CLI and the config file produce identical error messages.
 """
 
+import os
+import shutil
 import tomllib
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -184,13 +186,34 @@ def find_pyproject(start: Path, stop: Path) -> Path | None:
     return None
 
 
+def _resolve_python(value: str, base_directory: Path) -> str:
+    # Owner decision (task 05 review): a bare name such as "python3" is looked
+    # up on PATH; anything with a path separator follows the path rule.
+    if "/" not in value and os.sep not in value:
+        found = shutil.which(value)
+        if found is None:
+            raise ConfigError(
+                f"python interpreter {value!r} was not found on PATH; "
+                "give its full path or install it"
+            )
+        return found
+    path = Path(value) if Path(value).is_absolute() else base_directory / value
+    if not path.is_file():
+        raise ConfigError(
+            f"python interpreter {str(path)!r} does not exist; check the path"
+        )
+    return str(path)
+
+
 def resolve_paths(
     values: Mapping[str, object], base_directory: Path
 ) -> dict[str, object]:
-    """Make relative path values absolute against ``base_directory``.
+    """Make path values absolute and find the ``python`` interpreter.
 
-    Owner decision (task 04 review): paths from pyproject.toml are relative to
-    that file's directory, paths from CLI flags to the working directory.
+    Owner decisions (task 04 and 05 reviews): relative paths from
+    pyproject.toml are relative to that file's directory, relative paths from
+    CLI flags to the working directory. A ``python`` value without a path
+    separator is looked up on PATH.
 
     Args:
         values: Validated config values.
@@ -198,12 +221,17 @@ def resolve_paths(
 
     Returns:
         A copy of ``values`` with absolute paths for the keys in PATH_KEYS.
+
+    Raises:
+        ConfigError: If the ``python`` interpreter cannot be found.
     """
     resolved = dict(values)
-    for key in PATH_KEYS:
-        value = resolved.get(key)
-        if isinstance(value, str) and not Path(value).is_absolute():
-            resolved[key] = str(base_directory / value)
+    python = resolved.get("python")
+    if isinstance(python, str):
+        resolved["python"] = _resolve_python(python, base_directory)
+    output_dir = resolved.get("output_dir")
+    if isinstance(output_dir, str) and not Path(output_dir).is_absolute():
+        resolved["output_dir"] = str(base_directory / output_dir)
     return resolved
 
 
@@ -234,7 +262,10 @@ def read_config_table(pyproject: Path) -> dict[str, object]:
             values[key] = validate(key, value)
         except ConfigError as error:
             raise ConfigError(f"[tool.didibreak] in {pyproject}: {error}") from error
-    return resolve_paths(values, pyproject.parent)
+    try:
+        return resolve_paths(values, pyproject.parent)
+    except ConfigError as error:
+        raise ConfigError(f"[tool.didibreak] in {pyproject}: {error}") from error
 
 
 def build_config(
