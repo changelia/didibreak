@@ -2,12 +2,15 @@
 
 from pathlib import Path
 
+import pytest
 from conftest import GitRepository
 
 from didibreak.gitdiff import (
     ChangedFile,
+    GitError,
     changed_python_files,
     parse_name_status,
+    read_base_file,
     resolve_base,
 )
 
@@ -146,3 +149,23 @@ def test_renames_across_extensions_become_added_or_deleted(
 
     assert result.changed == (ChangedFile("script.py", None, "added"),)
     assert result.deleted == ("module.py",)
+
+
+def test_base_file_content_is_read_without_checkout(
+    git_repository: GitRepository,
+) -> None:
+    git_repository.write("app.py", "VALUE = 'base'\n")
+    base = git_repository.commit()
+    git_repository.write("app.py", "VALUE = 'current'\n")
+
+    assert read_base_file(git_repository.path, base, "app.py") == b"VALUE = 'base'\n"
+
+
+def test_reading_a_file_missing_at_base_is_an_error(
+    git_repository: GitRepository,
+) -> None:
+    git_repository.write("app.py", "x = 1\n")
+    base = git_repository.commit()
+
+    with pytest.raises(GitError, match=r"new\.py does not exist at base commit"):
+        read_base_file(git_repository.path, base, "new.py")

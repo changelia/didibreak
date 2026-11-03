@@ -262,6 +262,36 @@ def changed_python_files(
     )
 
 
+def read_base_file(root: Path, base_sha: str, path: str) -> bytes:
+    """Read a file's content at the base commit without checking it out.
+
+    Args:
+        root: Repository root.
+        base_sha: Base commit.
+        path: Repository-relative POSIX path at the base commit.
+
+    Returns:
+        The raw file content.
+
+    Raises:
+        GitError: If the file does not exist at the base commit.
+    """
+    try:
+        result = subprocess.run(
+            ["git", "cat-file", "blob", f"{base_sha}:{path}"],
+            cwd=root,
+            capture_output=True,
+            check=False,
+        )
+    except FileNotFoundError as error:
+        raise GitError(
+            "git is not installed or not on PATH; install git and try again"
+        ) from error
+    if result.returncode != 0:
+        raise GitError(f"{path} does not exist at base commit {base_sha[:12]}")
+    return result.stdout
+
+
 @contextmanager
 def base_worktree(root: Path, base_sha: str) -> Iterator[Path]:
     """Check out the base commit in a temporary git worktree.
