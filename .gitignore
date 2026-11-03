@@ -1,0 +1,25 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+
+# Build output
+build/
+dist/
+*.egg-info/
+
+# Generated at build time from spec/prompts/ (python/scripts/sync_prompts.py)
+python/src/didibreak/prompts/
+
+# didibreak output when run on this repository
+.didibreak/
+
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/
