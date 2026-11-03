@@ -1,5 +1,64 @@
 # Configuration (Python)
 
-Every CLI flag and `[tool.didibreak]` key in `pyproject.toml`, with type, default and example.
+didibreak reads settings from three places. A CLI flag overrides
+`[tool.didibreak]` in `pyproject.toml`, which overrides the built-in default.
 
-This page is a placeholder; content is added together with the features it describes.
+## Where the config file is found
+
+didibreak uses the nearest `pyproject.toml` from the current directory up to
+the root of the git repository. A missing file, or a file without a
+`[tool.didibreak]` table, means all defaults. Unknown keys and invalid values
+are errors (exit code 2).
+
+```toml
+[tool.didibreak]
+provider = "openai"
+max_functions = 5
+cases = 8
+exclude = ["scripts/*"]
+```
+
+## `didibreak check` flags and config keys
+
+Every flag except `--yes`, `-v` and `-q` has a config key with the same name
+in snake_case.
+
+| Flag | Config key | Type | Default | Meaning |
+| --- | --- | --- | --- | --- |
+| `--base REF` | `base` | git ref | `HEAD` | Version to compare the working tree against. |
+| `--intent TEXT` | `intent` | string | none | What the change was supposed to do; used only to label findings. |
+| `--format` | `format` | `text` or `json` | `text` | Report format on stdout. |
+| `--fail-on` | `fail_on` | `unclear` or `unexpected` | `unclear` | Exit 1 on unexpected or unclear findings (`unclear`), or on unexpected only. |
+| `--max-functions N` | `max_functions` | integer ≥ 1 | `10` | Maximum functions checked per run. |
+| `--cases N` | `cases` | integer 1–50 | `12` | Input cases requested per function per round. |
+| `--refine-rounds N` | `refine_rounds` | integer 0–3 | `1` | Extra rounds when no difference is found. |
+| `--max-cost USD` | `max_cost` | number > 0 | `0.50` | Hard LLM cost limit per run, in US dollars. |
+| `--timeout SECONDS` | `timeout` | number > 0 | `10` | Timeout per executed case. |
+| `--provider` | `provider` | `openai` or `anthropic` | none | LLM provider (`openai` means any OpenAI-compatible API). |
+| `--model NAME` | `model` | string | none | Model name. Default models per provider are documented with the LLM support. |
+| `--base-url URL` | `base_url` | http(s) URL | provider default | OpenAI-compatible endpoint, e.g. OpenRouter, Ollama, LM Studio. |
+| `--python PATH` | `python` | path | the interpreter running didibreak | Interpreter used to import and run your code. |
+| `--output-dir PATH` | `output_dir` | path | `.didibreak` | Folder for reports, reproducing tests and the cache. |
+| `--no-cache` | `no_cache` | true / false | `false` | Ignore and do not write the case cache. |
+| `--yes` | — | flag | off | Skip the cost confirmation. Implied by `--format json` and when stdin is not a terminal. |
+| `-v` / `-q` | — | flag | off | Verbose progress / errors only. Cannot be combined. |
+
+## Config-only keys
+
+| Config key | Type | Default | Meaning |
+| --- | --- | --- | --- |
+| `exclude` | list of glob patterns | `[]` | Extra files to skip, added to the default exclusions. |
+| `api_key_env` | string | provider default | Name of the environment variable that holds the API key. `""` disables the key check for local servers that need none. |
+
+## API keys
+
+didibreak reads the key from `OPENAI_API_KEY` for `openai`,
+`ANTHROPIC_API_KEY` for `anthropic`, or the variable named by `api_key_env`.
+Keys are never stored.
+
+## Other commands
+
+| Command | Meaning |
+| --- | --- |
+| `didibreak init-agents` | Print the `AGENTS.md` / `CLAUDE.md` snippet; never edits files. |
+| `didibreak --version` | Print the version. |
