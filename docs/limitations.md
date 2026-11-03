@@ -32,6 +32,8 @@ What didibreak cannot check, shared and per language.
 ## Functions that are skipped
 
 v0.1 does not run these functions; the report lists each one with its reason.
+A rule that matches in either the base or the current version skips the
+function; see [safety.md](safety.md).
 
 | Reason | When |
 | --- | --- |

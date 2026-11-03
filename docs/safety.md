@@ -9,6 +9,10 @@ functions, instance methods, generators, and functions with obvious I/O (files,
 processes, network, databases). The full list of rules and I/O names is in
 [limitations.md](limitations.md#functions-that-are-skipped).
 
+A function is skipped when a rule matches in **either** the base or the
+current version, because both versions are executed. The reason then ends with
+`(base version)`, for example `obvious I/O: os.remove (base version)`.
+
 The I/O check looks at:
 
 - the function's own body, including helpers defined inside it;

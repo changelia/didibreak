@@ -263,6 +263,26 @@ def _parse_version(
         return f"cannot parse the {version} version: {error}"
 
 
+def _either_version_skip_reason(
+    qualname: str,
+    current: FunctionDefinition,
+    current_context: ModuleContext,
+    previous: FunctionDefinition | None,
+    previous_context: ModuleContext,
+) -> str | None:
+    # Owner decision (task 07 review): both versions are executed, so a rule
+    # matching in either version skips the function.
+    reason = skip_reason(
+        current_context, qualname, current.function_type, current.is_async
+    )
+    if reason is not None or previous is None:
+        return reason
+    base_reason = skip_reason(
+        previous_context, qualname, previous.function_type, previous.is_async
+    )
+    return None if base_reason is None else f"{base_reason} (base version)"
+
+
 def _compare_file(
     file: SourceFile,
 ) -> tuple[list[ChangedFunction], list[str]] | SkippedFile:
@@ -272,7 +292,7 @@ def _compare_file(
     parsed_new = _parse_version(file.new_source, "current")
     if isinstance(parsed_new, str):
         return SkippedFile(file.path, parsed_new)
-    old, _ = parsed_old
+    old, old_context = parsed_old
     new, new_context = parsed_new
     module = module_name(file.path, file.import_root)
     changed: list[ChangedFunction] = []
@@ -291,11 +311,8 @@ def _compare_file(
                 line=current.line,
                 old_source=None if previous is None else previous.source,
                 new_source=current.source,
-                skip_reason=skip_reason(
-                    new_context,
-                    qualname,
-                    current.function_type,
-                    current.is_async,
+                skip_reason=_either_version_skip_reason(
+                    qualname, current, new_context, previous, old_context
                 ),
             )
         )
