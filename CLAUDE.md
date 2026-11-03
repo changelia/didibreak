@@ -32,6 +32,7 @@ If the Notion tools are not available, stop and tell the owner. Do not work from
    test, docs, ci, build, chore, perf; scopes python, spec, docs, ci; imperative, max 72 chars;
    footer "Refs: task NN". See "Commit rules" in Notion.
    Never push to main, merge, tag, bump versions or publish without explicit owner approval.
+   No Co-Authored-By trailers or AI attribution in commits or PRs; the owner is the sole author.
 4. Every code change: tests added; in python/ run uv run pytest, uv run ruff check .,
    uv run ruff format --check ., uv run mypy src (strict mode is configured in
    python/pyproject.toml via [tool.mypy] strict = true, added in task 03).
