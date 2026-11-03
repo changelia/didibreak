@@ -57,7 +57,7 @@ def test_unknown_ref_is_an_error(git_repository: GitRepository) -> None:
 def test_head_of_an_empty_repository_is_an_unknown_ref(
     git_repository: GitRepository,
 ) -> None:
-    with pytest.raises(GitError, match="unknown base ref 'HEAD'"):
+    with pytest.raises(GitError, match="has no commits yet: commit your code first"):
         resolve_base(git_repository.path, "HEAD")
 
 

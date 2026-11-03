@@ -109,6 +109,11 @@ def resolve_base(root: Path, ref: str) -> str:
         f"unknown base ref {ref!r}; use a branch, tag or commit that exists "
         "in this repository (see `git branch -a` and `git log`)"
     )
+    if _git(root, "rev-parse", "--verify", "--quiet", "HEAD").returncode != 0:
+        message += (
+            ". The repository has no commits yet: commit your code first so "
+            "there is a base version to compare with"
+        )
     shallow = _git(root, "rev-parse", "--is-shallow-repository").stdout.strip()
     if shallow == "true":
         message += (
