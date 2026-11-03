@@ -16,4 +16,17 @@ What didibreak cannot check, shared and per language.
   treated as a deleted file plus a new file.
 - **Deleted files:** functions in deleted files are not checked.
 
+## Which functions are compared
+
+- Candidates are module-level functions and the methods of module-level
+  classes. A function nested inside another function is not compared on its
+  own; a change inside it shows up as a change of the enclosing function.
+  Methods of nested classes are not compared at all.
+- A function counts as changed only when its code changes. Formatting,
+  comments and docstrings are ignored.
+- A file that cannot be parsed in either version (syntax error, unknown
+  encoding) is skipped and reported with the reason.
+- At most `max_functions` functions are checked per run (default 10), in
+  order of file path, then line; the rest are reported as not checked.
+
 The rest of this page is written together with the analysis features.

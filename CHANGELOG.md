@@ -21,6 +21,10 @@ the Python package and `js-v*` for the JS/TS package.
   untracked ones, skipping the default exclusions and `exclude` patterns.
 - Relative `output_dir` and `python` paths are resolved against the
   `pyproject.toml` folder (config file) or the current directory (flags).
+- `didibreak check` detects changed and new functions (formatting, comments
+  and docstrings are ignored), reports files it cannot parse, applies
+  `max_functions`, and shows excluded files; `-v` lists them.
+- A `python` value without `/` is looked up on `PATH`.
 
 ## JS/TS package
 
