@@ -11,10 +11,86 @@ import copy
 import io
 import textwrap
 import tokenize
-from dataclasses import dataclass
+from collections.abc import Sequence
+from dataclasses import dataclass, replace
 from pathlib import PurePosixPath
 
 _FunctionNode = ast.FunctionDef | ast.AsyncFunctionDef
+
+
+@dataclass(frozen=True)
+class SourceFile:
+    """Both versions of one changed file.
+
+    Attributes:
+        path: Repository-relative path in the working tree.
+        old_source: Content at the base commit; None for a new file.
+        new_source: Content in the working tree; None for a deleted file.
+    """
+
+    path: str
+    old_source: bytes | None
+    new_source: bytes | None
+
+
+@dataclass(frozen=True)
+class ChangedFunction:
+    """A function whose behavior may differ between base and working tree.
+
+    Attributes:
+        file: Repository-relative path in the working tree.
+        module: Importable module name (Detailed Design section 3).
+        qualname: ``name`` or ``Class.name``.
+        kind: ``changed`` (exists in both versions) or ``new``.
+        function_type: ``function``, ``staticmethod``, ``classmethod`` or
+            ``method`` (instance method).
+        is_async: True for ``async def``.
+        line: First line in the working tree, decorators included.
+        old_source: Base source, dedented; None for new functions.
+        new_source: Working-tree source, dedented.
+        skip_reason: Why the function is not tested; set by later stages.
+    """
+
+    file: str
+    module: str
+    qualname: str
+    kind: str
+    function_type: str
+    is_async: bool
+    line: int
+    old_source: str | None
+    new_source: str
+    skip_reason: str | None = None
+
+    @property
+    def report_name(self) -> str:
+        """Name used in reports: ``path/to/file.py::Class.name``."""
+        return f"{self.file}::{self.qualname}"
+
+
+@dataclass(frozen=True)
+class SkippedFile:
+    """A changed file whose functions cannot be compared."""
+
+    path: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class Detection:
+    """Result of comparing all changed files.
+
+    Attributes:
+        functions: Changed and new functions to check, by file then line.
+        limited: Functions cut by ``max_functions`` (skip reason ``limit``).
+        removed: ``path::qualname`` of functions that no longer exist.
+        skipped_files: Files that could not be parsed, with the reason.
+    """
+
+    functions: tuple[ChangedFunction, ...]
+    limited: tuple[ChangedFunction, ...]
+    removed: tuple[str, ...]
+    skipped_files: tuple[SkippedFile, ...]
 
 
 @dataclass(frozen=True)
@@ -134,3 +210,88 @@ def definitions(source: str) -> dict[str, FunctionDefinition]:
                         member, qualname, _function_type(member), lines
                     )
     return found
+
+
+def _parse_version(
+    content: bytes | None, version: str
+) -> dict[str, FunctionDefinition] | str:
+    """Return definitions, or a skip reason when the version cannot be parsed."""
+    if content is None:
+        return {}
+    try:
+        source = decode_source(content)
+    except (SyntaxError, UnicodeDecodeError) as error:
+        # detect_encoding reports undecodable bytes as SyntaxError.
+        return f"cannot read the {version} version as Python source text: {error}"
+    try:
+        return definitions(source)
+    except SyntaxError as error:
+        where = f", line {error.lineno}" if error.lineno else ""
+        return f"syntax error in the {version} version{where}: {error.msg}"
+    except ValueError as error:  # e.g. null bytes on Python 3.11
+        return f"cannot parse the {version} version: {error}"
+
+
+def _compare_file(
+    file: SourceFile,
+) -> tuple[list[ChangedFunction], list[str]] | SkippedFile:
+    old = _parse_version(file.old_source, "base")
+    if isinstance(old, str):
+        return SkippedFile(file.path, old)
+    new = _parse_version(file.new_source, "current")
+    if isinstance(new, str):
+        return SkippedFile(file.path, new)
+    module = module_name(file.path)
+    changed: list[ChangedFunction] = []
+    for qualname, current in new.items():
+        previous = old.get(qualname)
+        if previous is not None and previous.fingerprint == current.fingerprint:
+            continue
+        changed.append(
+            ChangedFunction(
+                file=file.path,
+                module=module,
+                qualname=qualname,
+                kind="new" if previous is None else "changed",
+                function_type=current.function_type,
+                is_async=current.is_async,
+                line=current.line,
+                old_source=None if previous is None else previous.source,
+                new_source=current.source,
+            )
+        )
+    removed = [f"{file.path}::{name}" for name in old if name not in new]
+    return changed, removed
+
+
+def detect_changed_functions(
+    files: Sequence[SourceFile], max_functions: int
+) -> Detection:
+    """Find changed and new functions in all changed files.
+
+    Args:
+        files: Both versions of every changed or deleted file.
+        max_functions: How many functions to keep; the rest are ``limited``.
+
+    Returns:
+        The detection result, ordered by file path, then line.
+    """
+    found: list[ChangedFunction] = []
+    removed: list[str] = []
+    skipped: list[SkippedFile] = []
+    for file in files:
+        result = _compare_file(file)
+        if isinstance(result, SkippedFile):
+            skipped.append(result)
+            continue
+        found.extend(result[0])
+        removed.extend(result[1])
+    found.sort(key=lambda function: (function.file, function.line))
+    return Detection(
+        functions=tuple(found[:max_functions]),
+        limited=tuple(
+            replace(function, skip_reason="limit") for function in found[max_functions:]
+        ),
+        removed=tuple(sorted(removed)),
+        skipped_files=tuple(sorted(skipped, key=lambda item: item.path)),
+    )
