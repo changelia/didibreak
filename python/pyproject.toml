@@ -9,6 +9,7 @@ description = "Find unintended behavior changes in Python code by running the ol
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
+license-files = ["LICENSE"]
 dependencies = []
 
 [project.scripts]
@@ -44,14 +45,24 @@ xfail_strict = true
 path = "src/didibreak/__init__.py"
 
 [tool.hatch.build]
-# The prompt copies are generated (git-ignored) but must be packaged.
-artifacts = ["src/didibreak/prompts/"]
+# Copied from the repository at build time (git-ignored) but must be packaged.
+artifacts = ["src/didibreak/prompts/", "/LICENSE"]
+
+[tool.hatch.metadata.hooks.custom]
+# hatch_build.py: copies the root LICENSE to python/LICENSE.
 
 [tool.hatch.build.hooks.custom]
-# hatch_build.py copies spec/prompts/ into src/didibreak/prompts/.
+# hatch_build.py: copies spec/prompts/ into src/didibreak/prompts/.
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/didibreak"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/didibreak", "tests", "scripts", "hatch_build.py", "README.md"]
+include = [
+  "src/didibreak",
+  "tests",
+  "scripts",
+  "hatch_build.py",
+  "README.md",
+  "LICENSE",
+]

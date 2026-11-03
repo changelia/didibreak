@@ -16,6 +16,9 @@ dist/
 # Generated at build time from spec/prompts/ (python/scripts/sync_prompts.py)
 python/src/didibreak/prompts/
 
+# Copied from the root LICENSE at build time (python/hatch_build.py)
+python/LICENSE
+
 # didibreak output when run on this repository
 .didibreak/
 
