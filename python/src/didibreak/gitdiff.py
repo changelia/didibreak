@@ -5,8 +5,22 @@ to git. Nothing here writes to the user's working tree or index.
 """
 
 import subprocess
+from collections.abc import Sequence
 from dataclasses import dataclass
-from pathlib import Path
+from fnmatch import fnmatchcase
+from pathlib import Path, PurePosixPath
+
+# Default exclusions (owner decision Q9, Detailed Design section 2).
+DEFAULT_EXCLUDES = (
+    "tests/",
+    "test_*.py",
+    "*_test.py",
+    "conftest.py",
+    "migrations/",
+    "alembic/versions/",
+    "setup.py",
+    "docs/",
+)
 
 
 class GitError(Exception):
@@ -137,11 +151,42 @@ def parse_name_status(output: str) -> tuple[list[ChangedFile], list[str]]:
     return changed, deleted
 
 
+def is_excluded(path: str, patterns: Sequence[str]) -> bool:
+    """Tell whether a repository-relative path matches any exclusion pattern.
+
+    Pattern forms:
+
+    - ending in ``/`` (``tests/``, ``alembic/versions/``): the folder at any depth;
+    - containing ``/`` (``scripts/*``): glob against the whole path;
+    - otherwise (``test_*.py``): glob against the file name.
+
+    Args:
+        path: Repository-relative POSIX path.
+        patterns: Exclusion patterns.
+
+    Returns:
+        True if the path is excluded.
+    """
+    name = PurePosixPath(path).name
+    for pattern in patterns:
+        if pattern.endswith("/"):
+            if f"/{pattern}" in f"/{path}":
+                return True
+        elif "/" in pattern:
+            if fnmatchcase(path, pattern):
+                return True
+        elif fnmatchcase(name, pattern):
+            return True
+    return False
+
+
 def _is_python(path: str | None) -> bool:
     return path is not None and path.endswith(".py")
 
 
-def changed_python_files(root: Path, base_sha: str) -> ChangedFiles:
+def changed_python_files(
+    root: Path, base_sha: str, exclude: Sequence[str] = ()
+) -> ChangedFiles:
     """List Python files changed between the base commit and the working tree.
 
     Staged and unstaged changes count; untracked files (not ignored by
@@ -151,9 +196,10 @@ def changed_python_files(root: Path, base_sha: str) -> ChangedFiles:
     Args:
         root: Repository root.
         base_sha: Base commit from resolve_base().
+        exclude: User patterns, applied after DEFAULT_EXCLUDES.
 
     Returns:
-        The changed and deleted Python files.
+        The changed and deleted Python files that are not excluded.
 
     Raises:
         GitError: If git fails.
@@ -170,8 +216,11 @@ def changed_python_files(root: Path, base_sha: str) -> ChangedFiles:
         for path in untracked.stdout.split("\0")
         if path
     ]
+    patterns = (*DEFAULT_EXCLUDES, *exclude)
     python_files: list[ChangedFile] = []
     for item in changed:
+        if is_excluded(item.path, patterns):
+            continue
         old_is_python = _is_python(item.old_path)
         if not _is_python(item.path):
             # A Python file renamed to another extension is gone as Python code.
@@ -184,5 +233,11 @@ def changed_python_files(root: Path, base_sha: str) -> ChangedFiles:
             python_files.append(item)
     return ChangedFiles(
         changed=tuple(sorted(python_files, key=lambda item: item.path)),
-        deleted=tuple(sorted(path for path in deleted if _is_python(path))),
+        deleted=tuple(
+            sorted(
+                path
+                for path in deleted
+                if _is_python(path) and not is_excluded(path, patterns)
+            )
+        ),
     )
