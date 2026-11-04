@@ -61,4 +61,16 @@ The check is a scan of names in the source, so it can miss I/O that is not
 on this list, and it can skip a function that only looks like I/O. Rules are
 checked in the order of the table; the first match is the reason.
 
+## Running functions
+
+- Linux and macOS only: per-case timeouts use Unix signals.
+- The `--python` interpreter must be Python 3.11 or newer.
+- Return values are compared exactly only for `None`, `bool`, `int`, `float`,
+  `str`, `bytes`, and lists, tuples, sets, frozensets and dicts of these.
+  Anything else, including subclasses of these types and values with more
+  than 10,000 elements or nested more than 100 levels deep, is compared by
+  type only.
+- Environment variables that look like credentials are removed before your
+  code runs; see [safety.md](safety.md#environment-variables-that-are-removed).
+
 The rest of this page is written together with the analysis features.

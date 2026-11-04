@@ -32,6 +32,9 @@ the Python package and `js-v*` for the JS/TS package.
   calls, and applies to both the base and the current version.
 - The import root is the folder of the nearest `pyproject.toml` (or its
   `src/`).
+- Execution harness (not used by `check` yet): runs cases against one
+  version of a function in separate processes, twice each, with per-case
+  timeouts, fixed seeds and credentials removed from the environment.
 
 ## JS/TS package
 

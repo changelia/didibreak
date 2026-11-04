@@ -312,7 +312,7 @@ def _run_check(arguments: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
         return EXIT_OK
-    # TODO(task 09): run the harness on the testable functions.
+    # TODO(task 11): run the harness on the testable functions.
     print("didibreak: the analysis is not implemented yet", file=sys.stderr)
     return exit_code_for([], config.fail_on)
 
