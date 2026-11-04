@@ -94,9 +94,24 @@ known behavior changes, used by tests of every stage:
 To add a case, create the three entries and run the tests. Fixture code is
 excluded from ruff because it is sample user code.
 
-## Adding a comparison rule or an LLM provider
+## Adding a comparison rule
 
-Documented here once the comparison and provider modules exist.
+Comparison rules live in `python/src/didibreak/compare.py` and are pure
+functions over harness outcomes:
+
+1. Write the rule in `difference()` (two outcomes of one case) or in
+   `compare_cases()` (dropping cases, new functions). Name any threshold as a
+   module constant.
+2. Add a unit test named after the behavior to
+   `python/tests/test_compare_rules.py`.
+3. If a fixture in `python/tests/fixtures/` shows the rule, update its
+   `expected.json`; `test_compare_fixtures.py` runs every fixture through the
+   harness and the rules.
+4. Update the rule table in `docs/how-it-works.md`.
+
+## Adding an LLM provider
+
+Documented here once the provider modules exist.
 
 ## Commits and pull requests
 

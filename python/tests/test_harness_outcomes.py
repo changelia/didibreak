@@ -1,5 +1,9 @@
+import collections
+import dataclasses
+import enum
 import json
 import math
+from collections.abc import Iterator
 
 import pytest
 
@@ -10,6 +14,7 @@ from didibreak._harness_child import (
     normalize,
     return_outcome,
     timeout_outcome,
+    type_name,
 )
 
 
@@ -61,13 +66,91 @@ def test_dict_keys_are_sorted_by_repr() -> None:
     }
 
 
-def test_other_types_and_subclasses_are_not_representable() -> None:
-    class Number(int):
-        pass
+def test_other_types_are_not_representable() -> None:
+    @dataclasses.dataclass
+    class Point:
+        x: int
 
     assert normalize(object()) is None
-    assert normalize(Number(1)) is None
+    assert normalize(Point(1)) is None  # dataclasses: a v0.2 candidate
     assert normalize([1, object()]) is None
+
+
+Pair = collections.namedtuple("Pair", "left right")
+
+
+class Color(enum.IntEnum):
+    RED = 1
+
+
+class Mode(enum.StrEnum):
+    FAST = "fast"
+
+
+@pytest.mark.parametrize(
+    ("value", "base_value"),
+    [
+        (Pair(1, 2), (1, 2)),
+        (collections.OrderedDict(b=1, a=2), {"a": 2, "b": 1}),
+        (collections.defaultdict(list, k=[1]), {"k": [1]}),
+        (Color.RED, 1),
+        (Mode.FAST, "fast"),
+    ],
+)
+def test_subclasses_are_normalized_through_their_builtin_base(
+    value: object, base_value: object
+) -> None:
+    normalized = normalize(value)
+    expected = normalize(base_value)
+
+    assert normalized is not None and expected is not None
+    assert normalized == {**expected, "class": type_name(value)}
+
+
+class Shape(enum.Enum):
+    CIRCLE = object()
+    SQUARE = object()
+
+
+class Other(enum.Enum):
+    CIRCLE = 1
+
+
+def test_enum_members_are_compared_by_class_and_name() -> None:
+    assert normalize(Shape.CIRCLE) == {
+        "type": "enum",
+        "class": type_name(Shape.CIRCLE),
+        "name": "CIRCLE",
+    }
+    assert normalize(Shape.CIRCLE) != normalize(Shape.SQUARE)
+    assert normalize(Shape.CIRCLE) != normalize(Other.CIRCLE)
+    assert normalize({Shape.SQUARE: [Shape.CIRCLE]}) is not None
+
+
+def test_int_and_str_enums_use_their_builtin_base_not_the_enum_rule() -> None:
+    normalized = normalize(Color.RED)
+
+    assert normalized is not None
+    assert normalized["type"] == "int"
+
+
+def test_subclass_class_is_kept_in_nested_values() -> None:
+    normalized = normalize([Pair(1, 2)])
+
+    assert normalized is not None
+    assert normalized["items"][0]["class"].endswith(".Pair")
+    assert normalize([Pair(1, 2)]) != normalize([(1, 2)])
+
+
+def test_overridden_methods_do_not_change_the_normalized_value() -> None:
+    class Sneaky(list[object]):
+        def __iter__(self) -> Iterator[object]:
+            return iter(["changed"])
+
+    normalized = normalize(Sneaky([1]))
+
+    assert normalized is not None
+    assert normalized["items"] == [{"type": "int", "value": 1}]
 
 
 def test_cycles_huge_ints_and_huge_containers_are_not_representable() -> None:
