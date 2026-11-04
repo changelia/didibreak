@@ -9,7 +9,13 @@ normalized here (Detailed Design section 4) because the objects themselves
 cannot leave the process.
 """
 
-from typing import Any
+import ast
+import importlib
+import json
+import os
+import sys
+from collections.abc import Callable
+from typing import Any, TextIO
 
 REPR_LIMIT = 2000
 MESSAGE_LIMIT = 500
@@ -147,3 +153,75 @@ def timeout_outcome(timeout: float) -> dict[str, Any]:
         "type_name": "",
         "repr": f"<timed out after {timeout:g} s>",
     }
+
+
+def _load_function(request: dict[str, Any]) -> Callable[..., object] | str:
+    """Import the function from the tree, or return the reason it cannot be run."""
+    sys.path.insert(0, request["import_root"])
+    try:
+        module = importlib.import_module(request["module"])
+    except BaseException as error:  # import runs arbitrary top-level code
+        return f"import failed: {type(error).__name__}"
+    # Leakage guard (Detailed Design section 3): an installed copy of the
+    # package, for example an editable install, must not be tested instead.
+    tree = os.path.realpath(request["tree"])
+    location = getattr(module, "__file__", None)
+    if (
+        location is None
+        or os.path.commonpath([tree, os.path.realpath(location)]) != tree
+    ):
+        return "import resolved outside tree"
+    target: object = module
+    try:
+        for part in request["qualname"].split("."):
+            target = getattr(target, part)
+    except BaseException:  # a module __getattr__ may raise anything
+        return "function not found after import"
+    if not callable(target):
+        return "function not found after import"
+    return target
+
+
+def run_case(
+    function: Callable[..., object], case: dict[str, Any], timeout: float
+) -> dict[str, Any]:
+    """Call the function with one case's arguments and record the outcome."""
+    args = [ast.literal_eval(text) for text in case["args"]]
+    kwargs = {name: ast.literal_eval(text) for name, text in case["kwargs"].items()}
+    try:
+        value = function(*args, **kwargs)
+    except BaseException as error:  # SystemExit is an outcome too
+        return exception_outcome(error)
+    return return_outcome(value)
+
+
+def _write(results: TextIO, record: dict[str, Any]) -> None:
+    # One complete line per record, flushed, so the parent keeps every
+    # finished case even if the process is killed later.
+    results.write(json.dumps(record) + "\n")
+    results.flush()
+
+
+def main(arguments: list[str]) -> None:
+    """Run the request file's cases and append records to the results file.
+
+    The first record is ``{"ready": true}`` or ``{"skip_reason": ...}``; then
+    one outcome per case, in order.
+    """
+    request_path, results_path = arguments
+    with open(request_path, encoding="utf-8") as file:
+        request = json.load(file)
+    with open(results_path, "w", encoding="utf-8") as results:
+        function = _load_function(request)
+        if isinstance(function, str):
+            _write(results, {"skip_reason": function})
+            return
+        _write(results, {"ready": True})
+        for case in request["cases"]:
+            _write(results, run_case(function, case, request["timeout"]))
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
+    # Do not wait for threads the user's code may have started.
+    os._exit(0)
