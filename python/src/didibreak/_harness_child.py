@@ -13,6 +13,7 @@ import ast
 import importlib
 import json
 import os
+import random
 import signal
 import sys
 from collections.abc import Callable
@@ -193,6 +194,7 @@ def run_case(
     """Call the function with one case's arguments and record the outcome."""
     args = [ast.literal_eval(text) for text in case["args"]]
     kwargs = {name: ast.literal_eval(text) for name, text in case["kwargs"].items()}
+    random.seed(0)  # the same random sequence for every case and run
     signal.setitimer(signal.ITIMER_REAL, timeout)
     try:
         try:

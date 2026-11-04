@@ -26,6 +26,12 @@ _CHILD_SCRIPT = Path(__file__).with_name("_harness_child.py")
 # Python 3.12, 2026-11-04). child_environment() removes PYTHON* variables
 # instead, which is what -E would do.
 _INTERPRETER_FLAGS = ("-s", "-P", "-B")
+# Variables removed from the child's environment, matched case-insensitively:
+# names ending with one of the suffixes or containing one of the words.
+# Broader than Detailed Design section 4 (*_API_KEY, *_TOKEN, *_SECRET), so
+# that names such as AWS_SECRET_ACCESS_KEY are covered too.
+SECRET_SUFFIXES = ("_KEY",)
+SECRET_WORDS = ("TOKEN", "SECRET", "PASSWORD")
 # Extra time for interpreter start and import before the child is killed.
 _KILL_GRACE_SECONDS = 5.0
 PROCESS_EXITED_TYPE = "didibreak.ProcessExited"
@@ -90,10 +96,13 @@ class HarnessSettings:
     Attributes:
         python: Interpreter that imports and runs the user's code.
         timeout: Per-case timeout in seconds.
+        api_key_env: Name of the variable holding the LLM API key; removed
+            from the child's environment whatever its name.
     """
 
     python: str
     timeout: float
+    api_key_env: str | None = None
 
 
 @dataclass(frozen=True)
@@ -104,21 +113,37 @@ class HarnessResult:
     skip_reason: str | None = None
 
 
-def child_environment(environment: Mapping[str, str]) -> dict[str, str]:
+def is_secret_variable(name: str) -> bool:
+    """Whether an environment variable looks like it holds a credential."""
+    upper = name.upper()
+    return upper.endswith(SECRET_SUFFIXES) or any(
+        word in upper for word in SECRET_WORDS
+    )
+
+
+def child_environment(
+    environment: Mapping[str, str], api_key_env: str | None = None
+) -> dict[str, str]:
     """Return the environment for the child process.
 
     Args:
         environment: The parent's environment.
+        api_key_env: Name of the API key variable to remove as well.
 
     Returns:
-        A copy without ``PYTHON*`` variables, so ``PYTHONPATH`` and similar
-        settings cannot change what is imported.
+        A copy without ``PYTHON*`` variables (so ``PYTHONPATH`` and similar
+        settings cannot change what is imported) and without credentials,
+        plus ``PYTHONHASHSEED=0`` and ``TZ=UTC`` for repeatable results.
     """
-    return {
+    kept = {
         name: value
         for name, value in environment.items()
         if not name.startswith("PYTHON")
+        and not is_secret_variable(name)
+        and name != api_key_env
     }
+    kept.update(PYTHONHASHSEED="0", TZ="UTC")
+    return kept
 
 
 def _check_literals(cases: Sequence[Case]) -> None:
@@ -202,7 +227,7 @@ def _start_child(
             str(results),
         ],
         cwd=working_directory,
-        env=child_environment(environment),
+        env=child_environment(environment, settings.api_key_env),
         stdin=subprocess.DEVNULL,
         # The user's prints must not reach didibreak's output.
         stdout=subprocess.DEVNULL,

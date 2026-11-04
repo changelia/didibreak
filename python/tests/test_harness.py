@@ -228,3 +228,70 @@ def test_partial_last_line_of_a_killed_child_is_ignored(tmp_path: Path) -> None:
     results.write_text('{"ready": true}\n{"kind": "ret', encoding="utf-8")
 
     assert harness._read_records(results) == [{"ready": True}]
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "OPENAI_API_KEY",
+        "GITHUB_TOKEN",
+        "AWS_SECRET_ACCESS_KEY",
+        "db_password",
+        "X_SECRET",
+    ],
+)
+def test_credentials_are_recognized(name: str) -> None:
+    assert harness.is_secret_variable(name)
+
+
+@pytest.mark.parametrize(
+    "name", ["PATH", "HOME", "LANG", "KEYBOARD", "MONKEY_BUSINESS"]
+)
+def test_ordinary_variables_are_kept(name: str) -> None:
+    assert not harness.is_secret_variable(name)
+
+
+def test_child_environment_is_scrubbed_and_fixed() -> None:
+    parent = {
+        "PATH": "/bin",
+        "OPENAI_API_KEY": "sk-1",
+        "MY_LLM": "sk-2",
+        "PYTHONPATH": "/elsewhere",
+        "PYTHONHASHSEED": "random",
+        "TZ": "Asia/Tbilisi",
+    }
+
+    assert harness.child_environment(parent, api_key_env="MY_LLM") == {
+        "PATH": "/bin",
+        "PYTHONHASHSEED": "0",
+        "TZ": "UTC",
+    }
+
+
+def test_function_cannot_read_api_keys(tmp_path: Path) -> None:
+    source = "import os\ndef f():\n    return sorted(os.environ)\n"
+    tree = make_tree(tmp_path / "tree", {"mod.py": source})
+    parent = {"PATH": "/usr/bin:/bin", "ANTHROPIC_API_KEY": "sk-ant", "CUSTOM": "k"}
+    settings = HarnessSettings(sys.executable, timeout=5.0, api_key_env="CUSTOM")
+
+    (outcome,) = run_cases(target(tree), [Case(())], settings, parent).outcomes
+
+    assert "sk-ant" not in outcome.repr
+    assert "ANTHROPIC_API_KEY" not in outcome.repr
+    assert "'CUSTOM'" not in outcome.repr
+
+
+def test_hash_seed_random_seed_and_time_zone_are_fixed(tmp_path: Path) -> None:
+    source = """\
+        import random, time
+        def f():
+            return hash("abc"), random.random(), time.strftime("%Z")
+        """
+    tree = make_tree(tmp_path / "tree", {"mod.py": source})
+    cases = [Case(()), Case(())]
+
+    first = run_cases(target(tree), cases, SETTINGS).outcomes
+    second = run_cases(target(tree), cases, SETTINGS).outcomes
+
+    assert first[0].value == first[1].value == second[0].value
+    assert "'UTC'" in first[0].repr
