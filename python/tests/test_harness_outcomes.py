@@ -107,6 +107,33 @@ def test_subclasses_are_normalized_through_their_builtin_base(
     assert normalized == {**expected, "class": type_name(value)}
 
 
+class Shape(enum.Enum):
+    CIRCLE = object()
+    SQUARE = object()
+
+
+class Other(enum.Enum):
+    CIRCLE = 1
+
+
+def test_enum_members_are_compared_by_class_and_name() -> None:
+    assert normalize(Shape.CIRCLE) == {
+        "type": "enum",
+        "class": type_name(Shape.CIRCLE),
+        "name": "CIRCLE",
+    }
+    assert normalize(Shape.CIRCLE) != normalize(Shape.SQUARE)
+    assert normalize(Shape.CIRCLE) != normalize(Other.CIRCLE)
+    assert normalize({Shape.SQUARE: [Shape.CIRCLE]}) is not None
+
+
+def test_int_and_str_enums_use_their_builtin_base_not_the_enum_rule() -> None:
+    normalized = normalize(Color.RED)
+
+    assert normalized is not None
+    assert normalized["type"] == "int"
+
+
 def test_subclass_class_is_kept_in_nested_values() -> None:
     normalized = normalize([Pair(1, 2)])
 

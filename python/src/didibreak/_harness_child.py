@@ -10,6 +10,7 @@ cannot leave the process.
 """
 
 import ast
+import enum
 import importlib
 import json
 import os
@@ -104,6 +105,10 @@ def _normalize(value: object, budget: _Budget, depth: int) -> dict[str, Any]:
         return {"type": "none"}
     base = _base_type(value)
     if base is None:
+        if isinstance(value, enum.Enum):
+            # Members of enums without a builtin base (IntEnum and StrEnum
+            # have one): the class and the member name identify the value.
+            return {"type": "enum", "class": type_name(value), "name": value.name}
         raise _Unrepresentable
     if base in _CONTAINER_BASES:
         node = _container(base, value, budget, depth)
@@ -128,7 +133,8 @@ def normalize(value: object) -> dict[str, Any] | None:
         sorted by repr, dicts as key-value pairs sorted by the key's repr), or
         None for anything else, including very large or deeply nested values.
         Subclasses of these types are normalized through their builtin base
-        and carry their qualified type name under ``"class"``.
+        and carry their qualified type name under ``"class"``. Other enum
+        members become ``{"type": "enum", "class": ..., "name": ...}``.
     """
     try:
         return _normalize(value, _Budget(), depth=0)

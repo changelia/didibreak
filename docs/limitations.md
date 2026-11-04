@@ -72,6 +72,7 @@ checked in the order of the table; the first match is the reason.
   their class must match too: `Point(1, 2)` and `(1, 2)` differ. The order of
   an `OrderedDict` and the `default_factory` of a `defaultdict` are not
   compared.
+- Other `Enum` members are compared by their class and member name.
 - Anything else, including dataclasses and other objects, and values with
   more than 10,000 elements or nested more than 100 levels deep, is compared
   by type only.
