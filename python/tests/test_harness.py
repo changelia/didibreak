@@ -1,6 +1,7 @@
 import shutil
 import sys
 import textwrap
+import time
 from pathlib import Path
 
 import pytest
@@ -123,6 +124,19 @@ def test_exceptions_and_keyword_arguments_are_recorded(tmp_path: Path) -> None:
     assert first.value == {"type": "int", "value": 1}
     assert (second.kind, second.type_name) == ("exception", "builtins.IndexError")
     assert second.message == "list index out of range"
+
+
+def test_a_hanging_case_does_not_stop_the_others(tmp_path: Path) -> None:
+    source = "import time\ndef f(n):\n    if n:\n        time.sleep(60)\n    return n\n"
+    tree = make_tree(tmp_path / "tree", {"mod.py": source})
+    settings = HarnessSettings(python=sys.executable, timeout=0.5)
+
+    start = time.monotonic()
+    outcomes = run_cases(target(tree), [Case(("1",)), Case(("0",))], settings).outcomes
+
+    assert [o.kind for o in outcomes] == ["timeout", "return"]
+    assert outcomes[0].repr == "<timed out after 0.5 s>"
+    assert time.monotonic() - start < 10
 
 
 def test_child_ignoring_its_timeout_is_killed(

@@ -13,6 +13,7 @@ import ast
 import importlib
 import json
 import os
+import signal
 import sys
 from collections.abc import Callable
 from typing import Any, TextIO
@@ -155,6 +156,10 @@ def timeout_outcome(timeout: float) -> dict[str, Any]:
     }
 
 
+def _on_alarm(signal_number: int, frame: object) -> None:
+    raise CaseTimeout
+
+
 def _load_function(request: dict[str, Any]) -> Callable[..., object] | str:
     """Import the function from the tree, or return the reason it cannot be run."""
     sys.path.insert(0, request["import_root"])
@@ -188,11 +193,19 @@ def run_case(
     """Call the function with one case's arguments and record the outcome."""
     args = [ast.literal_eval(text) for text in case["args"]]
     kwargs = {name: ast.literal_eval(text) for name, text in case["kwargs"].items()}
+    signal.setitimer(signal.ITIMER_REAL, timeout)
     try:
-        value = function(*args, **kwargs)
-    except BaseException as error:  # SystemExit is an outcome too
-        return exception_outcome(error)
-    return return_outcome(value)
+        try:
+            value = function(*args, **kwargs)
+        except CaseTimeout:
+            raise
+        except BaseException as error:  # SystemExit is an outcome too
+            return exception_outcome(error)
+        return return_outcome(value)
+    except CaseTimeout:
+        return timeout_outcome(timeout)
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
 
 
 def _write(results: TextIO, record: dict[str, Any]) -> None:
@@ -217,8 +230,13 @@ def main(arguments: list[str]) -> None:
             _write(results, {"skip_reason": function})
             return
         _write(results, {"ready": True})
+        signal.signal(signal.SIGALRM, _on_alarm)
         for case in request["cases"]:
-            _write(results, run_case(function, case, request["timeout"]))
+            try:
+                outcome = run_case(function, case, request["timeout"])
+            except CaseTimeout:  # the alarm fired while cancelling the timer
+                outcome = timeout_outcome(request["timeout"])
+            _write(results, outcome)
 
 
 if __name__ == "__main__":
