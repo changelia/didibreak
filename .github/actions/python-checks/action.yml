@@ -1,0 +1,46 @@
+name: Python checks
+description: >-
+  Install the locked dev environment and run the four checks, the build and
+  the package content check for the package in python/. One definition shared
+  by the Linux and macOS jobs of python.yml.
+
+inputs:
+  python-version:
+    description: Python version to run the checks with.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v10.3.3
+      with:
+        python-version: ${{ inputs.python-version }}
+        working-directory: python
+    - name: Install
+      shell: bash
+      working-directory: python
+      run: uv sync --locked
+    - name: Tests
+      shell: bash
+      working-directory: python
+      run: uv run pytest
+    - name: Lint
+      shell: bash
+      working-directory: python
+      run: uv run ruff check .
+    - name: Format
+      shell: bash
+      working-directory: python
+      run: uv run ruff format --check .
+    - name: Types
+      shell: bash
+      working-directory: python
+      run: uv run mypy src
+    - name: Build
+      shell: bash
+      working-directory: python
+      run: uv build
+    - name: Package contents
+      shell: bash
+      working-directory: python
+      run: uv run python scripts/check_dist.py dist

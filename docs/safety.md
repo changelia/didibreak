@@ -30,6 +30,56 @@ The I/O check looks at:
 - I/O that is not on the list, or that happens through dynamic code
   (`getattr`, `eval`, plugins), is not detected.
 - Importing your module runs its top-level code.
+- Your function's own side effects still happen: a file written to an
+  absolute path, for example, is really written. There is no container or
+  sandbox in v0.1.
 
-The rest of this page (process isolation, timeouts, environment variables)
-is written together with the execution harness.
+## How a function is run
+
+- **Separate processes.** Each version of a function runs in a new Python
+  process started with the `--python` interpreter. Every case runs twice per
+  version, in two separate processes, so one function takes four processes
+  per round.
+- **Only the version under test is imported.** The version's import root is
+  put first on `sys.path`. `PYTHONPATH`, the other `PYTHON*` variables and
+  the user site-packages folder are ignored. If the module is still found
+  outside that version's folder, for example in an installed or editable copy
+  of your package, the function is skipped with `import resolved outside
+  tree`.
+- **Nothing is written into your project by the run itself.** No
+  `__pycache__` files are written, the working directory is a new temporary
+  folder, and your function's printed output is discarded.
+- **Timeouts.** Each case stops after `timeout` seconds (default 10) and is
+  recorded as a timeout; the other cases still run. Code that catches every
+  exception (`except BaseException`) cannot stop this for long: the process
+  and any processes it started are killed after a total of `timeout` ×
+  number of cases plus 5 seconds.
+- **Crashes.** A case that ends the process (`os._exit`, a crash in a C
+  extension) is recorded as the exception `didibreak.ProcessExited`, and the
+  remaining cases run in a new process.
+- **Repeatable results.** `PYTHONHASHSEED=0`, `TZ=UTC`, and `random.seed(0)`
+  before every case. A case whose two runs still differ is dropped as flaky.
+- **Data crosses process boundaries as JSON only**, never `pickle`.
+
+### Environment variables that are removed
+
+Before your code runs, didibreak removes variables that look like
+credentials, so the function under test cannot use your API keys or tokens.
+A name matches, ignoring case, when it:
+
+- ends with `_KEY` (`OPENAI_API_KEY`, `AWS_SECRET_ACCESS_KEY`);
+- contains `TOKEN`, `SECRET` or `PASSWORD` (`GITHUB_TOKEN`, `DB_PASSWORD`);
+- is the variable named by `api_key_env`.
+
+Code that reads such a variable sees it as missing, which can change its
+behavior.
+
+### When a function cannot be run
+
+| Reason | When |
+| --- | --- |
+| `import failed: <ExceptionType>` | Importing the module raised an exception. |
+| `import failed: process exited with code <N>` | The process ended while importing the module. |
+| `import timed out` | Importing the module took longer than the time for all cases. |
+| `import resolved outside tree` | The module was found outside the version being tested. |
+| `function not found after import` | The module has no such function or method. |

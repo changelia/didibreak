@@ -49,7 +49,7 @@ in snake_case.
 | `--provider` | `provider` | `openai` or `anthropic` | none | LLM provider (`openai` means any OpenAI-compatible API). |
 | `--model NAME` | `model` | string | none | Model name. Default models per provider are documented with the LLM support. |
 | `--base-url URL` | `base_url` | http(s) URL | provider default | OpenAI-compatible endpoint, e.g. OpenRouter, Ollama, LM Studio. |
-| `--python PATH` | `python` | path | the interpreter running didibreak | Interpreter used to import and run your code. |
+| `--python PATH` | `python` | path | the interpreter running didibreak | Interpreter used to import and run your code (Python 3.11 or newer). |
 | `--output-dir PATH` | `output_dir` | path | `.didibreak` | Folder for reports, reproducing tests and the cache. |
 | `--no-cache` | `no_cache` | true / false | `false` | Ignore and do not write the case cache. |
 | `--yes` | — | flag | off | Skip the cost confirmation. Implied by `--format json` and when stdin is not a terminal. |
