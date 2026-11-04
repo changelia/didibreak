@@ -1,5 +1,11 @@
 name: python
 
+# Owner decision 2026-11-04 (private repository, macOS runner capacity):
+# pull requests run on Linux only, Python 3.11-3.13; macOS runs one Python
+# version on pushes to main and once a week, and does not block pull
+# requests. Task 23 restores the full macOS matrix on pull requests when the
+# repository becomes public.
+
 on:
   push:
     branches: [main]
@@ -8,46 +14,43 @@ on:
       - "spec/**"
       - "LICENSE"
       - ".github/workflows/python.yml"
+      - ".github/actions/python-checks/**"
   pull_request:
     paths:
       - "python/**"
       - "spec/**"
       - "LICENSE"
       - ".github/workflows/python.yml"
+      - ".github/actions/python-checks/**"
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  checks:
-    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
-    runs-on: ${{ matrix.os }}
+  linux:
+    name: Linux / Python ${{ matrix.python-version }}
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        # Linux and macOS only in v0.1 (owner decision Q8).
-        os: [ubuntu-latest, macos-latest]
         python-version: ["3.11", "3.12", "3.13"]
-    defaults:
-      run:
-        working-directory: python
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10.3.3
+      - uses: ./.github/actions/python-checks
         with:
           python-version: ${{ matrix.python-version }}
-          working-directory: python
-      - name: Install
-        run: uv sync --locked
-      - name: Tests
-        run: uv run pytest
-      - name: Lint
-        run: uv run ruff check .
-      - name: Format
-        run: uv run ruff format --check .
-      - name: Types
-        run: uv run mypy src
-      - name: Build
-        run: uv build
-      - name: Package contents
-        run: uv run python scripts/check_dist.py dist
+
+  macos:
+    # Linux and macOS are the v0.1 platforms (owner decision Q8).
+    name: macOS / Python 3.13
+    if: github.event_name != 'pull_request'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/python-checks
+        with:
+          python-version: "3.13"
