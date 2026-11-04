@@ -50,45 +50,70 @@ class _Budget:
             raise _Unrepresentable
 
 
-def _normalize(value: object, budget: _Budget, depth: int) -> dict[str, Any]:
-    budget.take(depth)
-    kind = type(value)  # exact types only: subclasses may change equality
-    if value is None:
-        return {"type": "none"}
-    if kind is bool:
-        return {"type": "bool", "value": value}
-    if kind is int:
-        assert isinstance(value, int)
-        if value.bit_length() > _MAX_INT_BITS:
+# Builtin types compared by value. A subclass (namedtuple, OrderedDict,
+# defaultdict, IntEnum, StrEnum, ...) is normalized through its builtin base;
+# the base's own methods are used so that overrides cannot change the result.
+# bool comes before int because bool is a subclass of int.
+_SCALAR_BASES: tuple[type, ...] = (bool, int, float, str, bytes)
+_CONTAINER_BASES: tuple[type, ...] = (list, tuple, set, frozenset, dict)
+
+
+def _base_type(value: object) -> type | None:
+    for base in (*_SCALAR_BASES, *_CONTAINER_BASES):
+        if isinstance(value, base):
+            return base
+    return None
+
+
+def _scalar(base: type, value: Any) -> dict[str, Any]:
+    if base is bool:
+        return {"type": "bool", "value": bool(value)}
+    if base is int:
+        number = int.__index__(value)
+        if number.bit_length() > _MAX_INT_BITS:
             raise _Unrepresentable
-        return {"type": "int", "value": value}
-    if kind is float:
-        assert isinstance(value, float)
+        return {"type": "int", "value": number}
+    if base is float:
         # repr round-trips exactly and also covers nan and inf.
-        return {"type": "float", "value": repr(value)}
-    if kind is str:
-        return {"type": "str", "value": value}
-    if kind is bytes:
-        assert isinstance(value, bytes)
-        return {"type": "bytes", "value": value.hex()}
-    if kind is list or kind is tuple:
-        assert isinstance(value, list | tuple)
-        items = [_normalize(item, budget, depth + 1) for item in value]
-        return {"type": kind.__name__, "items": items}
-    if kind is set or kind is frozenset:
-        assert isinstance(value, set | frozenset)
-        ordered = sorted(value, key=repr)
-        items = [_normalize(item, budget, depth + 1) for item in ordered]
-        return {"type": kind.__name__, "items": items}
-    if kind is dict:
-        assert isinstance(value, dict)
-        pairs = sorted(value.items(), key=lambda pair: repr(pair[0]))
+        return {"type": "float", "value": float.__repr__(value)}
+    if base is str:
+        return {"type": "str", "value": str.__str__(value)}
+    return {"type": "bytes", "value": bytes.hex(value)}
+
+
+def _container(
+    base: type[Any], value: Any, budget: _Budget, depth: int
+) -> dict[str, Any]:
+    if base is dict:
+        pairs = sorted(dict.items(value), key=lambda pair: repr(pair[0]))
         entries = [
             [_normalize(key, budget, depth + 1), _normalize(item, budget, depth + 1)]
             for key, item in pairs
         ]
         return {"type": "dict", "items": entries}
-    raise _Unrepresentable
+    elements = list(base.__iter__(value))
+    if base is set or base is frozenset:
+        elements.sort(key=repr)
+    items = [_normalize(item, budget, depth + 1) for item in elements]
+    return {"type": base.__name__, "items": items}
+
+
+def _normalize(value: object, budget: _Budget, depth: int) -> dict[str, Any]:
+    budget.take(depth)
+    if value is None:
+        return {"type": "none"}
+    base = _base_type(value)
+    if base is None:
+        raise _Unrepresentable
+    if base in _CONTAINER_BASES:
+        node = _container(base, value, budget, depth)
+    else:
+        node = _scalar(base, value)
+    if type(value) is not base:
+        # The real class stays part of the value: Point(1, 2) and (1, 2)
+        # are not the same result.
+        node["class"] = type_name(value)
+    return node
 
 
 def normalize(value: object) -> dict[str, Any] | None:
@@ -102,6 +127,8 @@ def normalize(value: object) -> dict[str, Any] | None:
         their repr), ``{"type": ..., "items": [...]}`` for containers (sets
         sorted by repr, dicts as key-value pairs sorted by the key's repr), or
         None for anything else, including very large or deeply nested values.
+        Subclasses of these types are normalized through their builtin base
+        and carry their qualified type name under ``"class"``.
     """
     try:
         return _normalize(value, _Budget(), depth=0)

@@ -65,11 +65,16 @@ checked in the order of the table; the first match is the reason.
 
 - Linux and macOS only: per-case timeouts use Unix signals.
 - The `--python` interpreter must be Python 3.11 or newer.
-- Return values are compared exactly only for `None`, `bool`, `int`, `float`,
+- Return values are compared by value for `None`, `bool`, `int`, `float`,
   `str`, `bytes`, and lists, tuples, sets, frozensets and dicts of these.
-  Anything else, including subclasses of these types and values with more
-  than 10,000 elements or nested more than 100 levels deep, is compared by
-  type only.
+  Subclasses of these types (`namedtuple`, `OrderedDict`, `defaultdict`,
+  `IntEnum`, `StrEnum`, ...) are compared through their builtin base, and
+  their class must match too: `Point(1, 2)` and `(1, 2)` differ. The order of
+  an `OrderedDict` and the `default_factory` of a `defaultdict` are not
+  compared.
+- Anything else, including dataclasses and other objects, and values with
+  more than 10,000 elements or nested more than 100 levels deep, is compared
+  by type only.
 - Environment variables that look like credentials are removed before your
   code runs; see [safety.md](safety.md#environment-variables-that-are-removed).
 
