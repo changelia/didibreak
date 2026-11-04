@@ -5,14 +5,22 @@ the reference: a case is a finding when the current version behaves
 differently. Intent never hides a finding; it only labels it later.
 """
 
+import ast
+import hashlib
+import json
 import math
 from collections.abc import Mapping
 from typing import Any
+
+from didibreak._harness_child import normalize
+from didibreak.harness import Case
 
 # Floats are equal when math.isclose(before, after, rel_tol, abs_tol) holds,
 # at any depth inside lists, tuples, sets and dicts (Spec). NaN equals NaN.
 FLOAT_RELATIVE_TOLERANCE = 1e-9
 FLOAT_ABSOLUTE_TOLERANCE = 1e-12
+# Hex characters of SHA-256 kept as the finding id (Q14).
+FINDING_ID_LENGTH = 12
 
 
 def floats_close(before: float, after: float) -> bool:
@@ -61,3 +69,37 @@ def values_equal(before: Mapping[str, Any], after: Mapping[str, Any]) -> bool:
         )
     scalar_keys = ("value", "name")  # "name" identifies enum members
     return all(before.get(key) == after.get(key) for key in scalar_keys)
+
+
+def _canonical_argument(text: str) -> object:
+    # The value, not its spelling: "'a'" and '"a"' are the same argument.
+    # normalize() sorts sets and dict keys by repr, so the result does not
+    # depend on the hash seed.
+    normalized = normalize(ast.literal_eval(text))
+    return text if normalized is None else normalized
+
+
+def finding_id(function: str, case: Case) -> str:
+    """Deterministic id of a finding (Detailed Design section 6).
+
+    Args:
+        function: Report name ``path/to/file.py::qualname``; the path is
+            repository-relative, so the id is the same on every machine.
+        case: The case's literal arguments.
+
+    Returns:
+        The first FINDING_ID_LENGTH hex characters of the SHA-256 of the
+        function name and the normalized arguments.
+
+    Raises:
+        ValueError: If an argument is not a Python literal.
+    """
+    payload = {
+        "function": function,
+        "args": [_canonical_argument(text) for text in case.args],
+        "kwargs": {
+            name: _canonical_argument(text) for name, text in case.kwargs.items()
+        },
+    }
+    text = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:FINDING_ID_LENGTH]
