@@ -295,3 +295,47 @@ def test_hash_seed_random_seed_and_time_zone_are_fixed(tmp_path: Path) -> None:
 
     assert first[0].value == first[1].value == second[0].value
     assert "'UTC'" in first[0].repr
+
+
+def test_deterministic_cases_are_stable(tmp_path: Path) -> None:
+    tree = make_tree(tmp_path / "tree", {"mod.py": "def f(x):\n    return [x, {x}]\n"})
+
+    outcomes = run_cases(
+        target(tree), [Case(("1",)), Case(("'a'",))], SETTINGS
+    ).outcomes
+
+    assert [o.stable for o in outcomes] == [True, True]
+
+
+def test_the_nondeterministic_fixture_is_unstable(tmp_path: Path) -> None:
+    (flaky,) = load_expected("nondeterministic")["flaky_functions"]
+    tree = tmp_path / "after"
+    shutil.copytree(FIXTURES_DIR / "nondeterministic" / "after", tree)
+    function = target(tree, "app.tokens", "make_token")
+
+    (outcome,) = run_cases(function, [Case(tuple(flaky["args"]))], SETTINGS).outcomes
+
+    assert outcome.kind == "return"
+    assert not outcome.stable
+
+
+def test_addresses_in_repr_do_not_make_a_case_unstable(tmp_path: Path) -> None:
+    tree = make_tree(tmp_path / "tree", {"mod.py": "def f():\n    return object()\n"})
+
+    (outcome,) = run_cases(target(tree), [Case(())], SETTINGS).outcomes
+
+    assert outcome.value is None
+    assert outcome.stable
+
+
+def test_each_case_runs_once_per_child_process(tmp_path: Path) -> None:
+    source = """\
+        import os
+        def f():
+            return os.getpid()
+        """
+    tree = make_tree(tmp_path / "tree", {"mod.py": source})
+
+    (outcome,) = run_cases(target(tree), [Case(())], SETTINGS).outcomes
+
+    assert not outcome.stable  # two processes, two process ids

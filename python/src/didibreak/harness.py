@@ -15,7 +15,7 @@ import signal
 import subprocess
 import tempfile
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -80,6 +80,8 @@ class Outcome:
         repr: ``repr`` of the value or exception, at most 2,000 characters.
         value: Normalized value for comparison; None when not representable.
         message: Exception message, at most 500 characters; None otherwise.
+        stable: False when the second run of the case gave a different
+            outcome; such cases are dropped as flaky.
     """
 
     kind: str
@@ -87,6 +89,7 @@ class Outcome:
     repr: str
     value: Mapping[str, Any] | None = None
     message: str | None = None
+    stable: bool = True
 
 
 @dataclass(frozen=True)
@@ -254,13 +257,54 @@ def _process_exited(exit_code: int) -> Outcome:
     return Outcome("exception", PROCESS_EXITED_TYPE, f"<{text}>", message=text)
 
 
+def _import_ended_reason(run: _ChildRun) -> str:
+    if run.killed:
+        return "import timed out"
+    return f"import failed: process exited with code {run.exit_code}"
+
+
+def _run_once(
+    target: Target,
+    cases: Sequence[Case],
+    settings: HarnessSettings,
+    environment: Mapping[str, str],
+) -> HarnessResult:
+    outcomes: list[Outcome] = []
+    with tempfile.TemporaryDirectory(prefix="didibreak-harness-") as folder:
+        while len(outcomes) < len(cases):
+            remaining = cases[len(outcomes) :]
+            run = _start_child(target, remaining, settings, environment, Path(folder))
+            if not run.records:  # the child ended before the import finished
+                return HarnessResult((), _import_ended_reason(run))
+            header, *records = run.records
+            if "skip_reason" in header:
+                return HarnessResult((), header["skip_reason"])
+            outcomes.extend(_outcome(record) for record in records)
+            if len(records) == len(remaining):
+                break
+            if run.killed:
+                outcomes.extend(_timeout(settings) for _ in remaining[len(records) :])
+                break
+            outcomes.append(_process_exited(run.exit_code))
+    return HarnessResult(tuple(outcomes))
+
+
+def _result_key(outcome: Outcome) -> tuple[object, ...]:
+    return (outcome.kind, outcome.type_name, outcome.value)
+
+
 def run_cases(
     target: Target,
     cases: Sequence[Case],
     settings: HarnessSettings,
     environment: Mapping[str, str] | None = None,
 ) -> HarnessResult:
-    """Run every case against the target function in a child process.
+    """Run every case twice against the target function, in child processes.
+
+    Each run is a separate child process (Detailed Design section 4). An
+    outcome is ``stable`` when both runs agree on kind, type and normalized
+    value; ``repr`` and messages may contain memory addresses and are not
+    compared. The outcomes returned are those of the first run.
 
     A case that crashes the child (for example ``os._exit``) is recorded as a
     ``didibreak.ProcessExited`` exception, and a new child runs the remaining
@@ -283,29 +327,16 @@ def run_cases(
         ValueError: If a case argument is not a Python literal.
     """
     _check_literals(cases)
-    parent_environment = os.environ if environment is None else environment
-    outcomes: list[Outcome] = []
-    with tempfile.TemporaryDirectory(prefix="didibreak-harness-") as folder:
-        while len(outcomes) < len(cases):
-            remaining = cases[len(outcomes) :]
-            run = _start_child(
-                target, remaining, settings, parent_environment, Path(folder)
-            )
-            if not run.records:
-                reason = (
-                    "import timed out"
-                    if run.killed
-                    else (f"import failed: process exited with code {run.exit_code}")
-                )
-                return HarnessResult((), reason)
-            header, *records = run.records
-            if "skip_reason" in header:
-                return HarnessResult((), header["skip_reason"])
-            outcomes.extend(_outcome(record) for record in records)
-            if len(records) == len(remaining):
-                break
-            if run.killed:
-                outcomes.extend(_timeout(settings) for _ in remaining[len(records) :])
-                break
-            outcomes.append(_process_exited(run.exit_code))
-    return HarnessResult(tuple(outcomes))
+    parent = os.environ if environment is None else environment
+    first = _run_once(target, cases, settings, parent)
+    if first.skip_reason is not None:
+        return first
+    second = _run_once(target, cases, settings, parent)
+    if second.skip_reason is not None:
+        return second
+    return HarnessResult(
+        tuple(
+            replace(outcome, stable=_result_key(outcome) == _result_key(again))
+            for outcome, again in zip(first.outcomes, second.outcomes, strict=True)
+        )
+    )
