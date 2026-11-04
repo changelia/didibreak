@@ -35,6 +35,12 @@ the Python package and `js-v*` for the JS/TS package.
 - Execution harness (not used by `check` yet): runs cases against one
   version of a function in separate processes, twice each, with per-case
   timeouts, fixed seeds and credentials removed from the environment.
+- Subclasses of builtin types (`namedtuple`, `OrderedDict`, `IntEnum`, ...)
+  are compared by value through their base; `Enum` members by class and
+  name.
+- Comparison rules (not used by `check` yet): flaky cases dropped, float
+  tolerance, exception types, raise vs return, timeouts, type-only
+  comparison with low confidence, new functions; deterministic finding ids.
 
 ## JS/TS package
 
