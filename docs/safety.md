@@ -36,6 +36,11 @@ The I/O check looks at:
 
 ## How a function is run
 
+- **Your working tree is never executed.** The base version runs from a
+  temporary git worktree of the base commit. The current version runs from a
+  temporary copy of your working tree that holds the files git sees: tracked
+  and untracked files, without ignored files, `.git` and the output folder.
+  Both are removed afterwards, also after an error or Ctrl-C.
 - **Separate processes.** Each version of a function runs in a new Python
   process started with the `--python` interpreter. Every case runs twice per
   version, in two separate processes, so one function takes four processes
