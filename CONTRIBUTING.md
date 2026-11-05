@@ -87,9 +87,12 @@ known behavior changes, used by tests of every stage:
   uncommitted working tree (`tests/fixture_repos.py`,
   `build_fixture_repository`);
 - `expected.json` documents what didibreak should report: changed and skipped
-  functions, findings with their outcomes, cases that must not differ, and
-  flaky functions. `tests/test_fixture_repos.py` runs both versions to check
-  that every documented outcome is true.
+  functions, findings with their outcomes, cases that must not produce a
+  finding (for a new function: cases that return or raise an exception type
+  the function raises itself), and flaky functions.
+  `tests/test_fixture_repos.py` runs both versions to check that every
+  documented outcome is true; `tests/test_compare_fixtures.py` runs every case
+  through the harness and the comparison rules.
 
 To add a case, create the three entries and run the tests. Fixture code is
 excluded from ruff because it is sample user code.

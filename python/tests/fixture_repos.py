@@ -31,7 +31,10 @@ FIXTURE_KEYS = {
     "findings": "Behavior differences to report: function, label, args, kwargs, "
     "before, after (outcomes as in the JSON report; before is null for new "
     "functions).",
-    "same_behavior": "Cases that must not produce a finding: function, args, kwargs.",
+    "same_behavior": "Cases that must not produce a finding: function, args, "
+    "kwargs. For a changed function both versions behave the same; for a new "
+    "function the case returns or raises an exception type the function raises "
+    "explicitly.",
     "flaky_functions": "Functions whose result changes between runs: function, "
     "args, kwargs; such cases are dropped as flaky.",
 }
