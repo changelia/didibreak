@@ -9,12 +9,12 @@ import ast
 import hashlib
 import json
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
 from didibreak._harness_child import normalize
-from didibreak.harness import Case, Outcome
+from didibreak.harness import PROCESS_EXITED_TYPE, Case, Outcome
 
 # Floats are equal when math.isclose(before, after, rel_tol, abs_tol) holds,
 # at any depth inside lists, tuples, sets and dicts (Spec). NaN equals NaN.
@@ -183,16 +183,39 @@ def difference(before: Outcome, after: Outcome) -> str | None:
     return None if before.type_name == after.type_name else LOW_CONFIDENCE
 
 
+def is_new_function_finding(outcome: Outcome, explicit_raises: Collection[str]) -> bool:
+    """Whether a new function's outcome is reported (owner decision 2026-11-05).
+
+    Args:
+        outcome: A stable outcome of the new function.
+        explicit_raises: Exception types the function raises with a
+            ``raise`` statement in its own code or same-module callees.
+
+    Returns:
+        True for timeouts, crashes (``didibreak.ProcessExited``) and
+        exceptions of any type the function does not raise explicitly; an
+        explicitly raised type is input validation, not a bug.
+    """
+    if outcome.kind == "return":
+        return False
+    if outcome.kind == "timeout" or outcome.type_name == PROCESS_EXITED_TYPE:
+        return True
+    return outcome.type_name not in explicit_raises
+
+
 def _new_function_findings(
-    function: str, cases: Sequence[Case], after: Sequence[Outcome]
+    function: str,
+    cases: Sequence[Case],
+    after: Sequence[Outcome],
+    explicit_raises: Collection[str],
 ) -> Comparison:
-    # No base version (Spec): only exceptions, and timeouts, are reported.
+    # No base version (Spec): only unexpected exceptions and timeouts.
     findings: list[Finding] = []
     flaky = 0
     for case, outcome in zip(cases, after, strict=True):
         if not outcome.stable:
             flaky += 1
-        elif outcome.kind != "return":
+        elif is_new_function_finding(outcome, explicit_raises):
             findings.append(
                 Finding(
                     id=finding_id(function, case),
@@ -212,6 +235,7 @@ def compare_cases(
     cases: Sequence[Case],
     before: Sequence[Outcome] | None,
     after: Sequence[Outcome],
+    explicit_raises: Collection[str] = frozenset(),
 ) -> Comparison:
     """Compare the outcomes of every case of one function.
 
@@ -220,6 +244,8 @@ def compare_cases(
         cases: The cases, in the order they were run.
         before: Base outcomes in case order; None for a new function.
         after: Current outcomes in case order.
+        explicit_raises: For a new function, exception types it raises
+            explicitly; see is_new_function_finding().
 
     Returns:
         Findings and counts. A case whose outcome is unstable in either
@@ -230,7 +256,7 @@ def compare_cases(
         ValueError: If the sequences have different lengths.
     """
     if before is None:
-        return _new_function_findings(function, cases, after)
+        return _new_function_findings(function, cases, after, explicit_raises)
     findings: list[Finding] = []
     flaky = timeouts = 0
     for case, old, new in zip(cases, before, after, strict=True):

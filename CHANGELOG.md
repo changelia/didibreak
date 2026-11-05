@@ -41,6 +41,8 @@ the Python package and `js-v*` for the JS/TS package.
 - Comparison rules (not used by `check` yet): flaky cases dropped, float
   tolerance, exception types, raise vs return, timeouts, type-only
   comparison with low confidence, new functions; deterministic finding ids.
+- New functions: exception types raised by an explicit `raise` in the
+  function or its same-module callees are not reported.
 
 ## JS/TS package
 

@@ -21,7 +21,7 @@ finding when the current version behaves differently.
 | One version raises, the other returns | Finding. |
 | One version times out | Finding. |
 | Both versions time out | Dropped. |
-| New function (no base version) | Only exceptions and timeouts are findings, with label `new_function`. |
+| New function (no base version) | Exceptions and timeouts are findings, with label `new_function`. An exception type the function raises itself with a `raise` statement, in its own code or in functions of the same module it calls, is input validation and not a finding. Crashes (`didibreak.ProcessExited`) and timeouts are always findings. |
 
 Intent never hides a finding; it only labels it `expected`, `unexpected` or
 `unclear`.
