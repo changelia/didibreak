@@ -343,3 +343,63 @@ def base_worktree(root: Path, base_sha: str) -> Iterator[Path]:
 def _remove_worktree(root: Path, tree: Path) -> None:
     # Fails harmlessly when the worktree was never created.
     _git(root, "worktree", "remove", "--force", str(tree))
+
+
+def visible_files(root: Path) -> list[str]:
+    """Files git sees in the working tree: tracked and untracked, not ignored.
+
+    Args:
+        root: Repository root.
+
+    Returns:
+        Sorted repository-relative POSIX paths of files that exist; tracked
+        files deleted from the working tree are left out.
+
+    Raises:
+        GitError: If git cannot list the files.
+    """
+    result = _git(root, "ls-files", "-z", "--cached", "--others", "--exclude-standard")
+    if result.returncode != 0:
+        raise GitError(
+            f"could not list the working tree files: {result.stderr.strip()}"
+        )
+    paths = {path for path in result.stdout.split("\0") if path}
+    return sorted(
+        path for path in paths if (root / path).is_file() or (root / path).is_symlink()
+    )
+
+
+@contextmanager
+def working_tree_copy(root: Path, skip: Sequence[str] = ()) -> Iterator[Path]:
+    """Copy the working tree to a temporary folder (Spec, Safety).
+
+    The current version runs from this copy, never from the user's working
+    tree. Only files git sees are copied (visible_files), so ``.git``,
+    ignored files and virtual environments stay out. Symbolic links are
+    copied as links. The copy is removed on success, on error and on Ctrl-C.
+
+    Args:
+        root: Repository root.
+        skip: Repository-relative folders not to copy, e.g. the output folder.
+
+    Yields:
+        Path of the copied tree.
+
+    Raises:
+        GitError: If git cannot list the files.
+        OSError: If a file cannot be copied.
+    """
+    temporary = Path(tempfile.mkdtemp(prefix="didibreak-current-"))
+    tree = temporary / "tree"
+    try:
+        prefixes = tuple(f"{folder.rstrip('/')}/" for folder in skip)
+        for path in visible_files(root):
+            if path.startswith(prefixes):
+                continue
+            destination = tree / path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(root / path, destination, follow_symlinks=False)
+        tree.mkdir(exist_ok=True)
+        yield tree
+    finally:
+        shutil.rmtree(temporary, ignore_errors=True)
