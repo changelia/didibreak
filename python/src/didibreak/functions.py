@@ -15,7 +15,12 @@ from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from pathlib import PurePosixPath
 
-from didibreak.testability import ModuleContext, module_context, skip_reason
+from didibreak.testability import (
+    ModuleContext,
+    explicitly_raised,
+    module_context,
+    skip_reason,
+)
 
 _FunctionNode = ast.FunctionDef | ast.AsyncFunctionDef
 
@@ -53,6 +58,8 @@ class ChangedFunction:
         old_source: Base source, dedented; None for new functions.
         new_source: Working-tree source, dedented.
         skip_reason: Why the function is not tested; set by later stages.
+        raised_types: Exception types the current version raises with an
+            explicit ``raise`` (see testability.explicitly_raised).
     """
 
     file: str
@@ -65,6 +72,7 @@ class ChangedFunction:
     old_source: str | None
     new_source: str
     skip_reason: str | None = None
+    raised_types: frozenset[str] = frozenset()
 
     @property
     def report_name(self) -> str:
@@ -314,6 +322,7 @@ def _compare_file(
                 skip_reason=_either_version_skip_reason(
                     qualname, current, new_context, previous, old_context
                 ),
+                raised_types=explicitly_raised(qualname, new_context, module),
             )
         )
     removed = [f"{file.path}::{name}" for name in old if name not in new]

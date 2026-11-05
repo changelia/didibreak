@@ -55,6 +55,9 @@ in snake_case.
 | `--yes` | — | flag | off | Skip the cost confirmation. Implied by `--format json` and when stdin is not a terminal. |
 | `-v` / `-q` | — | flag | off | Verbose progress / errors only. Cannot be combined. |
 
+`check` also has a hidden `--cases-file` option for developers and tests; it
+is not a user feature and is described in `CONTRIBUTING.md`.
+
 ## Config-only keys
 
 | Config key | Type | Default | Meaning |

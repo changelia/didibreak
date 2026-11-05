@@ -8,7 +8,7 @@ Names are resolved through the module's imports and aliases, so
 """
 
 import ast
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
 
@@ -75,10 +75,12 @@ class ModuleContext:
             (``run`` -> ``subprocess.run``, ``sh`` -> ``shutil``).
         functions: Module-level functions and methods of module-level classes
             by qualified name (``name`` or ``Class.name``).
+        classes: Names of module-level classes.
     """
 
     aliases: Mapping[str, str]
     functions: Mapping[str, _FunctionNode]
+    classes: frozenset[str] = frozenset()
 
 
 def _import_aliases(statements: list[ast.stmt]) -> dict[str, str]:
@@ -120,14 +122,20 @@ def module_context(source: str) -> ModuleContext:
     """
     tree = ast.parse(source)
     functions: dict[str, _FunctionNode] = {}
+    classes: set[str] = set()
     for node in tree.body:
         if isinstance(node, _FunctionNode):
             functions[node.name] = node
         elif isinstance(node, ast.ClassDef):
+            classes.add(node.name)
             for member in node.body:
                 if isinstance(member, _FunctionNode):
                     functions[f"{node.name}.{member.name}"] = member
-    return ModuleContext(aliases=_import_aliases(tree.body), functions=functions)
+    return ModuleContext(
+        aliases=_import_aliases(tree.body),
+        functions=functions,
+        classes=frozenset(classes),
+    )
 
 
 def _dotted_name(node: ast.expr) -> str | None:
@@ -237,11 +245,32 @@ def _called_functions(
     return called
 
 
+def reachable_functions(qualname: str, context: ModuleContext) -> Iterator[str]:
+    """Yield a function and the same-module functions it calls, transitively.
+
+    Breadth first, so each function is reached by its shortest call path;
+    every function is yielded once. Calls into other modules are not followed.
+
+    Args:
+        qualname: The function to start from; yielded first.
+        context: Its module.
+
+    Yields:
+        Qualified names of reachable functions defined in the module.
+    """
+    visited = {qualname}
+    queue = [qualname]
+    while queue:
+        current = queue.pop(0)
+        yield current
+        for callee in _called_functions(context.functions[current], current, context):
+            if callee not in visited:
+                visited.add(callee)
+                queue.append(callee)
+
+
 def find_io_through_calls(qualname: str, context: ModuleContext) -> str | None:
     """Find obvious I/O in a function or in same-module functions it calls.
-
-    Calls are followed transitively, breadth first, so the reported path is
-    the shortest one. Calls into other modules are not followed.
 
     Args:
         qualname: The function to check.
@@ -249,21 +278,57 @@ def find_io_through_calls(qualname: str, context: ModuleContext) -> str | None:
 
     Returns:
         ``name`` for I/O in the function itself, ``name (via helper)`` for
-        I/O reached through a call, or None.
+        I/O reached through a call (the shortest path), or None.
     """
-    visited = {qualname}
-    queue = [qualname]
-    while queue:
-        current = queue.pop(0)
-        function = context.functions[current]
-        found = find_obvious_io(function, context)
+    for current in reachable_functions(qualname, context):
+        found = find_obvious_io(context.functions[current], context)
         if found is not None:
             return found if current == qualname else f"{found} (via {current})"
-        for callee in _called_functions(function, current, context):
-            if callee not in visited:
-                visited.add(callee)
-                queue.append(callee)
     return None
+
+
+def _exception_type_name(
+    name: str, aliases: Mapping[str, str], context: ModuleContext, module: str
+) -> str:
+    # The qualified name the harness reports at runtime (type_name).
+    canonical = _canonical(name, aliases)
+    if canonical != name:  # imported, e.g. errors.Bad -> app.errors.Bad
+        return canonical
+    if name.split(".")[0] in context.classes:
+        return f"{module}.{name}"
+    return name if "." in name else f"builtins.{name}"
+
+
+def explicitly_raised(
+    qualname: str, context: ModuleContext, module: str
+) -> frozenset[str]:
+    """Exception types raised by a ``raise`` statement in a function's code.
+
+    The function's own body, helpers nested in it, and same-module functions
+    it calls (transitively, see reachable_functions) are searched. A bare
+    ``raise`` and raising a variable are ignored.
+
+    Args:
+        qualname: The function.
+        context: Its module.
+        module: Dotted module name, for exception classes defined in it.
+
+    Returns:
+        Qualified type names as the harness reports them, e.g.
+        ``builtins.ValueError`` or ``app.parsing.InvalidAge``.
+    """
+    raised: set[str] = set()
+    for current in reachable_functions(qualname, context):
+        function = context.functions[current]
+        aliases = {**context.aliases, **_import_aliases(list(function.body))}
+        for node in ast.walk(function):
+            if not isinstance(node, ast.Raise) or node.exc is None:
+                continue
+            expression = node.exc.func if isinstance(node.exc, ast.Call) else node.exc
+            name = _dotted_name(expression)
+            if name is not None:
+                raised.add(_exception_type_name(name, aliases, context, module))
+    return frozenset(raised)
 
 
 def is_generator(function: _FunctionNode) -> bool:

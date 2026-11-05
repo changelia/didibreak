@@ -1,0 +1,19 @@
+{
+  "description": "A new parser validates its input: it raises TypeError and ValueError itself and OutOfRange through a same-module helper. Explicitly raised exception types are input validation, so a new-function check reports nothing.",
+  "intent": "parse percentages from text",
+  "changed_functions": [
+    {"function": "app/percent.py::parse_percent", "kind": "new"},
+    {"function": "app/percent.py::_check_range", "kind": "new"}
+  ],
+  "skipped_functions": [],
+  "findings": [],
+  "same_behavior": [
+    {"function": "app/percent.py::parse_percent", "args": ["' 50% '"], "kwargs": {}},
+    {"function": "app/percent.py::parse_percent", "args": ["'abc'"], "kwargs": {}},
+    {"function": "app/percent.py::parse_percent", "args": ["'150%'"], "kwargs": {}},
+    {"function": "app/percent.py::parse_percent", "args": ["42"], "kwargs": {}},
+    {"function": "app/percent.py::_check_range", "args": ["101"], "kwargs": {}},
+    {"function": "app/percent.py::clamp_percent", "args": ["150"], "kwargs": {}}
+  ],
+  "flaky_functions": []
+}

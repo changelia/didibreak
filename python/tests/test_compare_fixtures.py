@@ -11,6 +11,7 @@ from fixture_repos import FIXTURES_DIR, fixture_names, load_expected
 from didibreak.compare import NEW_FUNCTION_LABEL, Comparison, compare_cases
 from didibreak.functions import module_name
 from didibreak.harness import Case, HarnessSettings, Outcome, Target, run_cases
+from didibreak.testability import explicitly_raised, module_context
 
 SETTINGS = HarnessSettings(python=sys.executable, timeout=5.0)
 
@@ -31,6 +32,12 @@ def run_version(tree: Path, function: str, cases: list[Case]) -> list[Outcome]:
     result = run_cases(target, cases, SETTINGS)
     assert result.skip_reason is None
     return list(result.outcomes)
+
+
+def raised_types(tree: Path, function: str) -> frozenset[str]:
+    path, qualname = function.split("::")
+    context = module_context((tree / path).read_text(encoding="utf-8"))
+    return explicitly_raised(qualname, context, module_name(path))
 
 
 def compare_fixture(
@@ -57,9 +64,10 @@ def compare_fixture(
             else run_version(before_tree, function, function_cases)
         )
         after = run_version(after_tree, function, function_cases)
+        explicit = raised_types(after_tree, function)
         results[function] = (
             function_cases,
-            compare_cases(function, function_cases, before, after),
+            compare_cases(function, function_cases, before, after, explicit),
         )
     return results
 

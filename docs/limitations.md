@@ -64,6 +64,11 @@ checked in the order of the table; the first match is the reason.
 ## Running functions
 
 - Linux and macOS only: per-case timeouts use Unix signals.
+- Files ignored by git (for example `.env` or generated data) are not in the
+  temporary copy the current version runs from. Code that needs them when it
+  is imported or called fails or behaves differently.
+- The working tree is copied for every run, which takes time in very large
+  repositories.
 - The `--python` interpreter must be Python 3.11 or newer.
 - Return values are compared by value for `None`, `bool`, `int`, `float`,
   `str`, `bytes`, and lists, tuples, sets, frozensets and dicts of these.

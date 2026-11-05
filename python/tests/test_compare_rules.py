@@ -123,6 +123,37 @@ def test_new_function_reports_exceptions_and_timeouts_only() -> None:
     assert all(f.before is None for f in result.findings)
 
 
+def test_new_function_explicitly_raised_types_are_not_findings() -> None:
+    cases = [Case(("'x'",)), Case(("''",)), Case(("0",)), Case(("1",))]
+    after = [
+        raised("builtins.ValueError"),
+        raised("app.m.OutOfRange"),
+        raised("builtins.IndexError"),
+        raised(PROCESS_EXITED_TYPE),
+    ]
+    explicit = {"builtins.ValueError", "app.m.OutOfRange", PROCESS_EXITED_TYPE}
+
+    result = compare_cases(FUNCTION, cases, None, after, explicit_raises=explicit)
+
+    # IndexError is not raised explicitly; a crash is always reported.
+    assert [f.case for f in result.findings] == [cases[2], cases[3]]
+
+
+def test_explicit_raises_do_not_hide_timeouts_or_changed_function_findings() -> None:
+    explicit = {"builtins.ValueError"}
+
+    new = compare_cases(FUNCTION, [CASE], None, [TIMEOUT], explicit_raises=explicit)
+    changed = compare_cases(
+        FUNCTION,
+        [CASE],
+        [returned(1)],
+        [raised("builtins.ValueError")],
+        explicit_raises=explicit,
+    )
+
+    assert len(new.findings) == len(changed.findings) == 1
+
+
 def test_new_function_flaky_case_is_dropped() -> None:
     unstable = Outcome("exception", "builtins.KeyError", "KeyError()", stable=False)
 

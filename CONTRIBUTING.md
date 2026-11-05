@@ -87,12 +87,52 @@ known behavior changes, used by tests of every stage:
   uncommitted working tree (`tests/fixture_repos.py`,
   `build_fixture_repository`);
 - `expected.json` documents what didibreak should report: changed and skipped
-  functions, findings with their outcomes, cases that must not differ, and
-  flaky functions. `tests/test_fixture_repos.py` runs both versions to check
-  that every documented outcome is true.
+  functions, findings with their outcomes, cases that must not produce a
+  finding (for a new function: cases that return or raise an exception type
+  the function raises itself), and flaky functions.
+  `tests/test_fixture_repos.py` runs both versions to check that every
+  documented outcome is true; `tests/test_compare_fixtures.py` runs every case
+  through the harness and the comparison rules.
 
 To add a case, create the three entries and run the tests. Fixture code is
 excluded from ruff because it is sample user code.
+
+## Running check without an LLM
+
+`--cases-file PATH` is a hidden developer and testing option, not a user
+feature: `didibreak check` takes the input cases from a JSON file instead of
+asking the LLM, so the deterministic part (git, function detection, harness,
+comparison) runs without any API key or cost. The format is the case
+generation schema with a `function` key per case:
+
+```json
+{
+  "cases": [
+    {"function": "app/utils/phone.py::normalize_phone", "args": ["'995 555 12 34 56'"], "kwargs": {}, "rationale": "country code without plus"}
+  ]
+}
+```
+
+`args` and `kwargs` values are Python literals written as strings;
+`kwargs` and `rationale` may be left out. A changed function without cases
+in the file is listed as skipped (`no cases`). Example on the
+`phone_regression` fixture (all three documented cases; real output):
+
+```text
+$ didibreak check --cases-file ../cases.json
+1 changed function(s) to check (0 new)
+3 cases · 2 behavior changes · 0 flaky dropped
+  UNCLEAR      app/utils/phone.py::normalize_phone('+1 202 555 0100')
+               before '+99512025550100' → after '+12025550100'
+  UNCLEAR      app/utils/phone.py::normalize_phone('995 555 12 34 56')
+               before '+995555123456' → after '+995995555123456'
+$ echo $?
+1
+```
+
+Findings are `unclear` until intent labelling exists, and this listing on
+stderr is replaced by the text and JSON reports later.
+`tests/test_check_end_to_end.py` runs every fixture this way.
 
 ## Adding a comparison rule
 

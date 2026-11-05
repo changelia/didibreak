@@ -127,7 +127,12 @@ def test_documented_findings_are_real_behavior_differences(case: str) -> None:
 
 @pytest.mark.parametrize("case", CASES)
 def test_documented_same_behavior_cases_do_not_differ(case: str) -> None:
-    for item in load_expected(case)["same_behavior"]:
+    expected = load_expected(case)
+    new = {f["function"] for f in expected["changed_functions"] if f["kind"] == "new"}
+    for item in expected["same_behavior"]:
+        if item["function"] in new:
+            # No base version; test_compare_fixtures checks there is no finding.
+            continue
         assert _same(_call(case, "before", item), _call(case, "after", item))
 
 

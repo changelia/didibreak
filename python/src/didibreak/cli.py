@@ -29,7 +29,6 @@ from didibreak.functions import (
     Detection,
     SourceFile,
     detect_changed_functions,
-    import_root,
 )
 from didibreak.gitdiff import (
     ChangedFiles,
@@ -39,10 +38,13 @@ from didibreak.gitdiff import (
     repository_root,
     resolve_base,
 )
+from didibreak.harness import Case, HarnessSettings, Outcome
+from didibreak.pipeline import Analysis, analyze, load_cases_file, tree_import_root
 
 EXIT_OK = 0
 EXIT_FINDINGS = 1
 EXIT_ERROR = 2
+EXIT_INTERRUPTED = 130
 
 AGENT_SNIPPET = """\
 ## Behavior check
@@ -200,14 +202,6 @@ def _report_excluded(excluded: Sequence[str], verbose: bool) -> None:
             print(f"  excluded: {path}", file=sys.stderr)
 
 
-def _import_root(root: Path, path: str) -> str:
-    pyproject = find_pyproject((root / path).parent, stop=root)
-    project_directory = (
-        None if pyproject is None else pyproject.parent.relative_to(root).as_posix()
-    )
-    return import_root(path, "" if project_directory == "." else project_directory)
-
-
 def load_source_files(
     root: Path, base_sha: str, files: ChangedFiles
 ) -> list[SourceFile]:
@@ -232,7 +226,7 @@ def load_source_files(
                 read_base_file(root, base_sha, item.old_path) if item.old_path else None
             ),
             new_source=(root / item.path).read_bytes(),
-            import_root=_import_root(root, item.path),
+            import_root=tree_import_root(root, item.path),
         )
         for item in files.changed
     ]
@@ -241,7 +235,7 @@ def load_source_files(
             path,
             read_base_file(root, base_sha, path),
             None,
-            import_root=_import_root(root, path),
+            import_root=tree_import_root(root, path),
         )
         for path in files.deleted
     ]
@@ -286,6 +280,64 @@ def _report_detection(detection: Detection, max_functions: int, verbose: bool) -
             print(f"  limit: {function.report_name}", file=sys.stderr)
 
 
+def _analyze(
+    config: Config,
+    root: Path,
+    base_sha: str,
+    files: ChangedFiles,
+    detection: Detection,
+    cases: Mapping[str, Sequence[Case]],
+) -> Analysis:
+    settings = HarnessSettings(
+        python=config.python or sys.executable,
+        timeout=config.timeout,
+        api_key_env=config.api_key_env or None,
+    )
+    output_dir = Path(config.output_dir)
+    skip = (
+        [output_dir.relative_to(root).as_posix()]
+        if output_dir.is_relative_to(root)
+        else []
+    )
+    base_paths = {item.path: item.old_path for item in files.changed if item.old_path}
+    return analyze(
+        root, base_sha, detection.functions, base_paths, cases, settings, skip
+    )
+
+
+def _describe(outcome: Outcome | None) -> str:
+    if outcome is None:
+        return "(new function)"
+    if outcome.kind == "exception":
+        return f"raises {outcome.type_name}"
+    return outcome.repr
+
+
+def _report_analysis(analysis: Analysis) -> None:
+    # Minimal listing on stderr until the text report (task 18).
+    print(
+        f"{analysis.cases_run} cases · {len(analysis.findings)} behavior "
+        f"changes · {analysis.flaky_dropped} flaky dropped",
+        file=sys.stderr,
+    )
+    for finding in analysis.findings:
+        name, _, qualname = finding.function.rpartition("::")
+        arguments = [*finding.case.args]
+        arguments += [f"{key}={value}" for key, value in finding.case.kwargs.items()]
+        label = (finding.label or "").upper().replace("_", "-")
+        print(
+            f"  {label:<13}{name}::{qualname}({', '.join(arguments)})\n"
+            f"  {'':<13}before {_describe(finding.before)} → "
+            f"after {_describe(finding.after)}",
+            file=sys.stderr,
+        )
+    for function in analysis.skipped:
+        print(
+            f"  skipped: {function.report_name} ({function.skip_reason})",
+            file=sys.stderr,
+        )
+
+
 def _run_check(arguments: argparse.Namespace) -> int:
     cli_values = {
         key: getattr(arguments, key) for key in CONFIG_KEYS if hasattr(arguments, key)
@@ -293,6 +345,11 @@ def _run_check(arguments: argparse.Namespace) -> int:
     try:
         working_directory = Path.cwd()
         config = load_config(cli_values, working_directory)
+        cases = (
+            load_cases_file(working_directory / arguments.cases_file)
+            if arguments.cases_file
+            else None
+        )
         root = repository_root(working_directory)
         base_sha = resolve_base(root, config.base)
         files = changed_python_files(root, base_sha, config.exclude)
@@ -312,9 +369,22 @@ def _run_check(arguments: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
         return EXIT_OK
-    # TODO(task 11): run the harness on the testable functions.
-    print("didibreak: the analysis is not implemented yet", file=sys.stderr)
-    return exit_code_for([], config.fail_on)
+    if cases is None:
+        # TODO(task 14): generate cases with the LLM.
+        print("didibreak: the analysis is not implemented yet", file=sys.stderr)
+        return exit_code_for([], config.fail_on)
+    try:
+        analysis = _analyze(config, root, base_sha, files, detection, cases)
+    except (GitError, OSError) as error:
+        print(f"didibreak: error: {error}", file=sys.stderr)
+        return EXIT_ERROR
+    if config.format == "text":
+        _report_analysis(analysis)
+    # TODO(task 18): print the JSON report for --format json.
+    return exit_code_for(
+        [finding.label for finding in analysis.findings if finding.label],
+        config.fail_on,
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -325,12 +395,18 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     Returns:
         The process exit code: 0 no failing findings, 1 failing findings,
-        2 tool or configuration error.
+        2 tool or configuration error, 130 interrupted (Ctrl-C).
     """
     parser = build_parser()
     arguments = parser.parse_args(argv)
     if arguments.command == "check":
-        return _run_check(arguments)
+        try:
+            return _run_check(arguments)
+        except KeyboardInterrupt:
+            # Worktree, copy and child processes are cleaned up by their
+            # context managers and finally blocks on the way out.
+            print("didibreak: interrupted", file=sys.stderr)
+            return EXIT_INTERRUPTED
     if arguments.command == "init-agents":
         print(AGENT_SNIPPET, end="")
         return EXIT_OK

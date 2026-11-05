@@ -41,6 +41,12 @@ the Python package and `js-v*` for the JS/TS package.
 - Comparison rules (not used by `check` yet): flaky cases dropped, float
   tolerance, exception types, raise vs return, timeouts, type-only
   comparison with low confidence, new functions; deterministic finding ids.
+- New functions: exception types raised by an explicit `raise` in the
+  function or its same-module callees are not reported.
+- `didibreak check` runs the changed functions on both versions and lists
+  behavior changes when cases come from the hidden developer option
+  `--cases-file` (cases from the LLM follow). The current version runs from a
+  temporary copy of the working tree. Ctrl-C exits with code 130.
 
 ## JS/TS package
 
