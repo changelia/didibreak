@@ -29,7 +29,6 @@ from didibreak.functions import (
     Detection,
     SourceFile,
     detect_changed_functions,
-    import_root,
 )
 from didibreak.gitdiff import (
     ChangedFiles,
@@ -39,6 +38,7 @@ from didibreak.gitdiff import (
     repository_root,
     resolve_base,
 )
+from didibreak.pipeline import tree_import_root
 
 EXIT_OK = 0
 EXIT_FINDINGS = 1
@@ -200,14 +200,6 @@ def _report_excluded(excluded: Sequence[str], verbose: bool) -> None:
             print(f"  excluded: {path}", file=sys.stderr)
 
 
-def _import_root(root: Path, path: str) -> str:
-    pyproject = find_pyproject((root / path).parent, stop=root)
-    project_directory = (
-        None if pyproject is None else pyproject.parent.relative_to(root).as_posix()
-    )
-    return import_root(path, "" if project_directory == "." else project_directory)
-
-
 def load_source_files(
     root: Path, base_sha: str, files: ChangedFiles
 ) -> list[SourceFile]:
@@ -232,7 +224,7 @@ def load_source_files(
                 read_base_file(root, base_sha, item.old_path) if item.old_path else None
             ),
             new_source=(root / item.path).read_bytes(),
-            import_root=_import_root(root, item.path),
+            import_root=tree_import_root(root, item.path),
         )
         for item in files.changed
     ]
@@ -241,7 +233,7 @@ def load_source_files(
             path,
             read_base_file(root, base_sha, path),
             None,
-            import_root=_import_root(root, path),
+            import_root=tree_import_root(root, path),
         )
         for path in files.deleted
     ]
