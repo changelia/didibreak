@@ -8,7 +8,7 @@ Names are resolved through the module's imports and aliases, so
 """
 
 import ast
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
 
@@ -237,11 +237,32 @@ def _called_functions(
     return called
 
 
+def reachable_functions(qualname: str, context: ModuleContext) -> Iterator[str]:
+    """Yield a function and the same-module functions it calls, transitively.
+
+    Breadth first, so each function is reached by its shortest call path;
+    every function is yielded once. Calls into other modules are not followed.
+
+    Args:
+        qualname: The function to start from; yielded first.
+        context: Its module.
+
+    Yields:
+        Qualified names of reachable functions defined in the module.
+    """
+    visited = {qualname}
+    queue = [qualname]
+    while queue:
+        current = queue.pop(0)
+        yield current
+        for callee in _called_functions(context.functions[current], current, context):
+            if callee not in visited:
+                visited.add(callee)
+                queue.append(callee)
+
+
 def find_io_through_calls(qualname: str, context: ModuleContext) -> str | None:
     """Find obvious I/O in a function or in same-module functions it calls.
-
-    Calls are followed transitively, breadth first, so the reported path is
-    the shortest one. Calls into other modules are not followed.
 
     Args:
         qualname: The function to check.
@@ -249,20 +270,12 @@ def find_io_through_calls(qualname: str, context: ModuleContext) -> str | None:
 
     Returns:
         ``name`` for I/O in the function itself, ``name (via helper)`` for
-        I/O reached through a call, or None.
+        I/O reached through a call (the shortest path), or None.
     """
-    visited = {qualname}
-    queue = [qualname]
-    while queue:
-        current = queue.pop(0)
-        function = context.functions[current]
-        found = find_obvious_io(function, context)
+    for current in reachable_functions(qualname, context):
+        found = find_obvious_io(context.functions[current], context)
         if found is not None:
             return found if current == qualname else f"{found} (via {current})"
-        for callee in _called_functions(function, current, context):
-            if callee not in visited:
-                visited.add(callee)
-                queue.append(callee)
     return None
 
 
