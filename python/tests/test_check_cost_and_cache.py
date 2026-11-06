@@ -182,6 +182,7 @@ def test_cost_limit_skips_cleanly_and_reports_it(
 
     assert events == ["estimate"]  # the request would exceed the limit
     err = capsys.readouterr().err
+    assert "(limit $0.000001)" in err
     assert "The estimate is above max_cost" in err
     assert f"skipped: {FUNCTION} (cost limit)" in err
 

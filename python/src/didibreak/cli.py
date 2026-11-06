@@ -325,6 +325,12 @@ def _store_cases(
             cache.store(function, count, cases)
 
 
+def _money(amount: float) -> str:
+    # Two decimals for limits like $0.50; more below a cent, so a tiny limit
+    # does not show as $0.00.
+    return f"${amount:.2f}" if amount >= 0.01 or amount == 0 else f"${amount:.6f}"
+
+
 def _print_estimate(
     estimate: Estimate, model: str, max_cost: float, cached: int
 ) -> None:
@@ -336,7 +342,7 @@ def _print_estimate(
             "cannot be enforced (add it to prices in [tool.didibreak])"
         )
     else:
-        cost = f", ~${estimate.cost_usd:.4f} (limit ${max_cost:.2f})"
+        cost = f", ~${estimate.cost_usd:.4f} (limit {_money(max_cost)})"
     print(
         f"Estimated: {estimate.calls} LLM calls with {model}, {tokens}{cost}",
         file=sys.stderr,
