@@ -46,7 +46,7 @@ in snake_case.
 | `--refine-rounds N` | `refine_rounds` | integer 0–3 | `1` | Extra rounds when no difference is found. |
 | `--max-cost USD` | `max_cost` | number > 0 | `0.50` | Hard LLM cost limit per run, in US dollars. |
 | `--timeout SECONDS` | `timeout` | number > 0 | `10` | Timeout per executed case. |
-| `--provider` | `provider` | `openai` or `anthropic` | none | LLM provider (`openai` means any OpenAI-compatible API). |
+| `--provider` | `provider` | `openai` or `anthropic` | none | LLM provider (`openai` means any OpenAI-compatible API). Required unless `--cases-file` is used; see [providers-and-costs.md](providers-and-costs.md#setting-up-a-provider). |
 | `--model NAME` | `model` | string | none | Model name. The default per provider is listed in [providers-and-costs.md](providers-and-costs.md#default-models). |
 | `--base-url URL` | `base_url` | http(s) URL | provider default | OpenAI-compatible endpoint, e.g. OpenRouter, Ollama, LM Studio. |
 | `--python PATH` | `python` | path | the interpreter running didibreak | Interpreter used to import and run your code (Python 3.11 or newer). |

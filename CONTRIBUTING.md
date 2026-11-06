@@ -172,6 +172,19 @@ requests, the usage fields, and (OpenAI-compatible APIs) whether
 `temperature` is accepted. Exit code 0 means both replies were schema-valid;
 2 means the key is not set and nothing was sent.
 
+## Checking the OpenAI client with a real call
+
+Tests use mocked transports only. To make one real call through didibreak's
+OpenAI client, set `OPENAI_API_KEY` and run from `python/`:
+
+```bash
+uv run python scripts/llm_smoke.py [MODEL] [OUTPUT]
+```
+
+It writes the model, PASS or FAIL, token usage and the reply to
+`/tmp/didibreak-client.txt` (or OUTPUT) and never writes the key. Exit code 0
+is PASS, 1 a failed call, 2 missing settings (no request is sent).
+
 ## Adding an LLM provider
 
 Documented here once the provider modules exist.
