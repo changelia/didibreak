@@ -1,7 +1,7 @@
 """Spike: Anthropic Messages API structured output (run by the owner).
 
 Usage, from python/:
-    ANTHROPIC_API_KEY=... uv run python spike/spike_anthropic.py [MODEL]
+    ANTHROPIC_API_KEY=... uv run --with certifi python spike/spike_anthropic.py [MODEL]
 
 Request shape verified from the official docs on 2026-11-06: header
 anthropic-version 2026-10-21, output_config {"format": {"type":

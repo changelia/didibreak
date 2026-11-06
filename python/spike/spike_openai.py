@@ -1,7 +1,7 @@
 """Spike: OpenAI Chat Completions structured output (run by the owner).
 
 Usage, from python/:
-    OPENAI_API_KEY=... uv run python spike/spike_openai.py [MODEL]
+    OPENAI_API_KEY=... uv run --with certifi python spike/spike_openai.py [MODEL]
 Default model gpt-6-luna (cheapest current model with Structured Outputs on
 Chat Completions, per the official model page checked 2026-11-06).
 """

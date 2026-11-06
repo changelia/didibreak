@@ -1,6 +1,6 @@
 """Spike: Ollama's OpenAI-compatible endpoint with response_format (run by the owner).
 
-Usage, from python/:  uv run python spike/spike_ollama.py MODEL [BASE_URL]
+Usage, from python/:  uv run --with certifi python spike/spike_ollama.py MODEL [URL]
 Needs a running Ollama server with MODEL pulled; no API key (the local
 server ignores it). Ollama's docs say structured outputs work through
 response_format on the OpenAI-compatible API but show no payload, so this

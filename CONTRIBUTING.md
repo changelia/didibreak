@@ -157,11 +157,15 @@ exist. They use only the standard library, are not packaged, read the API
 key from the environment and never print it. Run them from `python/`:
 
 ```bash
-OPENAI_API_KEY=... uv run python spike/spike_openai.py [MODEL]
-ANTHROPIC_API_KEY=... uv run python spike/spike_anthropic.py [MODEL]
-OPENROUTER_API_KEY=... uv run python spike/spike_openrouter.py [MODEL]
-uv run python spike/spike_ollama.py MODEL [BASE_URL]   # local server, no key
+OPENAI_API_KEY=... uv run --with certifi python spike/spike_openai.py [MODEL]
+ANTHROPIC_API_KEY=... uv run --with certifi python spike/spike_anthropic.py [MODEL]
+OPENROUTER_API_KEY=... uv run --with certifi python spike/spike_openrouter.py [MODEL]
+uv run --with certifi python spike/spike_ollama.py MODEL [BASE_URL]  # no key
 ```
+
+`--with certifi` gives urllib a CA bundle: uv-managed and python.org Pythons
+on macOS may have none and fail with `CERTIFICATE_VERIFY_FAILED`. certifi is
+only added for the run, not to the project.
 
 Each prints PASS or FAIL for the case-generation and intent-labelling
 requests, the usage fields, and (OpenAI-compatible APIs) whether

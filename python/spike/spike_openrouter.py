@@ -1,7 +1,8 @@
 """Spike: OpenRouter structured output, OpenAI-compatible API (run by the owner).
 
 Usage, from python/:
-    OPENROUTER_API_KEY=... uv run python spike/spike_openrouter.py [MODEL]
+    OPENROUTER_API_KEY=... uv run --with certifi
+        python spike/spike_openrouter.py [MODEL]   (one command)
 provider.require_parameters routes only to endpoints that support
 structured outputs (OpenRouter docs, checked 2026-11-06). The default model
 is only an example; pick any model listed with structured_outputs.
