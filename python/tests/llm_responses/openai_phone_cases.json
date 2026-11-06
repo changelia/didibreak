@@ -1,0 +1,25 @@
+{
+  "cases": [
+    {
+      "args": [
+        "'995123'"
+      ],
+      "kwargs": [],
+      "rationale": "The old version removes a leading 995, while the new version preserves it for input without a leading plus."
+    },
+    {
+      "args": [
+        "'+1 202-555-0123'"
+      ],
+      "kwargs": [],
+      "rationale": "The old version prefixes +995; the new version preserves the leading plus and uses the digits as-is."
+    },
+    {
+      "args": [
+        "'  +44 20 1234'"
+      ],
+      "kwargs": [],
+      "rationale": "The new version recognizes the plus after surrounding whitespace; the old version always prefixes +995."
+    }
+  ]
+}

@@ -7,12 +7,17 @@ into the package at build time). Every proposed argument must pass
 """
 
 import ast
+import keyword
 import textwrap
+from collections.abc import Mapping
 from dataclasses import dataclass
 from importlib import resources
 from string import Template
+from typing import Any
 
+from didibreak.compare import finding_id
 from didibreak.functions import ChangedFunction
+from didibreak.harness import Case
 from didibreak.llm.common import Message
 
 PROMPT_FILE = "case_generation.md"
@@ -29,6 +34,44 @@ NEW_TASK = (
     "which it raises an unexpected exception or does not finish."
 )
 NO_OLD_SOURCE = "(none: new function)"
+# Longer arguments are dropped as invalid: they bloat prompts, reports and
+# the harness request without making a case more useful.
+MAX_ARGUMENT_LENGTH = 2000
+
+CASES_SCHEMA_NAME = "didibreak_cases"
+# Strict structured output needs additionalProperties false on every object,
+# so keyword arguments are name/value pairs (task 12, accepted by the owner).
+CASES_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "cases": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "args": {"type": "array", "items": {"type": "string"}},
+                    "kwargs": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "value": {"type": "string"},
+                            },
+                            "required": ["name", "value"],
+                            "additionalProperties": False,
+                        },
+                    },
+                    "rationale": {"type": "string"},
+                },
+                "required": ["args", "kwargs", "rationale"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["cases"],
+    "additionalProperties": False,
+}
 
 
 @dataclass(frozen=True)
@@ -116,3 +159,91 @@ def build_messages(
         count=count,
     )
     return [Message("system", template.system), Message("user", user)]
+
+
+@dataclass(frozen=True)
+class CaseBatch:
+    """Cases accepted from one LLM reply.
+
+    Attributes:
+        cases: Valid, distinct cases in reply order, at most the number asked.
+        invalid: Cases dropped because an argument is not a Python literal,
+            too long, or a keyword name is unusable (summary
+            ``invalid_cases_dropped``).
+    """
+
+    cases: tuple[Case, ...]
+    invalid: int
+
+
+def is_literal(text: object) -> bool:
+    """Whether text is a Python literal of acceptable length (data, not code)."""
+    if not isinstance(text, str) or len(text) > MAX_ARGUMENT_LENGTH:
+        return False
+    try:
+        ast.literal_eval(text)
+    except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
+        return False
+    return True
+
+
+def _keyword_arguments(pairs: object) -> dict[str, str] | None:
+    if not isinstance(pairs, list):
+        return None
+    kwargs: dict[str, str] = {}
+    for pair in pairs:
+        if not isinstance(pair, dict):
+            return None
+        name, value = pair.get("name"), pair.get("value")
+        usable = (
+            isinstance(name, str)
+            and name.isidentifier()
+            and not keyword.iskeyword(name)
+            and name not in kwargs
+        )
+        if not usable or not is_literal(value):
+            return None
+        kwargs[str(name)] = str(value)
+    return kwargs
+
+
+def _case(item: object) -> Case | None:
+    if not isinstance(item, dict):
+        return None
+    args = item.get("args")
+    if not isinstance(args, list) or not all(is_literal(text) for text in args):
+        return None
+    kwargs = _keyword_arguments(item.get("kwargs", []))
+    if kwargs is None:
+        return None
+    rationale = item.get("rationale")
+    return Case(tuple(args), kwargs, rationale if isinstance(rationale, str) else "")
+
+
+def accept_cases(data: Mapping[str, Any], count: int, function: str) -> CaseBatch:
+    """Validate and deduplicate the cases of one LLM reply.
+
+    Args:
+        data: The schema-valid reply (``{"cases": [...]}``).
+        count: Cases requested; later ones are ignored.
+        function: Report name; duplicates are found with the finding id, so
+            ``'a'`` and ``"a"`` are the same argument.
+
+    Returns:
+        The accepted cases and the number of invalid ones.
+    """
+    accepted: list[Case] = []
+    seen: set[str] = set()
+    invalid = 0
+    for item in data.get("cases", []):
+        if len(accepted) == count:
+            break
+        case = _case(item)
+        if case is None:
+            invalid += 1
+            continue
+        key = finding_id(function, case)
+        if key not in seen:
+            seen.add(key)
+            accepted.append(case)
+    return CaseBatch(tuple(accepted), invalid)

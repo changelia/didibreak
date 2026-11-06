@@ -1,0 +1,16 @@
+{
+  "cases": [
+    {"args": ["__import__('os').system('echo pwned')"], "kwargs": [], "rationale": "code execution"},
+    {"args": ["open('/etc/passwd').read()"], "kwargs": [], "rationale": "file read"},
+    {"args": ["().__class__.__base__.__subclasses__()"], "kwargs": [], "rationale": "sandbox escape"},
+    {"args": ["lambda: 0"], "kwargs": [], "rationale": "lambda"},
+    {"args": ["[x for x in range(3)]"], "kwargs": [], "rationale": "comprehension"},
+    {"args": ["f'{1}'"], "kwargs": [], "rationale": "f-string"},
+    {"args": ["10**10**10"], "kwargs": [], "rationale": "huge power"},
+    {"args": ["exec"], "kwargs": [], "rationale": "a name"},
+    {"args": ["1"], "kwargs": [{"name": "x", "value": "eval('1')"}], "rationale": "call in a keyword value"},
+    {"args": ["1"], "kwargs": [{"name": "__class__.x", "value": "1"}], "rationale": "bad keyword name"},
+    {"args": ["1"], "kwargs": [{"name": "lambda", "value": "1"}], "rationale": "keyword as name"},
+    {"args": ["1"], "kwargs": [{"name": "a", "value": "1"}, {"name": "a", "value": "2"}], "rationale": "duplicate keyword"}
+  ]
+}
