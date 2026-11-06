@@ -24,8 +24,10 @@ no default model: set `model` to one the service offers.
 
 The LLM support will ask for JSON that matches a schema and check every reply
 against it. Status: **docs** means checked in the official documentation on
-2026-11-06; no real call has been made yet (no API key was available), so
-every row is still unverified against the live API.
+2026-11-06. No authenticated call has been made yet (no API key was
+available), so every row is still unverified against the live API. TLS
+connections to `api.openai.com`, `api.anthropic.com` and `openrouter.ai` were
+checked on 2026-11-06 (unauthenticated requests answered HTTP 401).
 
 | Provider | Request | Reply | Token usage | Status |
 | --- | --- | --- | --- | --- |
@@ -44,3 +46,7 @@ Things to know:
   ([migration guide](https://platform.claude.com/docs/en/api/migration-2026-10-21)),
   so no sampling parameters will be sent to Anthropic.
 - A local Ollama server needs no API key (`api_key_env = ""`).
+- TLS certificates are always verified. Python from uv or python.org on macOS
+  may come without a CA bundle, which makes plain `urllib` fail with
+  `CERTIFICATE_VERIFY_FAILED`; the LLM support must work there without
+  setting `SSL_CERT_FILE`.
