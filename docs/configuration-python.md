@@ -64,6 +64,7 @@ is not a user feature and is described in `CONTRIBUTING.md`.
 | --- | --- | --- | --- |
 | `exclude` | list of glob patterns | `[]` | Extra files to skip, added to the default exclusions. |
 | `api_key_env` | string | provider default | Name of the environment variable that holds the API key. `""` disables the key check for local servers that need none. |
+| `prices` | table | built-in prices | Prices in US dollars per million tokens for models that are not in the built-in table, or to replace a built-in price: `[tool.didibreak.prices]` then `"my-model" = { input = 0.5, output = 1.5 }` (`cached_input` optional). Without a price, didibreak shows tokens only. |
 | `temperature` | number 0–2 | not set | Sampling temperature sent to the LLM. When not set, none is sent and the provider's default applies. Some models accept only their default: `gpt-6-luna` rejects anything but 1, and the Anthropic API rejects any value. |
 
 ## Excluded files

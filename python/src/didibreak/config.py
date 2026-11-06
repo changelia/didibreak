@@ -55,6 +55,7 @@ class Config:
     exclude: tuple[str, ...] = field(default_factory=tuple)
     api_key_env: str | None = None
     temperature: float | None = None
+    prices: dict[str, dict[str, float]] | None = None
 
 
 def _string(key: str, value: object) -> str:
@@ -109,6 +110,34 @@ def _temperature(key: str, value: object) -> float:
     return float(value)
 
 
+_PRICE_FIELDS = ("input", "output", "cached_input")
+
+
+def _prices(key: str, value: object) -> dict[str, dict[str, float]]:
+    shape = (
+        f"{key} must be a table of model = {{ input = ..., output = ... }} "
+        "in USD per million tokens (cached_input optional)"
+    )
+    if not isinstance(value, dict):
+        raise ConfigError(shape)
+    table: dict[str, dict[str, float]] = {}
+    for model, entry in value.items():
+        if not isinstance(entry, dict) or not {"input", "output"} <= set(entry):
+            raise ConfigError(f"{key}.{model}: {shape}")
+        unknown = set(entry) - set(_PRICE_FIELDS)
+        if unknown:
+            raise ConfigError(f"{key}.{model}: unknown field {sorted(unknown)[0]!r}")
+        prices: dict[str, float] = {}
+        for name, number in entry.items():
+            if isinstance(number, bool) or not isinstance(number, int | float):
+                raise ConfigError(f"{key}.{model}.{name} must be a number")
+            if number < 0:
+                raise ConfigError(f"{key}.{model}.{name} must be >= 0; got {number}")
+            prices[name] = float(number)
+        table[str(model)] = prices
+    return table
+
+
 def _boolean(key: str, value: object) -> bool:
     if not isinstance(value, bool):
         raise ConfigError(f"{key} must be true or false, got {value!r}")
@@ -151,6 +180,9 @@ _VALIDATORS: dict[str, Callable[[str, object], object]] = {
     # Config-only and unset by default: no provider gets a temperature unless
     # the user sets one (owner decision 2026-11-06, task 12).
     "temperature": _temperature,
+    # Config-only: prices for models outside the built-in table, or to
+    # replace a built-in price (Spec: "built-in price table, overridable").
+    "prices": _prices,
 }
 
 CONFIG_KEYS = tuple(_VALIDATORS)
