@@ -3,7 +3,12 @@ from dataclasses import replace
 import pytest
 
 from didibreak.config import Config, ConfigError
-from didibreak.llm import DEFAULT_MODELS, client_settings, create_client
+from didibreak.llm import (
+    DEFAULT_MODELS,
+    client_settings,
+    create_client,
+    resolve_provider,
+)
 from didibreak.llm.anthropic import AnthropicClient
 from didibreak.llm.openai_compat import OpenAICompatibleClient
 
@@ -38,9 +43,44 @@ def test_anthropic_defaults() -> None:
     assert settings.api_key == "sk-ant"
 
 
-def test_missing_provider_is_a_configuration_error() -> None:
-    with pytest.raises(ConfigError, match='set provider = "openai" or "anthropic"'):
-        client_settings(Config(), ENV)
+@pytest.mark.parametrize(
+    ("environment", "provider"),
+    [
+        ({"OPENAI_API_KEY": "sk-openai"}, "openai"),
+        ({"ANTHROPIC_API_KEY": "sk-ant"}, "anthropic"),
+        ({"OPENAI_API_KEY": "sk-openai", "ANTHROPIC_API_KEY": ""}, "openai"),
+    ],
+)
+def test_provider_is_inferred_from_the_only_key_set(
+    environment: dict[str, str], provider: str
+) -> None:
+    assert resolve_provider(Config(), environment) == provider
+    assert client_settings(Config(), environment).model == DEFAULT_MODELS[provider]
+
+
+@pytest.mark.parametrize(
+    ("environment", "reason"),
+    [
+        (ENV, "both OPENAI_API_KEY and ANTHROPIC_API_KEY are set"),
+        ({}, "neither OPENAI_API_KEY nor ANTHROPIC_API_KEY is set"),
+    ],
+)
+def test_both_or_neither_key_needs_an_explicit_provider(
+    environment: dict[str, str], reason: str
+) -> None:
+    with pytest.raises(ConfigError) as info:
+        client_settings(Config(), environment)
+
+    assert reason in str(info.value)
+    assert 'set provider = "openai" or "anthropic"' in str(info.value)
+
+
+def test_explicit_provider_wins_over_the_environment() -> None:
+    only_openai = {"OPENAI_API_KEY": "sk-openai"}
+
+    assert resolve_provider(Config(provider="anthropic"), only_openai) == "anthropic"
+    with pytest.raises(ConfigError, match="ANTHROPIC_API_KEY"):
+        client_settings(Config(provider="anthropic"), only_openai)
 
 
 def test_other_openai_compatible_services_need_a_model() -> None:
@@ -93,3 +133,9 @@ def test_client_type_follows_the_provider() -> None:
     with create_client(Config(provider="anthropic"), ENV) as anthropic:
         assert isinstance(anthropic, AnthropicClient)
     assert "sk-openai" not in repr(openai.settings)
+
+
+def test_inferred_anthropic_gets_the_anthropic_client() -> None:
+    with create_client(Config(), {"ANTHROPIC_API_KEY": "sk-ant"}) as client:
+        assert isinstance(client, AnthropicClient)
+        assert client.settings.model == "claude-haiku-5-5"

@@ -13,13 +13,30 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
+from didibreak.cases import (
+    CASES_SCHEMA,
+    CASES_SCHEMA_NAME,
+    PromptTemplate,
+    accept_cases,
+    build_messages,
+)
 from didibreak.compare import Comparison, Finding, compare_cases
 from didibreak.config import ConfigError, find_pyproject
 from didibreak.functions import ChangedFunction, import_root, module_name
 from didibreak.gitdiff import base_worktree, working_tree_copy
 from didibreak.harness import Case, HarnessSettings, Target, run_cases
+from didibreak.llm.common import (
+    LLMClient,
+    LLMInvalidResponseError,
+    LLMUnavailableError,
+    TokenUsage,
+)
 
 NO_CASES_REASON = "no cases"
+# Skip reasons for case generation (Detailed Design section 10).
+INVALID_RESPONSE_REASON = "invalid llm response"
+UNAVAILABLE_REASON = "llm unavailable"
+NO_VALID_CASES_REASON = "no valid cases"
 # Until intent labelling exists (task 17), the relation of a finding to the
 # intent cannot be decided: "unclear" (Detailed Design section 5.3).
 UNLABELLED = "unclear"
@@ -186,6 +203,8 @@ def analyze(
         GitError: If the base worktree or the copy cannot be created.
         OSError: If a file cannot be copied.
     """
+    if not functions:  # nothing to run: no worktree, no copy
+        return Analysis((), (), (), 0, 0, 0)
     comparisons: list[Comparison] = []
     checked: list[ChangedFunction] = []
     skipped: list[ChangedFunction] = []
@@ -214,3 +233,73 @@ def analyze(
         flaky_dropped=sum(comparison.flaky_dropped for comparison in comparisons),
         timeouts_dropped=sum(c.timeouts_dropped for c in comparisons),
     )
+
+
+@dataclass(frozen=True)
+class Generation:
+    """Cases the LLM proposed for the changed functions.
+
+    Attributes:
+        cases: Accepted cases by report name; functions without any are in
+            ``skipped``.
+        skipped: Functions without cases, with ``skip_reason`` set.
+        invalid_cases_dropped: Cases rejected by cases.accept_cases.
+        usage: Token usage of all calls, failed ones included.
+    """
+
+    cases: Mapping[str, tuple[Case, ...]]
+    skipped: tuple[ChangedFunction, ...]
+    invalid_cases_dropped: int
+    usage: TokenUsage
+
+
+def generate_cases(
+    client: LLMClient,
+    functions: Sequence[ChangedFunction],
+    count: int,
+    template: PromptTemplate,
+) -> Generation:
+    """Ask the LLM for cases for each function and keep the valid ones.
+
+    Args:
+        client: The configured LLM client.
+        functions: Testable changed and new functions.
+        count: Cases to request per function (``cases``).
+        template: The case generation prompt template.
+
+    Returns:
+        Accepted cases, skipped functions and usage. An invalid reply (after
+        the client's one retry) skips that function; an unavailable provider
+        skips it and all remaining functions.
+
+    Raises:
+        LLMAuthError: The key was rejected.
+        LLMModelError: The model was not found.
+        LLMRequestError: The provider rejected the request.
+    """
+    cases: dict[str, tuple[Case, ...]] = {}
+    skipped: list[ChangedFunction] = []
+    invalid = 0
+    usage = TokenUsage()
+    for index, function in enumerate(functions):
+        messages = build_messages(function, count, template)
+        try:
+            reply = client.complete_json(messages, CASES_SCHEMA, CASES_SCHEMA_NAME)
+        except LLMInvalidResponseError as error:
+            usage += error.usage
+            skipped.append(replace(function, skip_reason=INVALID_RESPONSE_REASON))
+            continue
+        except LLMUnavailableError:
+            skipped += [
+                replace(rest, skip_reason=UNAVAILABLE_REASON)
+                for rest in functions[index:]
+            ]
+            break
+        usage += reply.usage
+        batch = accept_cases(reply.data, count, function.report_name)
+        invalid += batch.invalid
+        if batch.cases:
+            cases[function.report_name] = batch.cases
+        else:
+            skipped.append(replace(function, skip_reason=NO_VALID_CASES_REASON))
+    return Generation(cases, tuple(skipped), invalid, usage)

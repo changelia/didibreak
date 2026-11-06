@@ -13,6 +13,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from didibreak import __version__
+from didibreak.cases import load_template
 from didibreak.config import (
     CONFIG_KEYS,
     FAIL_ON,
@@ -27,6 +28,7 @@ from didibreak.config import (
     validate,
 )
 from didibreak.functions import (
+    ChangedFunction,
     Detection,
     SourceFile,
     detect_changed_functions,
@@ -40,8 +42,16 @@ from didibreak.gitdiff import (
     resolve_base,
 )
 from didibreak.harness import Case, HarnessSettings, Outcome
-from didibreak.llm import client_settings
-from didibreak.pipeline import Analysis, analyze, load_cases_file, tree_import_root
+from didibreak.llm import create_client
+from didibreak.llm.common import LLMAuthError, LLMModelError, LLMRequestError
+from didibreak.pipeline import (
+    Analysis,
+    Generation,
+    analyze,
+    generate_cases,
+    load_cases_file,
+    tree_import_root,
+)
 
 EXIT_OK = 0
 EXIT_FINDINGS = 1
@@ -288,10 +298,11 @@ def _report_detection(detection: Detection, max_functions: int, verbose: bool) -
             print(f"  limit: {function.report_name}", file=sys.stderr)
 
 
-def _check_llm_settings(config: Config) -> None:
-    # Missing provider, model or API key is exit 2 before any LLM call
-    # (Detailed Design section 10); no client is created yet.
-    client_settings(config, os.environ)
+def _generate(config: Config, functions: Sequence[ChangedFunction]) -> Generation:
+    # create_client raises ConfigError for a missing provider, model or key
+    # before any LLM call (exit 2, Detailed Design section 10).
+    with create_client(config, os.environ) as client:
+        return generate_cases(client, functions, config.cases, load_template())
 
 
 def _analyze(
@@ -299,7 +310,7 @@ def _analyze(
     root: Path,
     base_sha: str,
     files: ChangedFiles,
-    detection: Detection,
+    functions: Sequence[ChangedFunction],
     cases: Mapping[str, Sequence[Case]],
 ) -> Analysis:
     settings = HarnessSettings(
@@ -314,9 +325,7 @@ def _analyze(
         else []
     )
     base_paths = {item.path: item.old_path for item in files.changed if item.old_path}
-    return analyze(
-        root, base_sha, detection.functions, base_paths, cases, settings, skip
-    )
+    return analyze(root, base_sha, functions, base_paths, cases, settings, skip)
 
 
 def _describe(outcome: Outcome | None) -> str:
@@ -327,8 +336,30 @@ def _describe(outcome: Outcome | None) -> str:
     return outcome.repr
 
 
-def _report_analysis(analysis: Analysis) -> None:
+def _report_generation(generation: Generation) -> None:
+    usage = generation.usage
+    reasoning = (
+        f" ({usage.reasoning_tokens} reasoning)"
+        if usage.reasoning_tokens is not None
+        else ""
+    )
+    print(
+        f"LLM: {usage.calls} calls · {usage.input_tokens} input tokens · "
+        f"{usage.output_tokens} output tokens{reasoning}",
+        file=sys.stderr,
+    )
+    if generation.invalid_cases_dropped:
+        print(
+            f"{generation.invalid_cases_dropped} invalid cases dropped "
+            "(not Python literals)",
+            file=sys.stderr,
+        )
+
+
+def _report_analysis(analysis: Analysis, generation: Generation | None) -> None:
     # Minimal listing on stderr until the text report (task 18).
+    if generation is not None:
+        _report_generation(generation)
     print(
         f"{analysis.cases_run} cases · {len(analysis.findings)} behavior "
         f"changes · {analysis.flaky_dropped} flaky dropped",
@@ -345,7 +376,8 @@ def _report_analysis(analysis: Analysis) -> None:
             f"after {_describe(finding.after)}",
             file=sys.stderr,
         )
-    for function in analysis.skipped:
+    skipped = (*(generation.skipped if generation else ()), *analysis.skipped)
+    for function in skipped:
         print(
             f"  skipped: {function.report_name} ({function.skip_reason})",
             file=sys.stderr,
@@ -383,22 +415,23 @@ def _run_check(arguments: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
         return EXIT_OK
+    generation: Generation | None = None
+    functions = detection.functions
     if cases is None:
         try:
-            _check_llm_settings(config)
-        except ConfigError as error:
+            generation = _generate(config, functions)
+        except (ConfigError, LLMAuthError, LLMModelError, LLMRequestError) as error:
             print(f"didibreak: error: {error}", file=sys.stderr)
             return EXIT_ERROR
-        # TODO(task 14): generate cases with the LLM.
-        print("didibreak: the analysis is not implemented yet", file=sys.stderr)
-        return exit_code_for([], config.fail_on)
+        cases = generation.cases
+        functions = tuple(f for f in functions if f.report_name in cases)
     try:
-        analysis = _analyze(config, root, base_sha, files, detection, cases)
+        analysis = _analyze(config, root, base_sha, files, functions, cases)
     except (GitError, OSError) as error:
         print(f"didibreak: error: {error}", file=sys.stderr)
         return EXIT_ERROR
     if config.format == "text":
-        _report_analysis(analysis)
+        _report_analysis(analysis, generation)
     # TODO(task 18): print the JSON report for --format json.
     return exit_code_for(
         [finding.label for finding in analysis.findings if finding.label],

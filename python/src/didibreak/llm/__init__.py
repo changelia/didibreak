@@ -6,6 +6,7 @@ and labels findings; it never supplies code that is executed.
 """
 
 from collections.abc import Mapping
+from dataclasses import replace
 
 import httpx
 
@@ -24,6 +25,43 @@ DEFAULT_BASE_URLS = {
 }
 
 
+# Provider inferred from the standard key variables when none is configured
+# (owner decision 2026-11-06, task 13 review), in Spec usage order.
+_PROVIDER_KEYS = (("openai", "OPENAI_API_KEY"), ("anthropic", "ANTHROPIC_API_KEY"))
+
+
+def resolve_provider(config: Config, environment: Mapping[str, str]) -> str:
+    """The configured provider, or the one whose API key variable is set.
+
+    Args:
+        config: The effective configuration; an explicit provider wins.
+        environment: Environment variables.
+
+    Returns:
+        ``openai`` or ``anthropic``.
+
+    Raises:
+        ConfigError: No provider is configured and both or neither of
+            OPENAI_API_KEY and ANTHROPIC_API_KEY are set.
+    """
+    if config.provider is not None:
+        return config.provider
+    found = [
+        provider for provider, variable in _PROVIDER_KEYS if environment.get(variable)
+    ]
+    if len(found) == 1:
+        return found[0]
+    if found:
+        reason = "both OPENAI_API_KEY and ANTHROPIC_API_KEY are set"
+    else:
+        reason = "neither OPENAI_API_KEY nor ANTHROPIC_API_KEY is set"
+    raise ConfigError(
+        f'cannot choose an LLM provider: {reason}; set provider = "openai" or '
+        '"anthropic" in [tool.didibreak] of pyproject.toml or pass --provider '
+        '(for a local server also set base_url, model and api_key_env = "")'
+    )
+
+
 def client_settings(config: Config, environment: Mapping[str, str]) -> ClientSettings:
     """Resolve provider, model, base URL and API key from the configuration.
 
@@ -35,24 +73,22 @@ def client_settings(config: Config, environment: Mapping[str, str]) -> ClientSet
         Settings for the provider's client.
 
     Raises:
-        ConfigError: No provider is set, no model applies (a non-default
-            ``base_url`` has no default model), or the API key is missing.
+        ConfigError: No provider can be chosen (resolve_provider), no model
+            applies (a non-default ``base_url`` has no default model), or the
+            API key is missing.
     """
-    if config.provider is None:
-        raise ConfigError(
-            'no LLM provider configured: set provider = "openai" or "anthropic" '
-            "in [tool.didibreak] of pyproject.toml, or pass --provider"
-        )
-    default_url = DEFAULT_BASE_URLS[config.provider]
+    provider = resolve_provider(config, environment)
+    config = replace(config, provider=provider)
+    default_url = DEFAULT_BASE_URLS[provider]
     base_url = config.base_url or default_url
     model = config.model
     if model is None:
         if base_url.rstrip("/") != default_url.rstrip("/"):
             raise ConfigError(
-                f"set model: base_url {base_url} is not the {config.provider} "
+                f"set model: base_url {base_url} is not the {provider} "
                 "default, so there is no default model"
             )
-        model = DEFAULT_MODELS[config.provider]
+        model = DEFAULT_MODELS[provider]
     return ClientSettings(
         model=model,
         base_url=base_url,
@@ -81,6 +117,6 @@ def create_client(
         ConfigError: See client_settings().
     """
     settings = client_settings(config, environment)
-    if config.provider == "anthropic":
+    if resolve_provider(config, environment) == "anthropic":
         return AnthropicClient(settings, transport)
     return OpenAICompatibleClient(settings, transport)

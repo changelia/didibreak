@@ -3,7 +3,18 @@
 import subprocess
 from pathlib import Path
 
+import httpx
 import pytest
+
+
+@pytest.fixture(autouse=True)
+def no_real_network(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fail any test that would send a real HTTP request (Spec: no real LLM calls)."""
+
+    def blocked(self: httpx.HTTPTransport, request: httpx.Request) -> httpx.Response:
+        raise RuntimeError(f"real network access in a test: {request.url}")
+
+    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", blocked)
 
 
 class GitRepository:

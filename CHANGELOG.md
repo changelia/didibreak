@@ -53,8 +53,13 @@ the Python package and `js-v*` for the JS/TS package.
   yet), with retries, a JSON-mode fallback and default models `gpt-6-luna`
   and `claude-haiku-5-5`. `httpx` is the one runtime dependency.
 - `check` exits with code 2 when the LLM provider, model or API key is
-  missing and an LLM would be needed.
+  missing and an LLM would be needed. Without a `provider` setting, the
+  provider is taken from the one API key variable that is set.
 - Config-only key `temperature`; without it no temperature is sent.
+- `check` asks the LLM for input cases (versioned prompt
+  `case_generation.md`), keeps only Python-literal, distinct cases, counts
+  invalid ones, skips a function after two unusable replies, and runs the
+  comparison with them. No cost estimate or limit yet.
 
 ## JS/TS package
 

@@ -2,15 +2,32 @@
 
 Supported LLM providers and local models, what data is sent, and how cost is controlled.
 
-didibreak has LLM clients for OpenAI-compatible APIs and for Anthropic, but
-`check` does not call them yet: case generation is added next. Until then
-`check` only verifies the settings below. What data is sent and how cost is
-controlled are described with case generation.
+`didibreak check` asks the LLM for input cases for each changed function it
+can test: one request per function (at most `max_functions`, default 10),
+plus one more if a reply is unusable. There is no cost estimate or
+`max_cost` limit yet; they are added in a later version, so watch your
+provider's usage while trying didibreak.
+
+## What is sent to the provider
+
+For each function that is checked, and nothing else from your repository:
+
+- its file path and name (`app/utils/phone.py::normalize_phone`);
+- its signature and docstring;
+- the base and the current version of its source code;
+- the number of cases requested and the fixed instructions in
+  [`spec/prompts/case_generation.md`](../spec/prompts/case_generation.md).
+
+Your code is never sent anywhere else. The provider's own data policy
+applies to what it receives.
 
 ## Setting up a provider
 
-`provider` is required whenever didibreak needs the LLM. Examples for
-`[tool.didibreak]` in `pyproject.toml`:
+Without any setting, didibreak picks the provider from your API key: only
+`OPENAI_API_KEY` set means `openai`, only `ANTHROPIC_API_KEY` set means
+`anthropic`. If both or neither are set, set `provider` yourself. A
+configured `provider` always wins. Examples for `[tool.didibreak]` in
+`pyproject.toml`:
 
 ```toml
 # OpenAI: key in OPENAI_API_KEY, default model gpt-6-luna
@@ -32,9 +49,11 @@ model = "llama3.2"
 api_key_env = ""
 ```
 
-`didibreak check` stops with exit code 2 and says what to set when the
-provider is missing, when a `base_url` other than the provider's own has no
+`didibreak check` stops with exit code 2 and says what to set when no
+provider can be chosen, when a `base_url` other than the provider's own has no
 `model`, or when the API key variable is empty. The key is never printed.
+No LLM settings are needed when there is nothing to check (no changed or no
+testable functions).
 
 ## Default models
 

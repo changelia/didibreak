@@ -21,13 +21,19 @@ from didibreak.cli import (
 )
 from didibreak.config import CONFIG_KEYS, Config
 from didibreak.gitdiff import repository_root
+from didibreak.llm.common import TokenUsage
+from didibreak.pipeline import Generation
 
 
 @pytest.fixture(autouse=True)
 def llm_configured(monkeypatch: pytest.MonkeyPatch) -> None:
     # These tests cover detection and exit codes; LLM settings are checked in
-    # test_check_llm_settings.py.
-    monkeypatch.setattr("didibreak.cli._check_llm_settings", lambda config: None)
+    # test_check_llm_settings.py and LLM case generation in
+    # test_check_llm_end_to_end.py. Here the LLM proposes no cases.
+    def no_cases(config: object, functions: object) -> Generation:
+        return Generation({}, (), 0, TokenUsage())
+
+    monkeypatch.setattr("didibreak.cli._generate", no_cases)
 
 
 @pytest.fixture
