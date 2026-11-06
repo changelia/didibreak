@@ -119,7 +119,7 @@ Things to know:
 | HTTP 401 or 403 | Stops: the key was rejected; the message names the key variable. |
 | HTTP 404 | Stops: the model does not exist at that `base_url`. |
 | HTTP 429, 408, 409, 5xx, timeout or network error | Retries up to 2 times, waiting 1 s then 2 s, or the time in `Retry-After` (at most 30 s). |
-| Any other HTTP 4xx | Stops with the provider's error message. |
+| Any other HTTP 4xx | Does not retry; `check` skips that function (`llm request rejected: <message>`) and continues. |
 | Reply is not JSON, does not match the schema, was refused or cut off | Asks once more; if the second reply is also unusable, the function is skipped. |
 
 Requests time out after 120 seconds without a response (10 seconds to

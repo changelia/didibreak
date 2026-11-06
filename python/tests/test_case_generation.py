@@ -11,7 +11,9 @@ from didibreak.harness import Case
 from didibreak.llm.common import (
     LLMAuthError,
     LLMInvalidResponseError,
+    LLMModelError,
     LLMReply,
+    LLMRequestError,
     LLMUnavailableError,
     Message,
     TokenUsage,
@@ -118,6 +120,26 @@ def test_unavailable_provider_skips_the_remaining_functions() -> None:
         ("h", UNAVAILABLE_REASON),
     ]
     assert len(client.prompts) == 2  # h was never asked
+
+
+def test_other_rejected_requests_skip_only_that_function() -> None:
+    rejected = LLMRequestError("full message", "HTTP 400: temperature is not supported")
+    client = FakeClient({"f": rejected, "g": cases("1")})
+
+    result = generate_cases(client, [function("f"), function("g")], 5, load_template())
+
+    assert list(result.cases) == ["app/m.py::g"]
+    assert [(f.qualname, f.skip_reason) for f in result.skipped] == [
+        ("f", "llm request rejected: HTTP 400: temperature is not supported")
+    ]
+
+
+@pytest.mark.parametrize("error", [LLMAuthError("rejected"), LLMModelError("no model")])
+def test_auth_and_model_errors_stop_generation(error: Exception) -> None:
+    client = FakeClient({"f": error})
+
+    with pytest.raises(type(error)):
+        generate_cases(client, [function("f")], 5, load_template())
 
 
 def test_rejected_key_stops_generation() -> None:

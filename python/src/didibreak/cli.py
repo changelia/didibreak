@@ -43,7 +43,7 @@ from didibreak.gitdiff import (
 )
 from didibreak.harness import Case, HarnessSettings, Outcome
 from didibreak.llm import create_client
-from didibreak.llm.common import LLMAuthError, LLMModelError, LLMRequestError
+from didibreak.llm.common import LLMAuthError, LLMModelError
 from didibreak.pipeline import (
     Analysis,
     Generation,
@@ -420,7 +420,7 @@ def _run_check(arguments: argparse.Namespace) -> int:
     if cases is None:
         try:
             generation = _generate(config, functions)
-        except (ConfigError, LLMAuthError, LLMModelError, LLMRequestError) as error:
+        except (ConfigError, LLMAuthError, LLMModelError) as error:
             print(f"didibreak: error: {error}", file=sys.stderr)
             return EXIT_ERROR
         cases = generation.cases

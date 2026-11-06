@@ -28,6 +28,7 @@ from didibreak.harness import Case, HarnessSettings, Target, run_cases
 from didibreak.llm.common import (
     LLMClient,
     LLMInvalidResponseError,
+    LLMRequestError,
     LLMUnavailableError,
     TokenUsage,
 )
@@ -37,6 +38,7 @@ NO_CASES_REASON = "no cases"
 INVALID_RESPONSE_REASON = "invalid llm response"
 UNAVAILABLE_REASON = "llm unavailable"
 NO_VALID_CASES_REASON = "no valid cases"
+REQUEST_REJECTED_PREFIX = "llm request rejected: "
 # Until intent labelling exists (task 17), the relation of a finding to the
 # intent cannot be decided: "unclear" (Detailed Design section 5.3).
 UNLABELLED = "unclear"
@@ -270,12 +272,12 @@ def generate_cases(
     Returns:
         Accepted cases, skipped functions and usage. An invalid reply (after
         the client's one retry) skips that function; an unavailable provider
-        skips it and all remaining functions.
+        skips it and all remaining functions; any other rejected request
+        (HTTP 4xx except 401/403/404) skips that function.
 
     Raises:
-        LLMAuthError: The key was rejected.
-        LLMModelError: The model was not found.
-        LLMRequestError: The provider rejected the request.
+        LLMAuthError: The key was rejected (HTTP 401/403).
+        LLMModelError: The model was not found (HTTP 404).
     """
     cases: dict[str, tuple[Case, ...]] = {}
     skipped: list[ChangedFunction] = []
@@ -288,6 +290,11 @@ def generate_cases(
         except LLMInvalidResponseError as error:
             usage += error.usage
             skipped.append(replace(function, skip_reason=INVALID_RESPONSE_REASON))
+            continue
+        except LLMRequestError as error:
+            # Owner decision 2026-11-06: only 401/403/404 stop the run.
+            reason = REQUEST_REJECTED_PREFIX + error.provider_message
+            skipped.append(replace(function, skip_reason=reason))
             continue
         except LLMUnavailableError:
             skipped += [

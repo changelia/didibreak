@@ -23,6 +23,7 @@ MAX_BACKOFF_SECONDS = 30.0
 # 529 is Anthropic's "overloaded".
 RETRY_STATUSES = frozenset({408, 409, 429, 500, 502, 503, 504, 529})
 ERROR_TEXT_LIMIT = 300
+SHORT_MESSAGE_LIMIT = 120
 
 
 @dataclass(frozen=True)
@@ -131,7 +132,17 @@ class LLMModelError(LLMError):
 
 
 class LLMRequestError(LLMError):
-    """The provider rejected the request (other HTTP 4xx)."""
+    """The provider rejected the request (other HTTP 4xx).
+
+    Attributes:
+        provider_message: Short single-line summary such as ``HTTP 400:
+            temperature is not supported``, for a skip reason.
+    """
+
+    def __init__(self, message: str, provider_message: str = "") -> None:
+        """Keep a short form of the provider's message next to the full one."""
+        super().__init__(message)
+        self.provider_message = provider_message
 
 
 class LLMUnavailableError(LLMError):
@@ -253,7 +264,8 @@ def _status_error(response: httpx.Response, settings: ClientSettings) -> LLMErro
         )
         return LLMModelError(redact(message, settings.api_key))
     message = f"the LLM provider rejected the request ({detail})"
-    return LLMRequestError(redact(message, settings.api_key))
+    short = " ".join(redact(detail, settings.api_key).split())[:SHORT_MESSAGE_LIMIT]
+    return LLMRequestError(redact(message, settings.api_key), short)
 
 
 def _backoff_seconds(attempt: int, response: httpx.Response | None) -> float:
