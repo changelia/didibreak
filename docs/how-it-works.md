@@ -25,9 +25,10 @@ only; it never predicts results and never decides what changed.
 | `invalid llm response` | The reply was unusable twice. |
 | `no valid cases` | Every proposed case was invalid. |
 | `llm unavailable` | The provider kept failing (rate limit, server or network error); this and all remaining functions are skipped. |
+| `llm request rejected: <message>` | The provider refused this request (an HTTP 4xx other than 401, 403 and 404), for example because the prompt is too long; the run continues with the next function. |
 
-A rejected API key, an unknown model or a rejected request stops the run with
-exit code 2.
+A rejected API key (HTTP 401 or 403) or an unknown model (HTTP 404) stops the
+run with exit code 2.
 
 ## Comparison rules
 

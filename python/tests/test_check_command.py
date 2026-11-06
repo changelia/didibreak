@@ -30,7 +30,7 @@ def llm_configured(monkeypatch: pytest.MonkeyPatch) -> None:
     # These tests cover detection and exit codes; LLM settings are checked in
     # test_check_llm_settings.py and LLM case generation in
     # test_check_llm_end_to_end.py. Here the LLM proposes no cases.
-    def no_cases(config: object, functions: object) -> Generation:
+    def no_cases(config: object, functions: object, arguments: object) -> Generation:
         return Generation({}, (), 0, TokenUsage())
 
     monkeypatch.setattr("didibreak.cli._generate", no_cases)

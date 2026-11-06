@@ -4,9 +4,66 @@ Supported LLM providers and local models, what data is sent, and how cost is con
 
 `didibreak check` asks the LLM for input cases for each changed function it
 can test: one request per function (at most `max_functions`, default 10),
-plus one more if a reply is unusable. There is no cost estimate or
-`max_cost` limit yet; they are added in a later version, so watch your
-provider's usage while trying didibreak.
+plus one more if a reply is unusable. Cases are cached, so an unchanged
+function costs nothing on the next run.
+
+## Cost control
+
+Before the first request, `check` prints an estimate and, on a terminal,
+asks `Continue? [Y/n]`. A real run on the phone-number example with a limit
+too low for even one request (nothing is sent):
+
+```text
+$ didibreak check --max-cost 0.000001
+1 changed function(s) to check (0 new)
+Estimated: 1 LLM calls with gpt-6-luna, ~682 input + ~2,160 output tokens, ~$0.0011 (limit $0.000001)
+The estimate is above max_cost: functions after the limit are skipped.
+LLM: 0 calls · 0 input tokens · 0 output tokens · cost $0.0000
+0 cases · 0 behavior changes · 0 flaky dropped
+  skipped: app/utils/phone.py::normalize_phone (cost limit)
+```
+
+- The question is asked only in text mode on a terminal. `--yes`,
+  `--format json` and a non-terminal stdin (CI, AI agents) skip it.
+  Answering `n` sends nothing.
+- Input tokens are estimated from the exact prompt; output tokens from
+  180 tokens per requested case at first, then from the output tokens the
+  run actually used. Reasoning tokens count as output: in a live check of
+  `gpt-6-luna`, 399 of 537 output tokens were reasoning.
+- `max_cost` (default $0.50) is a hard limit per run: before each request
+  didibreak adds that request's estimate to the cost so far, and if the total
+  would exceed the limit, that function and all remaining ones are skipped
+  with the reason `cost limit`.
+- After the run, the actual tokens and cost are shown, for example (from a
+  test run with a fake provider):
+  `LLM: 1 calls · 1000 input tokens · 600 output tokens (400 reasoning) · cost $0.0004`.
+
+### Prices
+
+Built-in prices, in US dollars per million tokens, checked in the official
+docs on 2026-11-06:
+
+| Model | Input | Cached input | Output | Long prompts | Source |
+| --- | --- | --- | --- | --- | --- |
+| `gpt-6-luna` | 0.10 | 0.01 | 0.50 | over 272,000 prompt tokens: 0.20 / 0.02 / 0.75 | [model page](https://developers.openai.com/api/docs/models/gpt-6-luna) |
+| `claude-haiku-5-5` | 0.10 | 0.01 | 0.50 | over 100,000 prompt tokens: 0.50 / 0.05 / 2.50 | [pricing](https://platform.claude.com/docs/en/about-claude/pricing) |
+
+For any other model didibreak shows tokens only, never a guessed price, and
+cannot enforce `max_cost`. Add a price with the `prices` setting:
+
+```toml
+[tool.didibreak.prices]
+"openai/gpt-6-luna" = { input = 0.10, output = 0.50 }
+```
+
+## Case cache
+
+Accepted cases are stored in `.didibreak/cache/cases/` (inside
+`output_dir`), one file per function. A file is reused only when the prompt
+version, provider, model, `cases` and both versions of the function are the
+same. `--no-cache` ignores the cache for one run; deleting the folder clears
+it. The output folder contains its own `.gitignore`, so your `.gitignore` is
+not changed.
 
 ## What is sent to the provider
 
@@ -119,7 +176,7 @@ Things to know:
 | HTTP 401 or 403 | Stops: the key was rejected; the message names the key variable. |
 | HTTP 404 | Stops: the model does not exist at that `base_url`. |
 | HTTP 429, 408, 409, 5xx, timeout or network error | Retries up to 2 times, waiting 1 s then 2 s, or the time in `Retry-After` (at most 30 s). |
-| Any other HTTP 4xx | Stops with the provider's error message. |
+| Any other HTTP 4xx | Does not retry; `check` skips that function (`llm request rejected: <message>`) and continues. |
 | Reply is not JSON, does not match the schema, was refused or cut off | Asks once more; if the second reply is also unusable, the function is skipped. |
 
 Requests time out after 120 seconds without a response (10 seconds to

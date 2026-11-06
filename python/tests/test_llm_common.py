@@ -175,6 +175,20 @@ def test_client_errors_stop_at_once_with_a_clear_message(
     assert len(seen) == 1
 
 
+def test_rejected_request_keeps_a_short_single_line_provider_message() -> None:
+    text = "temperature\nis not supported " + "x" * 300 + f" {KEY}"
+    http, _ = client([httpx.Response(400, json={"error": {"message": text}})])
+
+    with pytest.raises(LLMRequestError) as info:
+        post_with_retries(http, "https://llm.test/v1/x", {}, {}, SETTINGS)
+
+    short = info.value.provider_message
+    assert short.startswith("HTTP 400: temperature is not supported")
+    assert "\n" not in short
+    assert len(short) <= 120
+    assert KEY not in short
+
+
 def test_the_key_never_appears_in_errors() -> None:
     echo = {"error": {"message": f"Incorrect API key provided: {KEY}"}}
     cases: list[list[httpx.Response | Exception]] = [

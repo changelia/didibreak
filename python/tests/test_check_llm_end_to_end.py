@@ -106,6 +106,40 @@ def test_malicious_cases_are_dropped_counted_and_never_run(
     assert "3 cases" in err  # only the documented cases ran
 
 
+def test_other_rejected_request_skips_the_function_and_continues(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    fixture = build_fixture_repository("float_precision", tmp_path / "repo")
+    replies = documented_cases(fixture.expected)
+    bad = httpx.Response(400, json={"error": {"message": "context too long"}})
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        prompt = json.loads(request.content)["messages"][-1]["content"]
+        if "::mean\n" in prompt:
+            return bad
+        cases = replies["app/stats.py::price_with_tax"]
+        content = json.dumps({"cases": cases})
+        body = {"choices": [{"message": {"content": content}, "finish_reason": "stop"}]}
+        return httpx.Response(200, json=body)
+
+    def create(config: Config, environment: Mapping[str, str]) -> object:
+        return llm.create_client(config, environment, httpx.MockTransport(handler))
+
+    monkeypatch.setattr(cli, "create_client", create)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-fake")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.chdir(fixture.repository.path)
+
+    assert main(["check"]) == EXIT_FINDINGS  # price_with_tax still ran
+    err = capsys.readouterr().err
+    assert (
+        "app/stats.py::mean (llm request rejected: HTTP 400: context too long)" in err
+    )
+    assert "app/stats.py::price_with_tax(10.05)" in err
+
+
 def test_rejected_key_exits_2(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

@@ -13,6 +13,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from didibreak import __version__
+from didibreak.cache import CaseCache
 from didibreak.cases import load_template
 from didibreak.config import (
     CONFIG_KEYS,
@@ -42,12 +43,15 @@ from didibreak.gitdiff import (
     resolve_base,
 )
 from didibreak.harness import Case, HarnessSettings, Outcome
-from didibreak.llm import create_client
-from didibreak.llm.common import LLMAuthError, LLMModelError, LLMRequestError
+from didibreak.llm import client_settings, create_client, resolve_provider
+from didibreak.llm.common import LLMAuthError, LLMModelError, TokenUsage
+from didibreak.llm.pricing import price_for, prices_from_config
 from didibreak.pipeline import (
     Analysis,
+    Estimate,
     Generation,
     analyze,
+    estimate_generation,
     generate_cases,
     load_cases_file,
     tree_import_root,
@@ -298,11 +302,103 @@ def _report_detection(detection: Detection, max_functions: int, verbose: bool) -
             print(f"  limit: {function.report_name}", file=sys.stderr)
 
 
-def _generate(config: Config, functions: Sequence[ChangedFunction]) -> Generation:
-    # create_client raises ConfigError for a missing provider, model or key
-    # before any LLM call (exit 2, Detailed Design section 10).
-    with create_client(config, os.environ) as client:
-        return generate_cases(client, functions, config.cases, load_template())
+def _cached_cases(
+    cache: CaseCache | None, functions: Sequence[ChangedFunction], count: int
+) -> dict[str, tuple[Case, ...]]:
+    found: dict[str, tuple[Case, ...]] = {}
+    for function in functions if cache else ():
+        cases = cache.load(function, count) if cache else None
+        if cases:
+            found[function.report_name] = cases
+    return found
+
+
+def _store_cases(
+    cache: CaseCache | None,
+    functions: Sequence[ChangedFunction],
+    generation: Generation,
+    count: int,
+) -> None:
+    for function in functions if cache else ():
+        cases = generation.cases.get(function.report_name)
+        if cache and cases:
+            cache.store(function, count, cases)
+
+
+def _money(amount: float) -> str:
+    # Two decimals for limits like $0.50; more below a cent, so a tiny limit
+    # does not show as $0.00.
+    return f"${amount:.2f}" if amount >= 0.01 or amount == 0 else f"${amount:.6f}"
+
+
+def _print_estimate(
+    estimate: Estimate, model: str, max_cost: float, cached: int
+) -> None:
+    usage = estimate.usage
+    tokens = f"~{usage.input_tokens:,} input + ~{usage.output_tokens:,} output tokens"
+    if estimate.cost_usd is None:
+        cost = (
+            f"; no price is known for {model}, so no cost is shown and max_cost "
+            "cannot be enforced (add it to prices in [tool.didibreak])"
+        )
+    else:
+        cost = f", ~${estimate.cost_usd:.4f} (limit {_money(max_cost)})"
+    print(
+        f"Estimated: {estimate.calls} LLM calls with {model}, {tokens}{cost}",
+        file=sys.stderr,
+    )
+    if estimate.cost_usd is not None and estimate.cost_usd > max_cost:
+        print(
+            "The estimate is above max_cost: functions after the limit are skipped.",
+            file=sys.stderr,
+        )
+    if cached:
+        print(f"{cached} function(s) use cached cases", file=sys.stderr)
+
+
+def _confirmed(arguments: argparse.Namespace, config: Config) -> bool:
+    # Detailed Design section 1: --yes is implied by --format json and by a
+    # stdin that is not a terminal.
+    if arguments.yes or config.format == "json" or not sys.stdin.isatty():
+        return True
+    print("Continue? [Y/n] ", end="", file=sys.stderr, flush=True)
+    answer = sys.stdin.readline()
+    if not answer:  # end of input
+        return False
+    return answer.strip().lower() in ("", "y", "yes")
+
+
+def _generate(
+    config: Config,
+    functions: Sequence[ChangedFunction],
+    arguments: argparse.Namespace,
+) -> Generation | None:
+    """LLM cases for the functions; None when the user declined the cost."""
+    # client_settings raises ConfigError for a missing provider, model or
+    # key before any LLM call (exit 2, Detailed Design section 10).
+    settings = client_settings(config, os.environ)
+    provider = resolve_provider(config, os.environ)
+    template = load_template()
+    price = price_for(settings.model, prices_from_config(config.prices))
+    cache = None
+    if not config.no_cache:
+        output_dir = Path(config.output_dir)
+        cache = CaseCache(output_dir, provider, settings.model, template.version)
+    cached = _cached_cases(cache, functions, config.cases)
+    missing = [f for f in functions if f.report_name not in cached]
+    generation = Generation({}, (), 0, TokenUsage(), None if price is None else 0.0)
+    if missing:
+        estimate = estimate_generation(missing, config.cases, template, price)
+        if not arguments.quiet:
+            _print_estimate(estimate, settings.model, config.max_cost, len(cached))
+        if not _confirmed(arguments, config):
+            return None
+        with create_client(config, os.environ) as client:
+            generation = generate_cases(
+                client, missing, config.cases, template, price, config.max_cost
+            )
+        _store_cases(cache, missing, generation, config.cases)
+    return replace(generation, cases={**cached, **generation.cases})
 
 
 def _analyze(
@@ -343,9 +439,13 @@ def _report_generation(generation: Generation) -> None:
         if usage.reasoning_tokens is not None
         else ""
     )
+    if generation.cost_usd is not None:
+        cost = f" · cost ${generation.cost_usd:.4f}"
+    else:
+        cost = " · cost unknown (no price for this model)" if usage.calls else ""
     print(
         f"LLM: {usage.calls} calls · {usage.input_tokens} input tokens · "
-        f"{usage.output_tokens} output tokens{reasoning}",
+        f"{usage.output_tokens} output tokens{reasoning}{cost}",
         file=sys.stderr,
     )
     if generation.invalid_cases_dropped:
@@ -419,10 +519,13 @@ def _run_check(arguments: argparse.Namespace) -> int:
     functions = detection.functions
     if cases is None:
         try:
-            generation = _generate(config, functions)
-        except (ConfigError, LLMAuthError, LLMModelError, LLMRequestError) as error:
+            generation = _generate(config, functions, arguments)
+        except (ConfigError, LLMAuthError, LLMModelError) as error:
             print(f"didibreak: error: {error}", file=sys.stderr)
             return EXIT_ERROR
+        if generation is None:
+            print("Cancelled: no LLM request was sent.", file=sys.stderr)
+            return EXIT_OK
         cases = generation.cases
         functions = tuple(f for f in functions if f.report_name in cases)
     try:

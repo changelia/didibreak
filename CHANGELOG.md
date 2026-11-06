@@ -60,6 +60,14 @@ the Python package and `js-v*` for the JS/TS package.
   `case_generation.md`), keeps only Python-literal, distinct cases, counts
   invalid ones, skips a function after two unusable replies, and runs the
   comparison with them. No cost estimate or limit yet.
+- A request the provider rejects for a reason other than the key or the
+  model (HTTP 4xx except 401, 403, 404) skips only that function.
+- Cost control: estimate before the first request with a confirmation
+  question on a terminal (`--yes` to skip), the `max_cost` limit (`cost
+  limit` skip reason), actual tokens and cost after the run, built-in prices
+  for the default models and a `prices` setting for others.
+- Generated cases are cached in `.didibreak/cache/cases/`; `--no-cache`
+  ignores the cache.
 
 ## JS/TS package
 
