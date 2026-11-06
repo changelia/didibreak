@@ -1,0 +1,220 @@
+"""check: cost estimate, confirmation, cost limit and case cache (fake provider)."""
+
+import io
+import json
+from collections.abc import Mapping
+from pathlib import Path
+from typing import Any
+
+import httpx
+import pytest
+from fixture_repos import FixtureRepository, build_fixture_repository
+
+from didibreak import cli, llm
+from didibreak.cache import GITIGNORE_TEXT
+from didibreak.cli import EXIT_FINDINGS, EXIT_OK, main
+from didibreak.config import Config
+
+FUNCTION = "app/utils/phone.py::normalize_phone"
+
+
+class FakeStdin(io.StringIO):
+    """A terminal-like stdin with a prepared answer."""
+
+    def isatty(self) -> bool:
+        return True
+
+
+@pytest.fixture
+def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> FixtureRepository:
+    fixture = build_fixture_repository("phone_regression", tmp_path / "repo")
+    monkeypatch.chdir(fixture.repository.path)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-fake")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    return fixture
+
+
+@pytest.fixture
+def events(monkeypatch: pytest.MonkeyPatch, repo: FixtureRepository) -> list[str]:
+    """Install a fake provider that answers with the documented cases."""
+    order: list[str] = []
+    items = repo.expected["findings"] + repo.expected["same_behavior"]
+    cases = [{"args": i["args"], "kwargs": [], "rationale": "r"} for i in items]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        order.append("request")
+        body = {
+            "model": "gpt-6-luna",
+            "choices": [
+                {
+                    "message": {"content": json.dumps({"cases": cases})},
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 1000,
+                "completion_tokens": 600,
+                "completion_tokens_details": {"reasoning_tokens": 400},
+            },
+        }
+        return httpx.Response(200, json=body)
+
+    def create(config: Config, environment: Mapping[str, str]) -> object:
+        return llm.create_client(config, environment, httpx.MockTransport(handler))
+
+    real_print_estimate = cli._print_estimate
+
+    def recording_print_estimate(*args: Any) -> None:
+        order.append("estimate")
+        real_print_estimate(*args)
+
+    monkeypatch.setattr(cli, "create_client", create)
+    monkeypatch.setattr(cli, "_print_estimate", recording_print_estimate)
+    return order
+
+
+def test_estimate_is_printed_before_any_request(
+    events: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["check"]) == EXIT_FINDINGS
+
+    assert events == ["estimate", "request"]
+    err = capsys.readouterr().err
+    assert "Estimated: 1 LLM calls with gpt-6-luna" in err
+    assert "(limit $0.50)" in err
+
+
+def test_actual_tokens_and_cost_are_reported(
+    events: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    main(["check"])
+
+    expected = (1000 * 0.10 + 600 * 0.50) / 1_000_000
+    err = capsys.readouterr().err
+    assert (
+        "LLM: 1 calls · 1000 input tokens · 600 output tokens (400 reasoning) · "
+        f"cost ${expected:.4f}"
+    ) in err
+
+
+@pytest.mark.parametrize("answer", ["n\n", "no\n", ""])
+def test_declining_the_estimate_sends_nothing(
+    events: list[str],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    answer: str,
+) -> None:
+    monkeypatch.setattr("sys.stdin", FakeStdin(answer))
+
+    assert main(["check"]) == EXIT_OK
+
+    assert events == ["estimate"]
+    err = capsys.readouterr().err
+    assert "Continue? [Y/n]" in err
+    assert "Cancelled: no LLM request was sent." in err
+
+
+@pytest.mark.parametrize("answer", ["\n", "y\n", "YES\n"])
+def test_accepting_the_estimate_continues(
+    events: list[str], monkeypatch: pytest.MonkeyPatch, answer: str
+) -> None:
+    monkeypatch.setattr("sys.stdin", FakeStdin(answer))
+
+    assert main(["check"]) == EXIT_FINDINGS
+    assert events == ["estimate", "request"]
+
+
+@pytest.mark.parametrize("flags", [["--yes"], ["--format", "json"]])
+def test_yes_and_json_mode_do_not_ask(
+    events: list[str],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    flags: list[str],
+) -> None:
+    monkeypatch.setattr("sys.stdin", FakeStdin("n\n"))
+
+    main(["check", *flags])
+
+    assert events == ["estimate", "request"]
+    assert "Continue?" not in capsys.readouterr().err
+
+
+def test_second_run_uses_the_cache_without_any_request(
+    events: list[str],
+    repo: FixtureRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    assert main(["check"]) == EXIT_FINDINGS
+    first = capsys.readouterr().err
+    events.clear()
+
+    def no_network(config: Config, environment: Mapping[str, str]) -> object:
+        raise AssertionError("a cache hit must not create a client")
+
+    monkeypatch.setattr(cli, "create_client", no_network)
+
+    assert main(["check"]) == EXIT_FINDINGS
+    second = capsys.readouterr().err
+    assert events == []
+    assert "LLM: 0 calls" in second
+    assert f"{FUNCTION}('995 555 12 34 56')" in first
+    assert f"{FUNCTION}('995 555 12 34 56')" in second
+    output = repo.repository.path / ".didibreak"
+    assert (output / ".gitignore").read_text() == GITIGNORE_TEXT
+    assert len(list((output / "cache" / "cases").glob("*.json"))) == 1
+    assert repo.repository.git("status", "--porcelain", "--", ".didibreak") == ""
+
+
+def test_no_cache_asks_the_llm_again(events: list[str]) -> None:
+    main(["check"])
+    events.clear()
+
+    main(["check", "--no-cache"])
+
+    assert events == ["estimate", "request"]
+
+
+def test_cost_limit_skips_cleanly_and_reports_it(
+    events: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["check", "--max-cost", "0.000001"]) == EXIT_OK
+
+    assert events == ["estimate"]  # the request would exceed the limit
+    err = capsys.readouterr().err
+    assert "The estimate is above max_cost" in err
+    assert f"skipped: {FUNCTION} (cost limit)" in err
+
+
+def test_unknown_model_shows_tokens_only(
+    events: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["check", "--model", "my-private-model"]) == EXIT_FINDINGS
+
+    err = capsys.readouterr().err
+    assert "no price is known for my-private-model" in err
+    assert "$" not in err.split("Estimated:")[1].splitlines()[0]
+    assert "cost unknown (no price for this model)" in err
+
+
+def test_configured_price_gives_a_cost_for_an_unknown_model(
+    events: list[str], repo: FixtureRepository, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (repo.repository.path / "pyproject.toml").write_text(
+        '[tool.didibreak.prices]\n"my-private-model" = { input = 1.0, output = 2.0 }\n',
+        encoding="utf-8",
+    )
+
+    main(["check", "--model", "my-private-model"])
+
+    expected = (1000 * 1.0 + 600 * 2.0) / 1_000_000
+    assert f"cost ${expected:.4f}" in capsys.readouterr().err
+
+
+def test_quiet_mode_prints_no_estimate(
+    events: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    main(["check", "-q"])
+
+    assert events == ["request"]
+    assert "Estimated" not in capsys.readouterr().err
