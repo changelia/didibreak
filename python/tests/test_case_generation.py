@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from didibreak.cases import load_template
+from didibreak.cases import build_messages, load_template
 from didibreak.functions import ChangedFunction
 from didibreak.harness import Case
 from didibreak.llm.common import (
@@ -18,10 +18,15 @@ from didibreak.llm.common import (
     Message,
     TokenUsage,
 )
+from didibreak.llm.pricing import Price, cost_usd
 from didibreak.pipeline import (
+    COST_LIMIT_REASON,
     INVALID_RESPONSE_REASON,
     NO_VALID_CASES_REASON,
+    OUTPUT_TOKENS_PER_CASE,
     UNAVAILABLE_REASON,
+    estimate_call,
+    estimate_generation,
     generate_cases,
 )
 
@@ -45,8 +50,11 @@ def function(name: str) -> ChangedFunction:
 class FakeClient:
     """Replies per function name; an Exception instance is raised instead."""
 
-    def __init__(self, replies: Mapping[str, object]) -> None:
+    def __init__(
+        self, replies: Mapping[str, object], usage: TokenUsage = USAGE
+    ) -> None:
         self.replies = replies
+        self.usage = usage
         self.prompts: list[str] = []
 
     def complete_json(
@@ -59,7 +67,7 @@ class FakeClient:
         if isinstance(reply, Exception):
             raise reply
         assert isinstance(reply, dict)
-        return LLMReply(reply, USAGE, "fake-model")
+        return LLMReply(reply, self.usage, "fake-model")
 
 
 def cases(*args: str) -> dict[str, Any]:
@@ -147,3 +155,88 @@ def test_rejected_key_stops_generation() -> None:
 
     with pytest.raises(LLMAuthError):
         generate_cases(client, [function("f")], 5, load_template())
+
+
+PRICE = Price(input=1.0, output=10.0)  # USD per million tokens, easy numbers
+
+
+def test_estimate_uses_prompt_size_and_the_per_case_default() -> None:
+    template = load_template()
+    functions = [function("f"), function("g")]
+
+    estimate = estimate_generation(functions, 12, template, PRICE)
+
+    one = estimate_call(build_messages(function("f"), 12, template), 12, 180)
+    assert one.output_tokens == OUTPUT_TOKENS_PER_CASE * 12 == 2160
+    assert estimate.calls == 2
+    assert estimate.usage.output_tokens == 2 * 2160
+    assert estimate.usage.input_tokens >= 2 * one.input_tokens - 2
+    assert estimate.cost_usd == pytest.approx(cost_usd(estimate.usage, PRICE))
+
+
+def test_estimate_without_a_price_has_tokens_only() -> None:
+    estimate = estimate_generation([function("f")], 3, load_template(), None)
+
+    assert estimate.cost_usd is None
+    assert estimate.usage.input_tokens > 0
+
+
+def test_cost_limit_stops_before_the_request_that_would_exceed_it() -> None:
+    heavy = TokenUsage(2000, 5000, 4000, 0, 1)  # 1,000 output tokens per case
+    replies = {"f": cases("1"), "g": cases("2"), "h": cases("3")}
+    client = FakeClient(replies, usage=heavy)
+    limit = cost_usd(heavy, PRICE) * 1.5  # room for one such request
+    functions = [function("f"), function("g"), function("h")]
+
+    result = generate_cases(client, functions, 5, load_template(), PRICE, limit)
+
+    assert list(result.cases) == ["app/m.py::f"]
+    assert [(f.qualname, f.skip_reason) for f in result.skipped] == [
+        ("g", COST_LIMIT_REASON),
+        ("h", COST_LIMIT_REASON),
+    ]
+    assert len(client.prompts) == 1
+    assert result.cost_usd == pytest.approx(cost_usd(heavy, PRICE))
+    assert result.cost_usd is not None and result.cost_usd <= limit
+
+
+def test_limit_too_low_for_the_first_request_sends_nothing() -> None:
+    client = FakeClient({"f": cases("1")})
+
+    result = generate_cases(client, [function("f")], 5, load_template(), PRICE, 1e-9)
+
+    assert client.prompts == []
+    assert [f.skip_reason for f in result.skipped] == [COST_LIMIT_REASON]
+    assert result.cost_usd == 0.0
+
+
+def test_observed_completion_tokens_replace_the_default_estimate() -> None:
+    # USAGE reports 50 output tokens for 5 requested cases: 10 per case,
+    # far below the 180 default, so all three requests fit.
+    client = FakeClient({"f": cases("1"), "g": cases("2"), "h": cases("3")})
+    template = load_template()
+    first = estimate_call(build_messages(function("f"), 5, template), 5, 180)
+    limit = cost_usd(first, PRICE) * 1.5
+    functions = [function("f"), function("g"), function("h")]
+
+    result = generate_cases(client, functions, 5, template, PRICE, limit)
+
+    assert len(result.cases) == 3
+
+
+def test_without_a_price_there_is_no_limit_and_no_cost() -> None:
+    client = FakeClient({"f": cases("1")})
+
+    result = generate_cases(client, [function("f")], 5, load_template(), None, 0.0)
+
+    assert list(result.cases) == ["app/m.py::f"]
+    assert result.cost_usd is None
+
+
+def test_failed_attempts_are_counted_in_the_cost() -> None:
+    error = LLMInvalidResponseError("bad", TokenUsage(1000, 1000, None, 0, 2))
+    client = FakeClient({"f": error})
+
+    result = generate_cases(client, [function("f")], 5, load_template(), PRICE, 10.0)
+
+    assert result.cost_usd == pytest.approx((1000 * 1.0 + 1000 * 10.0) / 1_000_000)

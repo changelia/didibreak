@@ -8,8 +8,9 @@ exists (task 14).
 
 import ast
 import json
+import math
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -28,10 +29,13 @@ from didibreak.harness import Case, HarnessSettings, Target, run_cases
 from didibreak.llm.common import (
     LLMClient,
     LLMInvalidResponseError,
+    LLMReply,
     LLMRequestError,
     LLMUnavailableError,
+    Message,
     TokenUsage,
 )
+from didibreak.llm.pricing import Price, cost_usd
 
 NO_CASES_REASON = "no cases"
 # Skip reasons for case generation (Detailed Design section 10).
@@ -237,6 +241,15 @@ def analyze(
     )
 
 
+# Cost estimate (task 15). Prompts are measured exactly; 3 characters per
+# token is on the safe side for code. Output starts from the task 12 live
+# run (537 completion tokens, 399 of them reasoning, for 3 cases) and then
+# follows the completion tokens actually observed in this run.
+CHARS_PER_TOKEN = 3
+OUTPUT_TOKENS_PER_CASE = 180
+COST_LIMIT_REASON = "cost limit"
+
+
 @dataclass(frozen=True)
 class Generation:
     """Cases the LLM proposed for the changed functions.
@@ -247,12 +260,109 @@ class Generation:
         skipped: Functions without cases, with ``skip_reason`` set.
         invalid_cases_dropped: Cases rejected by cases.accept_cases.
         usage: Token usage of all calls, failed ones included.
+        cost_usd: Cost of those calls; None when the model has no price.
     """
 
     cases: Mapping[str, tuple[Case, ...]]
     skipped: tuple[ChangedFunction, ...]
     invalid_cases_dropped: int
     usage: TokenUsage
+    cost_usd: float | None = None
+
+
+@dataclass(frozen=True)
+class Estimate:
+    """Expected LLM use before any call is made."""
+
+    calls: int
+    usage: TokenUsage
+    cost_usd: float | None
+
+
+def estimate_call(
+    messages: Sequence[Message], count: int, output_per_case: float
+) -> TokenUsage:
+    """Expected tokens of one case-generation request."""
+    characters = sum(len(message.content) for message in messages)
+    return TokenUsage(
+        input_tokens=math.ceil(characters / CHARS_PER_TOKEN),
+        output_tokens=math.ceil(output_per_case * count),
+        calls=1,
+    )
+
+
+def estimate_generation(
+    functions: Sequence[ChangedFunction],
+    count: int,
+    template: PromptTemplate,
+    price: Price | None,
+) -> Estimate:
+    """Expected calls, tokens and cost of generating cases for ``functions``.
+
+    Args:
+        functions: Functions that will be sent to the LLM (cache misses).
+        count: Cases requested per function.
+        template: The case generation prompt template.
+        price: The model's price, or None (tokens only).
+
+    Returns:
+        One call per function; a retry after an unusable reply is not
+        included.
+    """
+    usage = TokenUsage()
+    for function in functions:
+        messages = build_messages(function, count, template)
+        usage += estimate_call(messages, count, OUTPUT_TOKENS_PER_CASE)
+    cost = None if price is None else cost_usd(usage, price)
+    return Estimate(len(functions), usage, cost)
+
+
+@dataclass
+class _Spending:
+    """Usage and cost so far, and whether the next request fits the limit."""
+
+    price: Price | None
+    max_cost: float | None
+    count: int
+    usage: TokenUsage = field(default_factory=TokenUsage)
+    cost: float = 0.0
+
+    def add(self, usage: TokenUsage) -> None:
+        self.usage += usage
+        if self.price is not None:
+            self.cost += cost_usd(usage, self.price)
+
+    def allows(self, messages: Sequence[Message]) -> bool:
+        if self.price is None or self.max_cost is None:
+            return True  # without a price the limit cannot be enforced
+        observed = self.usage.calls and self.usage.output_tokens / (
+            self.usage.calls * self.count
+        )
+        estimate = estimate_call(
+            messages, self.count, observed or OUTPUT_TOKENS_PER_CASE
+        )
+        return self.cost + cost_usd(estimate, self.price) <= self.max_cost
+
+
+_UNAVAILABLE = object()
+
+
+def _ask(
+    client: LLMClient, messages: Sequence[Message], spending: _Spending
+) -> LLMReply | str | object:
+    """The reply, a skip reason for this function, or _UNAVAILABLE."""
+    try:
+        reply = client.complete_json(messages, CASES_SCHEMA, CASES_SCHEMA_NAME)
+    except LLMInvalidResponseError as error:
+        spending.add(error.usage)
+        return INVALID_RESPONSE_REASON
+    except LLMRequestError as error:
+        # Owner decision 2026-11-06: only 401/403/404 stop the run.
+        return REQUEST_REJECTED_PREFIX + error.provider_message
+    except LLMUnavailableError:
+        return _UNAVAILABLE
+    spending.add(reply.usage)
+    return reply
 
 
 def generate_cases(
@@ -260,6 +370,8 @@ def generate_cases(
     functions: Sequence[ChangedFunction],
     count: int,
     template: PromptTemplate,
+    price: Price | None = None,
+    max_cost: float | None = None,
 ) -> Generation:
     """Ask the LLM for cases for each function and keep the valid ones.
 
@@ -268,12 +380,16 @@ def generate_cases(
         functions: Testable changed and new functions.
         count: Cases to request per function (``cases``).
         template: The case generation prompt template.
+        price: The model's price; None means tokens only and no limit.
+        max_cost: Stop before a request whose estimated cost would take the
+            total above this many US dollars.
 
     Returns:
-        Accepted cases, skipped functions and usage. An invalid reply (after
-        the client's one retry) skips that function; an unavailable provider
-        skips it and all remaining functions; any other rejected request
-        (HTTP 4xx except 401/403/404) skips that function.
+        Accepted cases, skipped functions, usage and cost. An invalid reply
+        (after the client's one retry) skips that function; an unavailable
+        provider or the cost limit skips it and all remaining functions; any
+        other rejected request (HTTP 4xx except 401/403/404) skips that
+        function.
 
     Raises:
         LLMAuthError: The key was rejected (HTTP 401/403).
@@ -282,31 +398,24 @@ def generate_cases(
     cases: dict[str, tuple[Case, ...]] = {}
     skipped: list[ChangedFunction] = []
     invalid = 0
-    usage = TokenUsage()
+    spending = _Spending(price, max_cost, count)
     for index, function in enumerate(functions):
         messages = build_messages(function, count, template)
-        try:
-            reply = client.complete_json(messages, CASES_SCHEMA, CASES_SCHEMA_NAME)
-        except LLMInvalidResponseError as error:
-            usage += error.usage
-            skipped.append(replace(function, skip_reason=INVALID_RESPONSE_REASON))
-            continue
-        except LLMRequestError as error:
-            # Owner decision 2026-11-06: only 401/403/404 stop the run.
-            reason = REQUEST_REJECTED_PREFIX + error.provider_message
-            skipped.append(replace(function, skip_reason=reason))
-            continue
-        except LLMUnavailableError:
-            skipped += [
-                replace(rest, skip_reason=UNAVAILABLE_REASON)
-                for rest in functions[index:]
-            ]
+        stop = None if spending.allows(messages) else COST_LIMIT_REASON
+        result = _ask(client, messages, spending) if stop is None else None
+        if result is _UNAVAILABLE:
+            stop = UNAVAILABLE_REASON
+        if stop is not None:
+            skipped += [replace(rest, skip_reason=stop) for rest in functions[index:]]
             break
-        usage += reply.usage
-        batch = accept_cases(reply.data, count, function.report_name)
+        if not isinstance(result, LLMReply):  # a skip reason
+            skipped.append(replace(function, skip_reason=str(result)))
+            continue
+        batch = accept_cases(result.data, count, function.report_name)
         invalid += batch.invalid
         if batch.cases:
             cases[function.report_name] = batch.cases
         else:
             skipped.append(replace(function, skip_reason=NO_VALID_CASES_REASON))
-    return Generation(cases, tuple(skipped), invalid, usage)
+    cost = None if price is None else spending.cost
+    return Generation(cases, tuple(skipped), invalid, spending.usage, cost)
