@@ -80,3 +80,28 @@ def test_cases_file_runs_need_no_llm_settings(
 
     assert main(["check", "--cases-file", str(cases)]) == 1  # one unclear finding
     assert "provider" not in capsys.readouterr().err
+
+
+def test_provider_is_inferred_from_the_only_key_set(
+    changed_function: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-only")
+
+    assert main(["check"]) == EXIT_OK
+    assert "provider" not in capsys.readouterr().err
+
+
+def test_both_keys_without_provider_exit_2(
+    changed_function: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-1")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-2")
+
+    assert main(["check"]) == EXIT_ERROR
+    assert (
+        "both OPENAI_API_KEY and ANTHROPIC_API_KEY are set" in capsys.readouterr().err
+    )

@@ -9,8 +9,11 @@ controlled are described with case generation.
 
 ## Setting up a provider
 
-`provider` is required whenever didibreak needs the LLM. Examples for
-`[tool.didibreak]` in `pyproject.toml`:
+Without any setting, didibreak picks the provider from your API key: only
+`OPENAI_API_KEY` set means `openai`, only `ANTHROPIC_API_KEY` set means
+`anthropic`. If both or neither are set, set `provider` yourself. A
+configured `provider` always wins. Examples for `[tool.didibreak]` in
+`pyproject.toml`:
 
 ```toml
 # OpenAI: key in OPENAI_API_KEY, default model gpt-6-luna
@@ -32,8 +35,8 @@ model = "llama3.2"
 api_key_env = ""
 ```
 
-`didibreak check` stops with exit code 2 and says what to set when the
-provider is missing, when a `base_url` other than the provider's own has no
+`didibreak check` stops with exit code 2 and says what to set when no
+provider can be chosen, when a `base_url` other than the provider's own has no
 `model`, or when the API key variable is empty. The key is never printed.
 
 ## Default models
