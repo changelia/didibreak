@@ -67,7 +67,10 @@ checked in the order of the table; the first match is the reason.
   instances, dates, file handles) as arguments get no useful cases and are
   reported as `no valid cases` or show only type errors.
 - The LLM picks the inputs, so a change on a path no proposed input reaches
-  is not found. Each run may propose different inputs.
+  is not found. Each run may propose different inputs; cached cases are
+  reused while the function does not change.
+- The cost estimate is an estimate: a retry after an unusable reply is not
+  included, and the real token counts can differ.
 
 ## Running functions
 
