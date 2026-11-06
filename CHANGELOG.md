@@ -56,6 +56,10 @@ the Python package and `js-v*` for the JS/TS package.
   missing and an LLM would be needed. Without a `provider` setting, the
   provider is taken from the one API key variable that is set.
 - Config-only key `temperature`; without it no temperature is sent.
+- `check` asks the LLM for input cases (versioned prompt
+  `case_generation.md`), keeps only Python-literal, distinct cases, counts
+  invalid ones, skips a function after two unusable replies, and runs the
+  comparison with them. No cost estimate or limit yet.
 
 ## JS/TS package
 

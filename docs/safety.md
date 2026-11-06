@@ -34,6 +34,13 @@ The I/O check looks at:
   absolute path, for example, is really written. There is no container or
   sandbox in v0.1.
 
+## What the LLM can and cannot do
+
+The LLM only proposes input values. Every argument it returns must pass
+`ast.literal_eval`, so it can contain only literals such as numbers,
+strings, lists and dicts; anything else is dropped before any code runs.
+LLM output is never executed as code.
+
 ## How a function is run
 
 - **Your working tree is never executed.** The base version runs from a

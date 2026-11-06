@@ -61,6 +61,14 @@ The check is a scan of names in the source, so it can miss I/O that is not
 on this list, and it can skip a function that only looks like I/O. Rules are
 checked in the order of the table; the first match is the reason.
 
+## Inputs from the LLM
+
+- Arguments are Python literals only. Functions that need objects (class
+  instances, dates, file handles) as arguments get no useful cases and are
+  reported as `no valid cases` or show only type errors.
+- The LLM picks the inputs, so a change on a path no proposed input reaches
+  is not found. Each run may propose different inputs.
+
 ## Running functions
 
 - Linux and macOS only: per-case timeouts use Unix signals.

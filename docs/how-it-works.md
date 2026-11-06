@@ -5,6 +5,30 @@ The pipeline, why the old version is the reference, and what is and is not detec
 The rest of this page (pipeline, the old version as reference) is written
 together with the features it describes.
 
+## Case generation
+
+For each changed or new function that can be tested, didibreak asks the LLM
+for input cases (`cases`, default 12), showing it the function's name,
+signature, docstring and both versions of its code. The LLM proposes inputs
+only; it never predicts results and never decides what changed.
+
+- Every argument must be a Python literal: numbers, strings, bytes, `True`,
+  `False`, `None`, and lists, tuples, dicts and sets of these. A case with
+  anything else (a call, a name, an operator, an f-string) or an argument
+  longer than 2,000 characters is dropped and counted as an invalid case.
+- Cases with the same values are kept once; at most `cases` are used.
+- A reply that is not valid JSON for the requested schema is asked for once
+  more; if it fails again, the function is skipped.
+
+| Skip reason | When |
+| --- | --- |
+| `invalid llm response` | The reply was unusable twice. |
+| `no valid cases` | Every proposed case was invalid. |
+| `llm unavailable` | The provider kept failing (rate limit, server or network error); this and all remaining functions are skipped. |
+
+A rejected API key, an unknown model or a rejected request stops the run with
+exit code 2.
+
 ## Comparison rules
 
 Each case runs on the base version and on the current version, twice on
