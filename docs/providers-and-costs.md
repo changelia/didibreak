@@ -38,6 +38,8 @@ api_key_env = ""
 `didibreak check` stops with exit code 2 and says what to set when no
 provider can be chosen, when a `base_url` other than the provider's own has no
 `model`, or when the API key variable is empty. The key is never printed.
+No LLM settings are needed when there is nothing to check (no changed or no
+testable functions).
 
 ## Default models
 

@@ -105,3 +105,40 @@ def test_both_keys_without_provider_exit_2(
     assert (
         "both OPENAI_API_KEY and ANTHROPIC_API_KEY are set" in capsys.readouterr().err
     )
+
+
+@pytest.fixture
+def no_llm_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY"):
+        monkeypatch.delenv(name, raising=False)
+
+
+def test_nothing_to_check_needs_no_llm_settings(
+    git_repository: GitRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    no_llm_settings: None,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    git_repository.write("app.py", "def f(x):\n    return x\n")
+    git_repository.commit()
+    monkeypatch.chdir(git_repository.path)
+
+    assert main(["check"]) == EXIT_OK
+    assert "Nothing to check" in capsys.readouterr().err
+
+
+def test_only_skipped_functions_need_no_llm_settings(
+    git_repository: GitRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    no_llm_settings: None,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    git_repository.write("app.py", "async def f(x):\n    return x\n")
+    git_repository.commit()
+    git_repository.write("app.py", "async def f(x):\n    return x + 1\n")
+    monkeypatch.chdir(git_repository.path)
+
+    assert main(["check"]) == EXIT_OK
+    err = capsys.readouterr().err
+    assert "checked 0 functions" in err
+    assert "provider" not in err
