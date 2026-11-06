@@ -60,12 +60,18 @@ def exit_code_for(labels: Iterable[str], fail_on: str) -> int:
 
     Args:
         labels: Labels of all findings in the run.
-        fail_on: ``unclear`` (fail on unexpected or unclear) or ``unexpected``.
+        fail_on: ``unclear`` (fail on unexpected, unclear or new_function
+            findings) or ``unexpected`` (fail on unexpected only).
 
     Returns:
         1 if any finding should fail the run, otherwise 0.
     """
-    failing = {"unexpected"} if fail_on == "unexpected" else {"unexpected", "unclear"}
+    # Owner decision 2026-11-06: new_function findings fail the default run.
+    failing = (
+        {"unexpected"}
+        if fail_on == "unexpected"
+        else {"unexpected", "unclear", "new_function"}
+    )
     return EXIT_FINDINGS if any(label in failing for label in labels) else EXIT_OK
 
 

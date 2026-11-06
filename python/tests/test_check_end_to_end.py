@@ -72,8 +72,10 @@ def test_findings_match_the_expected_file(case: str, tmp_path: Path) -> None:
 
 
 def exit_code_without_intent(expected: dict[str, Any]) -> int:
-    failing = [f for f in expected["findings"] if f["label"] != "new_function"]
-    return EXIT_FINDINGS if failing else EXIT_OK
+    # Under the default --fail-on unclear every finding fails the run: changed
+    # functions are unclear without intent labelling, and new_function
+    # findings fail too (owner decision 2026-11-06).
+    return EXIT_FINDINGS if expected["findings"] else EXIT_OK
 
 
 @pytest.mark.parametrize("case", CASES)
@@ -95,6 +97,18 @@ def test_check_exit_code_and_listing(
     for finding in fixture.expected["findings"]:
         assert f"{finding['function']}({', '.join(finding['args'])})" in err
     assert fixture.repository.status() == status  # working tree untouched
+
+
+def test_new_function_findings_fail_only_the_default_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = build_fixture_repository("new_function", tmp_path / "repo")
+    path = cases_file(fixture.expected, tmp_path)
+    monkeypatch.chdir(fixture.repository.path)
+
+    assert main(["check", "--cases-file", str(path)]) == EXIT_FINDINGS
+    code = main(["check", "--cases-file", str(path), "--fail-on", "unexpected"])
+    assert code == EXIT_OK
 
 
 def test_fail_on_unexpected_ignores_unclear_findings(

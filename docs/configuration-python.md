@@ -40,7 +40,7 @@ in snake_case.
 | `--base REF` | `base` | git ref | `HEAD` | Version to compare the working tree against. |
 | `--intent TEXT` | `intent` | string | none | What the change was supposed to do; used only to label findings. |
 | `--format` | `format` | `text` or `json` | `text` | Report format on stdout. |
-| `--fail-on` | `fail_on` | `unclear` or `unexpected` | `unclear` | Exit 1 on unexpected or unclear findings (`unclear`), or on unexpected only. |
+| `--fail-on` | `fail_on` | `unclear` or `unexpected` | `unclear` | Exit 1 on `unexpected`, `unclear` or `new_function` findings (`unclear`), or on `unexpected` findings only. |
 | `--max-functions N` | `max_functions` | integer ≥ 1 | `10` | Maximum functions checked per run. |
 | `--cases N` | `cases` | integer 1–50 | `12` | Input cases requested per function per round. |
 | `--refine-rounds N` | `refine_rounds` | integer 0–3 | `1` | Extra rounds when no difference is found. |
