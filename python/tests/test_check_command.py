@@ -225,7 +225,9 @@ def test_init_agents_prints_the_snippet_from_the_spec(
     ("labels", "fail_on", "expected"),
     [
         ([], "unclear", EXIT_OK),
-        (["expected", "new_function"], "unclear", EXIT_OK),
+        (["expected"], "unclear", EXIT_OK),
+        (["expected", "new_function"], "unclear", EXIT_FINDINGS),
+        (["new_function"], "unexpected", EXIT_OK),
         (["unclear"], "unclear", EXIT_FINDINGS),
         (["unclear"], "unexpected", EXIT_OK),
         (["expected", "unexpected"], "unexpected", EXIT_FINDINGS),

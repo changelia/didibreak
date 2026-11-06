@@ -149,6 +149,25 @@ functions over harness outcomes:
    harness and the rules.
 4. Update the rule table in `docs/how-it-works.md`.
 
+## Provider spike scripts
+
+`python/spike/` holds throwaway scripts from task 12 that check each
+provider's structured JSON output with real calls before the LLM clients
+exist. They use only the standard library, are not packaged, read the API
+key from the environment and never print it. Run them from `python/`:
+
+```bash
+OPENAI_API_KEY=... uv run python spike/spike_openai.py [MODEL]
+ANTHROPIC_API_KEY=... uv run python spike/spike_anthropic.py [MODEL]
+OPENROUTER_API_KEY=... uv run python spike/spike_openrouter.py [MODEL]
+uv run python spike/spike_ollama.py MODEL [BASE_URL]   # local server, no key
+```
+
+Each prints PASS or FAIL for the case-generation and intent-labelling
+requests, the usage fields, and (OpenAI-compatible APIs) whether
+`temperature` is accepted. Exit code 0 means both replies were schema-valid;
+2 means the key is not set and nothing was sent.
+
 ## Adding an LLM provider
 
 Documented here once the provider modules exist.

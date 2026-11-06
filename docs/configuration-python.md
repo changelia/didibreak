@@ -40,14 +40,14 @@ in snake_case.
 | `--base REF` | `base` | git ref | `HEAD` | Version to compare the working tree against. |
 | `--intent TEXT` | `intent` | string | none | What the change was supposed to do; used only to label findings. |
 | `--format` | `format` | `text` or `json` | `text` | Report format on stdout. |
-| `--fail-on` | `fail_on` | `unclear` or `unexpected` | `unclear` | Exit 1 on unexpected or unclear findings (`unclear`), or on unexpected only. |
+| `--fail-on` | `fail_on` | `unclear` or `unexpected` | `unclear` | Exit 1 on `unexpected`, `unclear` or `new_function` findings (`unclear`), or on `unexpected` findings only. |
 | `--max-functions N` | `max_functions` | integer ≥ 1 | `10` | Maximum functions checked per run. |
 | `--cases N` | `cases` | integer 1–50 | `12` | Input cases requested per function per round. |
 | `--refine-rounds N` | `refine_rounds` | integer 0–3 | `1` | Extra rounds when no difference is found. |
 | `--max-cost USD` | `max_cost` | number > 0 | `0.50` | Hard LLM cost limit per run, in US dollars. |
 | `--timeout SECONDS` | `timeout` | number > 0 | `10` | Timeout per executed case. |
 | `--provider` | `provider` | `openai` or `anthropic` | none | LLM provider (`openai` means any OpenAI-compatible API). |
-| `--model NAME` | `model` | string | none | Model name. Default models per provider are documented with the LLM support. |
+| `--model NAME` | `model` | string | none | Model name. The default per provider is listed in [providers-and-costs.md](providers-and-costs.md#default-models). |
 | `--base-url URL` | `base_url` | http(s) URL | provider default | OpenAI-compatible endpoint, e.g. OpenRouter, Ollama, LM Studio. |
 | `--python PATH` | `python` | path | the interpreter running didibreak | Interpreter used to import and run your code (Python 3.11 or newer). |
 | `--output-dir PATH` | `output_dir` | path | `.didibreak` | Folder for reports, reproducing tests and the cache. |

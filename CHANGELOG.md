@@ -47,6 +47,8 @@ the Python package and `js-v*` for the JS/TS package.
   behavior changes when cases come from the hidden developer option
   `--cases-file` (cases from the LLM follow). The current version runs from a
   temporary copy of the working tree. Ctrl-C exits with code 130.
+- `new_function` findings make the run exit 1 with the default
+  `--fail-on unclear` (not with `--fail-on unexpected`).
 
 ## JS/TS package
 
