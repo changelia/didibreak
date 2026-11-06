@@ -7,8 +7,10 @@ scripts run before the LLM clients exist. API keys are read from the
 environment, sent only in request headers and removed from anything printed.
 """
 
+import importlib
 import json
 import os
+import ssl
 import sys
 import urllib.error
 import urllib.request
@@ -151,6 +153,22 @@ def redact(text: str, secret: str) -> str:
     return text.replace(secret, "[redacted]") if secret else text
 
 
+def ssl_context() -> ssl.SSLContext:
+    """TLS context that verifies certificates without SSL_CERT_FILE.
+
+    uv-managed and python.org Pythons on macOS may have no CA bundle, so
+    urllib fails with CERTIFICATE_VERIFY_FAILED. Run the scripts with
+    ``uv run --with certifi`` to use certifi's bundle; without certifi the
+    system default is used.
+    """
+    try:
+        # Optional: present only when run with `uv run --with certifi`.
+        certifi = importlib.import_module("certifi")
+    except ImportError:
+        return ssl.create_default_context()
+    return ssl.create_default_context(cafile=certifi.where())
+
+
 @dataclass(frozen=True)
 class Reply:
     """HTTP status and parsed JSON body (or the raw text if not JSON)."""
@@ -173,7 +191,9 @@ def post_json(
         method="POST",
     )
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with urllib.request.urlopen(
+            request, timeout=timeout, context=ssl_context()
+        ) as response:
             status, raw = response.status, response.read()
     except urllib.error.HTTPError as error:
         status, raw = error.code, error.read()

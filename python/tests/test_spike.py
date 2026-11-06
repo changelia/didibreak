@@ -148,3 +148,34 @@ def test_errors_are_printed_with_the_key_removed(
     assert "HTTP 401" in out
     assert KEY not in out
     assert "[redacted]" in out
+
+
+def test_ssl_context_uses_certifi_when_available(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    calls: list[object] = []
+
+    class FakeCertifi:
+        @staticmethod
+        def where() -> str:
+            return "/fake/cacert.pem"
+
+    def fake_context(cafile: object = None) -> str:
+        calls.append(cafile)
+        return "context"
+
+    monkeypatch.setitem(sys.modules, "certifi", FakeCertifi)
+    monkeypatch.setattr(spike_common.ssl, "create_default_context", fake_context)
+
+    assert spike_common.ssl_context() == "context"
+    assert calls == ["/fake/cacert.pem"]
+
+
+def test_ssl_context_falls_back_to_the_system_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(sys.modules, "certifi", None)  # import raises ImportError
+
+    context = spike_common.ssl_context()
+
+    assert context.verify_mode == spike_common.ssl.CERT_REQUIRED
