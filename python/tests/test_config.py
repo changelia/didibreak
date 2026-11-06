@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from didibreak.cli import build_parser
 from didibreak.config import (
     CONFIG_KEYS,
     Config,
@@ -26,6 +27,7 @@ def test_defaults_match_detailed_design() -> None:
     assert config.output_dir == ".didibreak"
     assert config.provider is None
     assert config.model is None
+    assert config.temperature is None
 
 
 @pytest.mark.parametrize(
@@ -44,6 +46,8 @@ def test_defaults_match_detailed_design() -> None:
         ("exclude", "tests/*", "exclude must be a list of glob patterns"),
         ("no_cache", "yes", "no_cache must be true or false, got 'yes'"),
         ("base", "  ", "base must not be empty"),
+        ("temperature", 2.5, "temperature must be >= 0 and <= 2; got 2.5"),
+        ("temperature", "low", "temperature must be a number, got 'low'"),
     ],
 )
 def test_invalid_values_are_rejected_with_the_rule(
@@ -53,6 +57,17 @@ def test_invalid_values_are_rejected_with_the_rule(
         validate(key, value)
 
     assert message in str(info.value)
+
+
+def test_temperature_is_read_from_the_config_file(tmp_path: Path) -> None:
+    path = _write_pyproject(tmp_path, "[tool.didibreak]\ntemperature = 0\n")
+
+    assert read_config_table(path) == {"temperature": 0.0}
+
+
+def test_temperature_has_no_cli_flag() -> None:
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["check", "--temperature", "0"])
 
 
 def test_every_config_field_has_a_validator() -> None:
