@@ -54,6 +54,7 @@ class Config:
     no_cache: bool = False
     exclude: tuple[str, ...] = field(default_factory=tuple)
     api_key_env: str | None = None
+    temperature: float | None = None
 
 
 def _string(key: str, value: object) -> str:
@@ -100,6 +101,14 @@ def _positive_number(key: str, value: object) -> float:
     return float(value)
 
 
+def _temperature(key: str, value: object) -> float:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise ConfigError(f"{key} must be a number, got {value!r}")
+    if not 0 <= value <= 2:
+        raise ConfigError(f"{key} must be >= 0 and <= 2; got {value}")
+    return float(value)
+
+
 def _boolean(key: str, value: object) -> bool:
     if not isinstance(value, bool):
         raise ConfigError(f"{key} must be true or false, got {value!r}")
@@ -139,6 +148,9 @@ _VALIDATORS: dict[str, Callable[[str, object], object]] = {
     "exclude": _glob_list,
     # An empty string disables the API key check (local servers).
     "api_key_env": _string,
+    # Config-only and unset by default: no provider gets a temperature unless
+    # the user sets one (owner decision 2026-11-06, task 12).
+    "temperature": _temperature,
 }
 
 CONFIG_KEYS = tuple(_VALIDATORS)

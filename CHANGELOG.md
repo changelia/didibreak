@@ -49,6 +49,12 @@ the Python package and `js-v*` for the JS/TS package.
   temporary copy of the working tree. Ctrl-C exits with code 130.
 - `new_function` findings make the run exit 1 with the default
   `--fail-on unclear` (not with `--fail-on unexpected`).
+- LLM clients for OpenAI-compatible APIs and Anthropic (not used by `check`
+  yet), with retries, a JSON-mode fallback and default models `gpt-6-luna`
+  and `claude-haiku-5-5`. `httpx` is the one runtime dependency.
+- `check` exits with code 2 when the LLM provider, model or API key is
+  missing and an LLM would be needed.
+- Config-only key `temperature`; without it no temperature is sent.
 
 ## JS/TS package
 

@@ -6,6 +6,7 @@ that has a config key is validated by ``config.validate`` so the CLI and
 """
 
 import argparse
+import os
 import sys
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import replace
@@ -39,6 +40,7 @@ from didibreak.gitdiff import (
     resolve_base,
 )
 from didibreak.harness import Case, HarnessSettings, Outcome
+from didibreak.llm import client_settings
 from didibreak.pipeline import Analysis, analyze, load_cases_file, tree_import_root
 
 EXIT_OK = 0
@@ -286,6 +288,12 @@ def _report_detection(detection: Detection, max_functions: int, verbose: bool) -
             print(f"  limit: {function.report_name}", file=sys.stderr)
 
 
+def _check_llm_settings(config: Config) -> None:
+    # Missing provider, model or API key is exit 2 before any LLM call
+    # (Detailed Design section 10); no client is created yet.
+    client_settings(config, os.environ)
+
+
 def _analyze(
     config: Config,
     root: Path,
@@ -376,6 +384,11 @@ def _run_check(arguments: argparse.Namespace) -> int:
             )
         return EXIT_OK
     if cases is None:
+        try:
+            _check_llm_settings(config)
+        except ConfigError as error:
+            print(f"didibreak: error: {error}", file=sys.stderr)
+            return EXIT_ERROR
         # TODO(task 14): generate cases with the LLM.
         print("didibreak: the analysis is not implemented yet", file=sys.stderr)
         return exit_code_for([], config.fail_on)

@@ -23,6 +23,13 @@ from didibreak.config import CONFIG_KEYS, Config
 from didibreak.gitdiff import repository_root
 
 
+@pytest.fixture(autouse=True)
+def llm_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    # These tests cover detection and exit codes; LLM settings are checked in
+    # test_check_llm_settings.py.
+    monkeypatch.setattr("didibreak.cli._check_llm_settings", lambda config: None)
+
+
 @pytest.fixture
 def repository(git_repository: GitRepository, monkeypatch: pytest.MonkeyPatch) -> Path:
     git_repository.write("app.py", "VALUE = 1\n")

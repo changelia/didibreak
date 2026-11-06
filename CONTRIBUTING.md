@@ -149,28 +149,18 @@ functions over harness outcomes:
    harness and the rules.
 4. Update the rule table in `docs/how-it-works.md`.
 
-## Provider spike scripts
+## Checking the OpenAI client with a real call
 
-`python/spike/` holds throwaway scripts from task 12 that check each
-provider's structured JSON output with real calls before the LLM clients
-exist. They use only the standard library, are not packaged, read the API
-key from the environment and never print it. Run them from `python/`:
+Tests use mocked transports only. To make one real call through didibreak's
+OpenAI client, set `OPENAI_API_KEY` and run from `python/`:
 
 ```bash
-OPENAI_API_KEY=... uv run --with certifi python spike/spike_openai.py [MODEL]
-ANTHROPIC_API_KEY=... uv run --with certifi python spike/spike_anthropic.py [MODEL]
-OPENROUTER_API_KEY=... uv run --with certifi python spike/spike_openrouter.py [MODEL]
-uv run --with certifi python spike/spike_ollama.py MODEL [BASE_URL]  # no key
+uv run python scripts/llm_smoke.py [MODEL] [OUTPUT]
 ```
 
-`--with certifi` gives urllib a CA bundle: uv-managed and python.org Pythons
-on macOS may have none and fail with `CERTIFICATE_VERIFY_FAILED`. certifi is
-only added for the run, not to the project.
-
-Each prints PASS or FAIL for the case-generation and intent-labelling
-requests, the usage fields, and (OpenAI-compatible APIs) whether
-`temperature` is accepted. Exit code 0 means both replies were schema-valid;
-2 means the key is not set and nothing was sent.
+It writes the model, PASS or FAIL, token usage and the reply to
+`/tmp/didibreak-client.txt` (or OUTPUT) and never writes the key. Exit code 0
+is PASS, 1 a failed call, 2 missing settings (no request is sent).
 
 ## Adding an LLM provider
 
