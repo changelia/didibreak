@@ -244,3 +244,8 @@ def test_second_invalid_reply_raises_with_the_usage(
         complete_with_one_retry(lambda: replies.pop(0), SCHEMA)
 
     assert info.value.usage.calls == 2
+
+
+def test_tests_cannot_reach_the_real_network() -> None:
+    with pytest.raises(RuntimeError, match="real network access in a test"):
+        httpx.get("https://api.openai.com/v1/models")
