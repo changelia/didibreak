@@ -78,6 +78,12 @@ the Python package and `js-v*` for the JS/TS package.
   `refine_rounds` (default 1) more rounds of LLM cases, built from the cases
   already tried and their results; counted in the estimate and the cost
   limit, and cached per round.
+- Text and JSON reports on stdout: the text report groups findings
+  `UNEXPECTED`, `UNCLEAR`, `EXPECTED`, `NEW-FUNCTION`, lists skipped
+  functions with reasons and ends with the LLM usage line; `--format json`
+  writes one report (`schema_version: 1`, `spec/report.schema.json`) with a
+  stable key order, and the estimate goes to stderr. See
+  `docs/output-format.md`.
 
 ## JS/TS package
 
