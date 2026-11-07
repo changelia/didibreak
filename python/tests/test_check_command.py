@@ -32,10 +32,10 @@ def llm_configured(monkeypatch: pytest.MonkeyPatch) -> None:
     # These tests cover detection and exit codes; LLM settings are checked in
     # test_check_llm_settings.py and LLM case generation in
     # test_check_llm_end_to_end.py. Here the LLM proposes no cases.
-    def no_session(config: object, functions: object, arguments: object) -> object:
+    def no_session(*arguments: object) -> object:
         return contextlib.nullcontext()
 
-    def no_cases(session: object, functions: object, run: object) -> object:
+    def no_cases(*arguments: object) -> object:
         empty = Analysis((), (), (), 0, 0, 0)
         return empty, cli._LLMCases(Generation({}, (), 0, TokenUsage()))
 
