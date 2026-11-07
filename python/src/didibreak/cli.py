@@ -36,11 +36,13 @@ from didibreak.gitdiff import (
     ChangedFiles,
     GitError,
     changed_python_files,
+    commit_message,
     read_base_file,
     repository_root,
     resolve_base,
 )
 from didibreak.harness import Case, HarnessSettings, Outcome
+from didibreak.intent import NO_INTENT_REASON, intent_text, mark_unclear
 from didibreak.llm import create_client
 from didibreak.llm.common import LLMAuthError, LLMModelError
 from didibreak.llm_session import LLMSession, Plan
@@ -315,11 +317,13 @@ def _print_estimate(plan: Plan, session: LLMSession, functions: int) -> None:
         cost = ", cost $0 (local)"
     else:
         cost = f", ~${estimate.cost_usd or 0:.4f} (limit {_money(max_cost)})"
-    if plan.refinement:
-        calls = (
-            f"up to {plan.calls} LLM calls ({plan.initial} + up to "
-            f"{plan.refinement} refinement)"
-        )
+    if plan.refinement or plan.labelling:
+        parts = [str(plan.initial)]
+        if plan.refinement:
+            parts.append(f"up to {plan.refinement} refinement")
+        if plan.labelling:
+            parts.append(f"{plan.labelling} labelling")
+        calls = f"up to {plan.calls} LLM calls ({' + '.join(parts)})"
     else:
         calls = f"{plan.calls} LLM calls"
     print(f"Estimated: {calls} with {model}, {tokens}{cost}", file=sys.stderr)
@@ -366,7 +370,10 @@ class _LLMCases:
 
 
 def _start_llm(
-    config: Config, functions: Sequence[ChangedFunction], arguments: argparse.Namespace
+    config: Config,
+    functions: Sequence[ChangedFunction],
+    arguments: argparse.Namespace,
+    intent: str | None,
 ) -> LLMSession | None:
     """Plan the LLM requests, show the estimate, ask; None when declined.
 
@@ -379,7 +386,7 @@ def _start_llm(
         return create_client(config, environment)  # looked up at call time
 
     session = LLMSession.open(config, os.environ, factory)
-    plan = session.plan(functions)
+    plan = session.plan(functions, intent)
     if not plan.calls:
         return session  # every case is cached
     if not arguments.quiet:
@@ -412,11 +419,13 @@ class _Refinement:
     cases: int
 
 
-def _refine(
-    session: LLMSession,
-    run: Callable[[Sequence[ChangedFunction], Mapping[str, Sequence[Case]]], Analysis],
-    analysis: Analysis,
-) -> _Refinement:
+# Runs the given functions with the given cases on both versions.
+_RunCases = Callable[
+    [Sequence[ChangedFunction], Mapping[str, Sequence[Case]]], Analysis
+]
+
+
+def _refine(session: LLMSession, run: _RunCases, analysis: Analysis) -> _Refinement:
     """Refinement rounds for functions whose cases found no difference."""
     found = {finding.function for finding in analysis.findings}
     stopped: dict[str, ChangedFunction] = {}
@@ -447,12 +456,14 @@ def _refine(
 def _check_with_llm(
     session: LLMSession,
     functions: Sequence[ChangedFunction],
-    run: Callable[[Sequence[ChangedFunction], Mapping[str, Sequence[Case]]], Analysis],
+    run: _RunCases,
+    intent: str | None,
 ) -> tuple[Analysis, _LLMCases]:
-    """First cases, comparison, then refinement rounds (task 16)."""
+    """First cases, comparison, refinement rounds (task 16), labels (task 17)."""
     first = session.cases(functions)
     with_cases = [f for f in functions if f.report_name in first.cases]
     refinement = _refine(session, run, run(with_cases, first.cases))
+    findings = session.label(refinement.analysis.findings, intent, NO_INTENT_REASON)
     budget = session.budget
     totals = replace(
         first,
@@ -467,7 +478,7 @@ def _check_with_llm(
         refinement.refined,
         refinement.cases,
     )
-    return refinement.analysis, llm
+    return replace(refinement.analysis, findings=findings), llm
 
 
 def _analyze(
@@ -563,12 +574,25 @@ def _report_analysis(analysis: Analysis, llm_cases: _LLMCases | None) -> None:
             f"after {_describe(finding.after)}",
             file=sys.stderr,
         )
+        if finding.reason:
+            print(f"  {'':<13}{finding.reason}", file=sys.stderr)
     skipped = (*(generation.skipped if generation else ()), *analysis.skipped)
     for function in skipped:
         print(
             f"  skipped: {function.report_name} ({function.skip_reason})",
             file=sys.stderr,
         )
+
+
+CASES_FILE_REASON = "intent labelling needs the LLM, which --cases-file runs do not use"
+
+
+def _intent(config: Config, root: Path, base_sha: str) -> str | None:
+    # The latest commit message describes the change only when the base is
+    # an earlier commit; against HEAD the change is uncommitted (task 17).
+    head = resolve_base(root, "HEAD")
+    message = commit_message(root) if base_sha != head else None
+    return intent_text(config.intent, message)
 
 
 def _run_check(arguments: argparse.Namespace) -> int:
@@ -610,16 +634,20 @@ def _run_check(arguments: argparse.Namespace) -> int:
     ) -> Analysis:
         return _analyze(config, root, base_sha, files, selected, chosen)
 
+    intent = _intent(config, root, base_sha)
     try:
         if cases is not None:
             analysis = run(functions, cases)
+            reason = CASES_FILE_REASON if intent else NO_INTENT_REASON
+            unclear = mark_unclear(analysis.findings, reason)
+            analysis = replace(analysis, findings=unclear)
         else:
-            session = _start_llm(config, functions, arguments)
+            session = _start_llm(config, functions, arguments, intent)
             if session is None:
                 print("Cancelled: no LLM request was sent.", file=sys.stderr)
                 return EXIT_OK
             with session:
-                analysis, llm_cases = _check_with_llm(session, functions, run)
+                analysis, llm_cases = _check_with_llm(session, functions, run, intent)
     except (ConfigError, LLMAuthError, LLMModelError, GitError, OSError) as error:
         print(f"didibreak: error: {error}", file=sys.stderr)
         return EXIT_ERROR

@@ -40,6 +40,27 @@ cases go through the same validation, execution and comparison. A function
 is not refined further once a round finds a difference, or when the LLM
 proposes only cases that were already tried (`no new cases`).
 
+## Intent labels
+
+Every finding gets a label that says how it relates to what the change was
+meant to do:
+
+| Label | Meaning |
+| --- | --- |
+| `expected` | The intent explicitly describes this kind of change. |
+| `unexpected` | The intent does not cover this change, or contradicts it. |
+| `unclear` | The intent is vague, or the relation cannot be decided. |
+| `new_function` | The function is new; there is no old behavior to compare with. |
+
+The intent is the `--intent` text and, when `--base` is an earlier commit,
+the latest commit message. One LLM request labels all findings of a run,
+with a one-sentence reason each. The LLM never removes a finding and never
+decides what changed; it only relates each measured difference to the
+intent. Findings stay `unclear`, with the reason shown, when there is no
+intent, when the labelling reply is unusable or the cost limit is reached,
+and in `--cases-file` runs, which use no LLM. The exit code follows the
+labels; see [output-format.md](output-format.md#exit-codes).
+
 ## Comparison rules
 
 Each case runs on the base version and on the current version, twice on

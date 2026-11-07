@@ -19,20 +19,45 @@ from didibreak.cases import (
     PromptTemplate,
     load_template,
 )
+from didibreak.compare import Finding
 from didibreak.config import Config
 from didibreak.functions import ChangedFunction
 from didibreak.harness import Case
+from didibreak.intent import (
+    LABEL_PROMPT_FILE,
+    LABELS_SCHEMA,
+    LABELS_SCHEMA_NAME,
+    MAX_LABELLED_FINDINGS,
+    apply_labels,
+    build_label_messages,
+    mark_unclear,
+    to_label,
+)
 from didibreak.llm import client_settings, resolve_provider
-from didibreak.llm.common import ClientSettings, TokenUsage
-from didibreak.llm.pricing import LOCAL, prices_from_config, required_price
+from didibreak.llm.common import (
+    ClientSettings,
+    LLMInvalidResponseError,
+    LLMRequestError,
+    LLMUnavailableError,
+    TokenUsage,
+)
+from didibreak.llm.pricing import LOCAL, cost_usd, prices_from_config, required_price
 from didibreak.pipeline import (
+    CHARS_PER_TOKEN,
+    COST_LIMIT_REASON,
     Budget,
     Estimate,
     Generation,
+    estimate_call,
     estimate_generation,
     estimate_refinement,
     generate_cases,
 )
+
+# Labelling estimate: one line per finding and its label and reason.
+FINDING_LINE_CHARS = 250
+OUTPUT_TOKENS_PER_LABEL = 120
+LABELLING_FAILED = "intent labelling failed: "
 
 ClientFactory = Callable[[Config, Mapping[str, str]], Any]
 
@@ -44,17 +69,19 @@ class Plan:
     Attributes:
         initial: Requests for first cases (cache misses).
         refinement: Most refinement requests (cache misses, every round).
-        estimate: Combined estimate of both.
+        labelling: 1 when findings will be labelled against an intent.
+        estimate: Combined estimate of all of them.
     """
 
     initial: int
     refinement: int
+    labelling: int
     estimate: Estimate
 
     @property
     def calls(self) -> int:
         """Most requests the run can make."""
-        return self.initial + self.refinement
+        return self.initial + self.refinement + self.labelling
 
 
 @dataclass
@@ -66,6 +93,7 @@ class LLMSession:
     settings: ClientSettings
     template: PromptTemplate
     refinement_template: PromptTemplate
+    label_template: PromptTemplate
     caches: tuple[CaseCache | None, CaseCache | None]
     factory: ClientFactory
     budget: Budget
@@ -85,6 +113,7 @@ class LLMSession:
         provider = resolve_provider(config, environment)
         template = load_template(PROMPT_FILE)
         refinement = load_template(REFINEMENT_PROMPT_FILE)
+        labels = load_template(LABEL_PROMPT_FILE)
         caches: tuple[CaseCache | None, CaseCache | None] = (None, None)
         if not config.no_cache:
             folder = Path(config.output_dir)
@@ -94,7 +123,15 @@ class LLMSession:
             )
         budget = Budget(None, config.max_cost, config.cases)
         return cls(
-            config, environment, settings, template, refinement, caches, factory, budget
+            config,
+            environment,
+            settings,
+            template,
+            refinement,
+            labels,
+            caches,
+            factory,
+            budget,
         )
 
     def __enter__(self) -> "LLMSession":
@@ -117,11 +154,14 @@ class LLMSession:
             return None
         return cache.load(function, self.config.cases, round_number)
 
-    def plan(self, functions: Sequence[ChangedFunction]) -> Plan:
+    def plan(
+        self, functions: Sequence[ChangedFunction], intent: str | None = None
+    ) -> Plan:
         """Count and estimate the requests the run may make.
 
         Refinement requests are counted for every function and round whose
-        cases are not cached, as if no round found a difference.
+        cases are not cached, as if no round found a difference. With an
+        intent, one labelling request is added (labels are never cached).
 
         Raises:
             ConfigError: A request is needed and the model has no price and
@@ -135,8 +175,9 @@ class LLMSession:
             for round_number in range(1, self.config.refine_rounds + 1)
             if self._cached(function, round_number) is None
         ]
+        labelling = 1 if intent and functions else 0
         price = None
-        if initial or rounds:
+        if initial or rounds or labelling:
             overrides = prices_from_config(self.config.prices)
             price = required_price(
                 self.settings.model, self.settings.base_url, overrides
@@ -145,9 +186,60 @@ class LLMSession:
             self.budget = Budget(price, self.config.max_cost, count)
         first = estimate_generation(initial, count, self.template, price)
         more = estimate_refinement(rounds, count, self.refinement_template, price)
-        cost = None if price is None else (first.cost_usd or 0) + (more.cost_usd or 0)
-        estimate = Estimate(first.calls + more.calls, first.usage + more.usage, cost)
-        return Plan(len(initial), len(rounds), estimate)
+        usage = first.usage + more.usage
+        if labelling:
+            usage += self._labelling_estimate(intent or "", len(functions))
+        cost = None if price is None else cost_usd(usage, price)
+        estimate = Estimate(first.calls + more.calls + labelling, usage, cost)
+        return Plan(len(initial), len(rounds), labelling, estimate)
+
+    def _labelling_estimate(self, intent: str, functions: int) -> TokenUsage:
+        rounds = 1 + self.config.refine_rounds
+        findings = min(functions * self.config.cases * rounds, MAX_LABELLED_FINDINGS)
+        messages = build_label_messages(intent, (), self.label_template)
+        call = estimate_call(messages, findings, OUTPUT_TOKENS_PER_LABEL)
+        extra = findings * FINDING_LINE_CHARS // CHARS_PER_TOKEN
+        return replace(call, input_tokens=call.input_tokens + extra)
+
+    def label(
+        self, findings: Sequence[Finding], intent: str | None, no_intent: str
+    ) -> tuple[Finding, ...]:
+        """Label findings against the intent with one request (task 17).
+
+        Args:
+            findings: All findings of the run.
+            intent: The intent text, or None.
+            no_intent: Reason used when there is no intent.
+
+        Returns:
+            The same findings, labelled; on any labelling problem they are
+            unclear with the reason. A rejected key or an unknown model
+            still raises (exit 2).
+        """
+        if intent is None:
+            return mark_unclear(findings, no_intent)
+        sent = to_label(findings)
+        if not sent:
+            return tuple(findings)
+        messages = build_label_messages(intent, sent, self.label_template)
+        if not self.budget.allows(messages):
+            return mark_unclear(findings, LABELLING_FAILED + COST_LIMIT_REASON)
+        if self._client is None:
+            self._client = self.factory(self.config, self.environment)
+        try:
+            reply = self._client.complete_json(
+                messages, LABELS_SCHEMA, LABELS_SCHEMA_NAME
+            )
+        except LLMInvalidResponseError as error:
+            self.budget.add(error.usage)
+            return mark_unclear(findings, LABELLING_FAILED + "invalid llm response")
+        except LLMUnavailableError:
+            return mark_unclear(findings, LABELLING_FAILED + "llm unavailable")
+        except LLMRequestError as error:
+            reason = f"{LABELLING_FAILED}request rejected: {error.provider_message}"
+            return mark_unclear(findings, reason)
+        self.budget.add(reply.usage)
+        return apply_labels(findings, reply.data)
 
     def cases(
         self,
