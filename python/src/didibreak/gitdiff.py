@@ -403,3 +403,19 @@ def working_tree_copy(root: Path, skip: Sequence[str] = ()) -> Iterator[Path]:
         yield tree
     finally:
         shutil.rmtree(temporary, ignore_errors=True)
+
+
+def commit_message(root: Path, ref: str = "HEAD") -> str | None:
+    """The full message of a commit, or None if it cannot be read.
+
+    Args:
+        root: Repository root.
+        ref: Commit to read.
+
+    Returns:
+        The message without surrounding whitespace, or None.
+    """
+    result = _git(root, "log", "-1", "--format=%B", ref, "--")
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip() or None
