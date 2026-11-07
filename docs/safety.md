@@ -34,6 +34,14 @@ The I/O check looks at:
   absolute path, for example, is really written. There is no container or
   sandbox in v0.1.
 
+## What didibreak writes
+
+didibreak writes only inside its output folder (`output_dir`, default
+`.didibreak/` at the repository root): the case cache now, reports and
+reproducing tests later. The folder ignores itself with its own
+`.gitignore` containing `*`, so it never shows up in `git status`. Your own
+`.gitignore` and your code are never edited.
+
 ## What the LLM can and cannot do
 
 The LLM only proposes input values. Every argument it returns must pass
