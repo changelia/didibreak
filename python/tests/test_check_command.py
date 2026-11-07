@@ -1,5 +1,6 @@
 """Tests for the check and init-agents commands, config precedence and exit codes."""
 
+import contextlib
 import os
 import subprocess
 import sys
@@ -23,7 +24,7 @@ from didibreak.cli import (
 from didibreak.config import CONFIG_KEYS, Config
 from didibreak.gitdiff import repository_root
 from didibreak.llm.common import TokenUsage
-from didibreak.pipeline import Generation
+from didibreak.pipeline import Analysis, Generation
 
 
 @pytest.fixture(autouse=True)
@@ -31,10 +32,15 @@ def llm_configured(monkeypatch: pytest.MonkeyPatch) -> None:
     # These tests cover detection and exit codes; LLM settings are checked in
     # test_check_llm_settings.py and LLM case generation in
     # test_check_llm_end_to_end.py. Here the LLM proposes no cases.
-    def no_cases(config: object, functions: object, arguments: object) -> object:
-        return cli._LLMCases(Generation({}, (), 0, TokenUsage()))
+    def no_session(config: object, functions: object, arguments: object) -> object:
+        return contextlib.nullcontext()
 
-    monkeypatch.setattr("didibreak.cli._generate", no_cases)
+    def no_cases(session: object, functions: object, run: object) -> object:
+        empty = Analysis((), (), (), 0, 0, 0)
+        return empty, cli._LLMCases(Generation({}, (), 0, TokenUsage()))
+
+    monkeypatch.setattr("didibreak.cli._start_llm", no_session)
+    monkeypatch.setattr("didibreak.cli._check_with_llm", no_cases)
 
 
 @pytest.fixture

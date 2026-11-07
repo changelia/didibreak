@@ -80,7 +80,9 @@ def test_estimate_is_printed_before_any_request(
 
     assert events == ["estimate", "request"]
     err = capsys.readouterr().err
-    assert "Estimated: 1 LLM calls with gpt-6-luna" in err
+    assert (
+        "Estimated: up to 2 LLM calls (1 + up to 1 refinement) with gpt-6-luna" in err
+    )
     assert "(limit $0.50)" in err
 
 
@@ -156,7 +158,7 @@ def test_second_run_uses_the_cache_without_any_request(
 
     assert main(["check"]) == EXIT_FINDINGS
     second = capsys.readouterr().err
-    assert events == []
+    assert "request" not in events  # the estimate may still list a refinement
     assert "LLM: 0 calls" in second
     assert f"{FUNCTION}('995 555 12 34 56')" in first
     assert f"{FUNCTION}('995 555 12 34 56')" in second
@@ -218,7 +220,7 @@ def test_local_endpoint_without_a_price_costs_nothing(
 
     assert events == ["estimate", "request"]
     err = capsys.readouterr().err
-    assert "Estimated: 1 LLM calls with llama3.2" in err
+    assert "Estimated: up to 2 LLM calls (1 + up to 1 refinement) with llama3.2" in err
     assert ", cost $0 (local)" in err
     assert "output tokens (400 reasoning) · cost $0 (local)" in err
 
@@ -230,12 +232,13 @@ def test_unpriced_model_with_all_cases_cached_needs_no_price(
         '[tool.didibreak.prices]\n"my-private-model" = { input = 1.0, output = 2.0 }\n',
         encoding="utf-8",
     )
-    assert main(["check", "--model", "my-private-model"]) == EXIT_FINDINGS
+    argv = ["check", "--model", "my-private-model", "--refine-rounds", "0"]
+    assert main(argv) == EXIT_FINDINGS
     (repo.repository.path / "pyproject.toml").unlink()
     events.clear()
 
-    assert main(["check", "--model", "my-private-model"]) == EXIT_FINDINGS
-    assert events == []  # all cached: no request, no price needed
+    assert main(argv) == EXIT_FINDINGS
+    assert events == []  # all cached, no refinement: no request, no price needed
 
 
 def test_configured_price_gives_a_cost_for_an_unknown_model(

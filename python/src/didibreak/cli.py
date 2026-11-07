@@ -13,8 +13,6 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from didibreak import __version__
-from didibreak.cache import CaseCache
-from didibreak.cases import load_template
 from didibreak.config import (
     CONFIG_KEYS,
     FAIL_ON,
@@ -43,16 +41,13 @@ from didibreak.gitdiff import (
     resolve_base,
 )
 from didibreak.harness import Case, HarnessSettings, Outcome
-from didibreak.llm import client_settings, create_client, resolve_provider
-from didibreak.llm.common import LLMAuthError, LLMModelError, TokenUsage
-from didibreak.llm.pricing import LOCAL, prices_from_config, required_price
+from didibreak.llm import create_client
+from didibreak.llm.common import LLMAuthError, LLMModelError
+from didibreak.llm_session import LLMSession, Plan
 from didibreak.pipeline import (
     Analysis,
-    Estimate,
     Generation,
     analyze,
-    estimate_generation,
-    generate_cases,
     load_cases_file,
     tree_import_root,
 )
@@ -302,53 +297,38 @@ def _report_detection(detection: Detection, max_functions: int, verbose: bool) -
             print(f"  limit: {function.report_name}", file=sys.stderr)
 
 
-def _cached_cases(
-    cache: CaseCache | None, functions: Sequence[ChangedFunction], count: int
-) -> dict[str, tuple[Case, ...]]:
-    found: dict[str, tuple[Case, ...]] = {}
-    for function in functions if cache else ():
-        cases = cache.load(function, count) if cache else None
-        if cases:
-            found[function.report_name] = cases
-    return found
-
-
-def _store_cases(
-    cache: CaseCache | None,
-    functions: Sequence[ChangedFunction],
-    generation: Generation,
-    count: int,
-) -> None:
-    for function in functions if cache else ():
-        cases = generation.cases.get(function.report_name)
-        if cache and cases:
-            cache.store(function, count, cases)
-
-
 def _money(amount: float) -> str:
     # Two decimals for limits like $0.50; more below a cent, so a tiny limit
     # does not show as $0.00.
     return f"${amount:.2f}" if amount >= 0.01 or amount == 0 else f"${amount:.6f}"
 
 
-def _print_estimate(
-    estimate: Estimate, model: str, max_cost: float, cached: int, local: bool
-) -> None:
+def _print_estimate(plan: Plan, session: LLMSession, functions: int) -> None:
+    estimate, model, max_cost = (
+        plan.estimate,
+        session.settings.model,
+        session.config.max_cost,
+    )
     usage = estimate.usage
     tokens = f"~{usage.input_tokens:,} input + ~{usage.output_tokens:,} output tokens"
-    if local:
+    if session.local:
         cost = ", cost $0 (local)"
     else:
         cost = f", ~${estimate.cost_usd or 0:.4f} (limit {_money(max_cost)})"
-    print(
-        f"Estimated: {estimate.calls} LLM calls with {model}, {tokens}{cost}",
-        file=sys.stderr,
-    )
-    if not local and (estimate.cost_usd or 0) > max_cost:
+    if plan.refinement:
+        calls = (
+            f"up to {plan.calls} LLM calls ({plan.initial} + up to "
+            f"{plan.refinement} refinement)"
+        )
+    else:
+        calls = f"{plan.calls} LLM calls"
+    print(f"Estimated: {calls} with {model}, {tokens}{cost}", file=sys.stderr)
+    if not session.local and (estimate.cost_usd or 0) > max_cost:
         print(
             "The estimate is above max_cost: functions after the limit are skipped.",
             file=sys.stderr,
         )
+    cached = functions - plan.initial
     if cached:
         print(f"{cached} function(s) use cached cases", file=sys.stderr)
 
@@ -367,50 +347,127 @@ def _confirmed(arguments: argparse.Namespace, config: Config) -> bool:
 
 @dataclass(frozen=True)
 class _LLMCases:
-    """Generated (and cached) cases, and whether the model runs locally."""
+    """What the LLM contributed to a run, for the listing.
+
+    Attributes:
+        generation: First-round cases and skips, with the usage, cost and
+            invalid cases of all rounds.
+        local: The model runs on this machine (cost 0).
+        refinement_skipped: Functions whose refinement could not be done.
+        refined: Functions that got refinement cases.
+        refinement_cases: Refinement cases run.
+    """
 
     generation: Generation
     local: bool = False
+    refinement_skipped: tuple[ChangedFunction, ...] = ()
+    refined: int = 0
+    refinement_cases: int = 0
 
 
-def _generate(
-    config: Config,
+def _start_llm(
+    config: Config, functions: Sequence[ChangedFunction], arguments: argparse.Namespace
+) -> LLMSession | None:
+    """Plan the LLM requests, show the estimate, ask; None when declined.
+
+    Raises:
+        ConfigError: Missing provider, model or key, or an unpriced
+            non-local model (exit 2, before any request).
+    """
+
+    def factory(config: Config, environment: Mapping[str, str]) -> object:
+        return create_client(config, environment)  # looked up at call time
+
+    session = LLMSession.open(config, os.environ, factory)
+    plan = session.plan(functions)
+    if not plan.calls:
+        return session  # every case is cached
+    if not arguments.quiet:
+        _print_estimate(plan, session, len(functions))
+    return session if _confirmed(arguments, config) else None
+
+
+def _merge(first: Analysis, second: Analysis) -> Analysis:
+    runs = dict(first.runs)
+    for name, more in second.runs.items():
+        runs[name] = (*runs.get(name, ()), *more)
+    checked = (*first.checked, *(f for f in second.checked if f not in first.checked))
+    return Analysis(
+        findings=(*first.findings, *second.findings),
+        checked=checked,
+        skipped=(*first.skipped, *second.skipped),
+        cases_run=first.cases_run + second.cases_run,
+        flaky_dropped=first.flaky_dropped + second.flaky_dropped,
+        timeouts_dropped=first.timeouts_dropped + second.timeouts_dropped,
+        runs=runs,
+    )
+
+
+@dataclass(frozen=True)
+class _Refinement:
+    analysis: Analysis
+    skipped: tuple[ChangedFunction, ...]
+    invalid: int
+    refined: int
+    cases: int
+
+
+def _refine(
+    session: LLMSession,
+    run: Callable[[Sequence[ChangedFunction], Mapping[str, Sequence[Case]]], Analysis],
+    analysis: Analysis,
+) -> _Refinement:
+    """Refinement rounds for functions whose cases found no difference."""
+    found = {finding.function for finding in analysis.findings}
+    stopped: dict[str, ChangedFunction] = {}
+    refined: set[str] = set()
+    invalid = cases = 0
+    for round_number in range(1, session.config.refine_rounds + 1):
+        quiet = [
+            f
+            for f in analysis.checked
+            if f.report_name not in found and f.report_name not in stopped
+        ]
+        if not quiet:
+            break
+        generation = session.cases(quiet, round_number, analysis.runs)
+        invalid += generation.invalid_cases_dropped
+        stopped.update((f.report_name, f) for f in generation.skipped)
+        ready = [f for f in quiet if f.report_name in generation.cases]
+        if not ready:
+            break
+        more = run(ready, generation.cases)
+        analysis = _merge(analysis, more)
+        found |= {finding.function for finding in more.findings}
+        refined |= {f.report_name for f in ready}
+        cases += more.cases_run
+    return _Refinement(analysis, tuple(stopped.values()), invalid, len(refined), cases)
+
+
+def _check_with_llm(
+    session: LLMSession,
     functions: Sequence[ChangedFunction],
-    arguments: argparse.Namespace,
-) -> _LLMCases | None:
-    """LLM cases for the functions; None when the user declined the cost."""
-    # client_settings raises ConfigError for a missing provider, model or
-    # key before any LLM call (exit 2, Detailed Design section 10).
-    settings = client_settings(config, os.environ)
-    provider = resolve_provider(config, os.environ)
-    template = load_template()
-    cache = None
-    if not config.no_cache:
-        output_dir = Path(config.output_dir)
-        cache = CaseCache(output_dir, provider, settings.model, template.version)
-    cached = _cached_cases(cache, functions, config.cases)
-    missing = [f for f in functions if f.report_name not in cached]
-    generation = Generation({}, (), 0, TokenUsage(), 0.0)
-    local = False
-    if missing:
-        # A non-local model without a price is a ConfigError (exit 2): the
-        # cost limit could not be enforced (owner decision 2026-11-07).
-        overrides = prices_from_config(config.prices)
-        price = required_price(settings.model, settings.base_url, overrides)
-        local = price.source == LOCAL
-        estimate = estimate_generation(missing, config.cases, template, price)
-        if not arguments.quiet:
-            _print_estimate(
-                estimate, settings.model, config.max_cost, len(cached), local
-            )
-        if not _confirmed(arguments, config):
-            return None
-        with create_client(config, os.environ) as client:
-            generation = generate_cases(
-                client, missing, config.cases, template, price, config.max_cost
-            )
-        _store_cases(cache, missing, generation, config.cases)
-    return _LLMCases(replace(generation, cases={**cached, **generation.cases}), local)
+    run: Callable[[Sequence[ChangedFunction], Mapping[str, Sequence[Case]]], Analysis],
+) -> tuple[Analysis, _LLMCases]:
+    """First cases, comparison, then refinement rounds (task 16)."""
+    first = session.cases(functions)
+    with_cases = [f for f in functions if f.report_name in first.cases]
+    refinement = _refine(session, run, run(with_cases, first.cases))
+    budget = session.budget
+    totals = replace(
+        first,
+        invalid_cases_dropped=first.invalid_cases_dropped + refinement.invalid,
+        usage=budget.usage,
+        cost_usd=None if budget.price is None else budget.cost,
+    )
+    llm = _LLMCases(
+        totals,
+        session.local,
+        refinement.skipped,
+        refinement.refined,
+        refinement.cases,
+    )
+    return refinement.analysis, llm
 
 
 def _analyze(
@@ -470,11 +527,26 @@ def _report_generation(generation: Generation, local: bool) -> None:
         )
 
 
+def _report_refinement(llm_cases: _LLMCases) -> None:
+    if llm_cases.refined:
+        print(
+            f"Refinement: {llm_cases.refined} function(s) got "
+            f"{llm_cases.refinement_cases} more cases",
+            file=sys.stderr,
+        )
+    for function in llm_cases.refinement_skipped:
+        print(
+            f"  refinement skipped: {function.report_name} ({function.skip_reason})",
+            file=sys.stderr,
+        )
+
+
 def _report_analysis(analysis: Analysis, llm_cases: _LLMCases | None) -> None:
     # Minimal listing on stderr until the text report (task 18).
     generation = llm_cases.generation if llm_cases else None
     if llm_cases is not None:
         _report_generation(llm_cases.generation, llm_cases.local)
+        _report_refinement(llm_cases)
     print(
         f"{analysis.cases_run} cases · {len(analysis.findings)} behavior "
         f"changes · {analysis.flaky_dropped} flaky dropped",
@@ -532,20 +604,23 @@ def _run_check(arguments: argparse.Namespace) -> int:
         return EXIT_OK
     llm_cases: _LLMCases | None = None
     functions = detection.functions
-    if cases is None:
-        try:
-            llm_cases = _generate(config, functions, arguments)
-        except (ConfigError, LLMAuthError, LLMModelError) as error:
-            print(f"didibreak: error: {error}", file=sys.stderr)
-            return EXIT_ERROR
-        if llm_cases is None:
-            print("Cancelled: no LLM request was sent.", file=sys.stderr)
-            return EXIT_OK
-        cases = llm_cases.generation.cases
-        functions = tuple(f for f in functions if f.report_name in cases)
+
+    def run(
+        selected: Sequence[ChangedFunction], chosen: Mapping[str, Sequence[Case]]
+    ) -> Analysis:
+        return _analyze(config, root, base_sha, files, selected, chosen)
+
     try:
-        analysis = _analyze(config, root, base_sha, files, functions, cases)
-    except (GitError, OSError) as error:
+        if cases is not None:
+            analysis = run(functions, cases)
+        else:
+            session = _start_llm(config, functions, arguments)
+            if session is None:
+                print("Cancelled: no LLM request was sent.", file=sys.stderr)
+                return EXIT_OK
+            with session:
+                analysis, llm_cases = _check_with_llm(session, functions, run)
+    except (ConfigError, LLMAuthError, LLMModelError, GitError, OSError) as error:
         print(f"didibreak: error: {error}", file=sys.stderr)
         return EXIT_ERROR
     if config.format == "text":

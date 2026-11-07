@@ -17,6 +17,7 @@ from typing import Any
 from didibreak.cases import (
     CASES_SCHEMA,
     CASES_SCHEMA_NAME,
+    MAX_PREVIOUS_CASES,
     CaseRun,
     PromptTemplate,
     accept_cases,
@@ -263,6 +264,9 @@ def analyze(
 CHARS_PER_TOKEN = 3
 OUTPUT_TOKENS_PER_CASE = 180
 COST_LIMIT_REASON = "cost limit"
+# A refinement prompt also lists the cases already tried: about this many
+# characters per case (call plus both outcomes).
+PREVIOUS_CHARS_PER_CASE = 160
 
 
 @dataclass(frozen=True)
@@ -330,6 +334,34 @@ def estimate_generation(
         usage += estimate_call(messages, count, OUTPUT_TOKENS_PER_CASE)
     cost = None if price is None else cost_usd(usage, price)
     return Estimate(len(functions), usage, cost)
+
+
+def estimate_refinement(
+    rounds: Sequence[tuple[ChangedFunction, int]],
+    count: int,
+    template: PromptTemplate,
+    price: Price | None,
+) -> Estimate:
+    """Upper bound for refinement requests, one per (function, round).
+
+    Args:
+        rounds: Functions with the refinement round each request would be.
+        count: Cases requested per call.
+        template: The refinement prompt template.
+        price: The model's price, or None (tokens only).
+
+    Returns:
+        The estimate if every listed refinement is needed.
+    """
+    usage = TokenUsage()
+    for function, round_number in rounds:
+        messages = build_refinement_messages(function, count, template, ())
+        listed = min(count * round_number, MAX_PREVIOUS_CASES)
+        call = estimate_call(messages, count, OUTPUT_TOKENS_PER_CASE)
+        extra = math.ceil(listed * PREVIOUS_CHARS_PER_CASE / CHARS_PER_TOKEN)
+        usage += replace(call, input_tokens=call.input_tokens + extra)
+    cost = None if price is None else cost_usd(usage, price)
+    return Estimate(len(rounds), usage, cost)
 
 
 @dataclass

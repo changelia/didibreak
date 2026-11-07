@@ -77,7 +77,14 @@ def test_llm_cases_reproduce_the_documented_findings(
     code = main(["check"])
 
     expected_functions = [f["function"] for f in fixture.expected["changed_functions"]]
-    assert asked == expected_functions  # one request per testable function
+    with_findings = {f["function"] for f in fixture.expected["findings"]}
+    # One request per testable function, then one refinement request for each
+    # function that ran (it had cases) without a finding; the fake repeats its
+    # cases, so the refinement brings no new cases and stops there.
+    assert asked[: len(expected_functions)] == expected_functions
+    assert sorted(asked[len(expected_functions) :]) == sorted(
+        f for f in expected_functions if f not in with_findings and f in replies
+    )
     assert code == (EXIT_FINDINGS if fixture.expected["findings"] else EXIT_OK)
     err = capsys.readouterr().err
     for finding in fixture.expected["findings"]:
