@@ -43,7 +43,7 @@ in snake_case.
 | `--fail-on` | `fail_on` | `unclear` or `unexpected` | `unclear` | Exit 1 on `unexpected`, `unclear` or `new_function` findings (`unclear`), or on `unexpected` findings only. |
 | `--max-functions N` | `max_functions` | integer ≥ 1 | `10` | Maximum functions checked per run. |
 | `--cases N` | `cases` | integer 1–50 | `12` | Input cases requested per function per round. |
-| `--refine-rounds N` | `refine_rounds` | integer 0–3 | `1` | Extra rounds when no difference is found. |
+| `--refine-rounds N` | `refine_rounds` | integer 0–3 | `1` | Extra LLM rounds for a function whose cases found no difference; each round sends the cases already tried with their results. `0` turns refinement off. |
 | `--max-cost USD` | `max_cost` | number > 0 | `0.50` | Hard LLM cost limit per run, in US dollars. |
 | `--timeout SECONDS` | `timeout` | number > 0 | `10` | Timeout per executed case. |
 | `--provider` | `provider` | `openai` or `anthropic` | from the API key | LLM provider (`openai` means any OpenAI-compatible API). If not set: `openai` when only `OPENAI_API_KEY` is set, `anthropic` when only `ANTHROPIC_API_KEY` is set; otherwise set it. See [providers-and-costs.md](providers-and-costs.md#setting-up-a-provider). |

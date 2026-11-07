@@ -4,8 +4,9 @@ Supported LLM providers and local models, what data is sent, and how cost is con
 
 `didibreak check` asks the LLM for input cases for each changed function it
 can test: one request per function (at most `max_functions`, default 10),
-plus one more if a reply is unusable. Cases are cached, so an unchanged
-function costs nothing on the next run.
+plus one more if a reply is unusable, plus up to `refine_rounds` (default 1)
+refinement requests for a function whose cases found no difference. Cases
+are cached, so an unchanged function costs nothing on the next run.
 
 ## Cost control
 
@@ -16,7 +17,7 @@ too low for even one request (nothing is sent):
 ```text
 $ didibreak check --max-cost 0.000001
 1 changed function(s) to check (0 new)
-Estimated: 1 LLM calls with gpt-6-luna, ~682 input + ~2,160 output tokens, ~$0.0011 (limit $0.000001)
+Estimated: up to 2 LLM calls (1 + up to 1 refinement) with gpt-6-luna, ~2,094 input + ~4,320 output tokens, ~$0.0024 (limit $0.000001)
 The estimate is above max_cost: functions after the limit are skipped.
 LLM: 0 calls · 0 input tokens · 0 output tokens · cost $0.0000
 0 cases · 0 behavior changes · 0 flaky dropped
@@ -26,6 +27,9 @@ LLM: 0 calls · 0 input tokens · 0 output tokens · cost $0.0000
 - The question is asked only in text mode on a terminal. `--yes`,
   `--format json` and a non-terminal stdin (CI, AI agents) skip it.
   Answering `n` sends nothing.
+- The estimate counts every refinement request that could be needed, so it
+  is an upper bound ("up to"); refinement is skipped for functions whose
+  first cases already find a difference.
 - Input tokens are estimated from the exact prompt; output tokens from
   180 tokens per requested case at first, then from the output tokens the
   run actually used. Reasoning tokens count as output: in a live check of
@@ -33,7 +37,8 @@ LLM: 0 calls · 0 input tokens · 0 output tokens · cost $0.0000
 - `max_cost` (default $0.50) is a hard limit per run: before each request
   didibreak adds that request's estimate to the cost so far, and if the total
   would exceed the limit, that function and all remaining ones are skipped
-  with the reason `cost limit`.
+  with the reason `cost limit`. The limit covers refinement requests too
+  (`refinement skipped: ... (cost limit)`).
 - After the run, the actual tokens and cost are shown, for example (from a
   test run with a fake provider):
   `LLM: 1 calls · 1000 input tokens · 600 output tokens (400 reasoning) · cost $0.0004`.
@@ -63,7 +68,8 @@ setting:
 ## Case cache
 
 Accepted cases are stored in `.didibreak/cache/cases/` (inside
-`output_dir`), one file per function. A file is reused only when the prompt
+`output_dir`), one file per function and round (first cases, then each
+refinement round). A file is reused only when the prompt
 version, provider, model, `cases` and both versions of the function are the
 same. `--no-cache` ignores the cache for one run; deleting the folder clears
 it. The output folder contains its own `.gitignore`, so your `.gitignore` is
@@ -77,7 +83,11 @@ For each function that is checked, and nothing else from your repository:
 - its signature and docstring;
 - the base and the current version of its source code;
 - the number of cases requested and the fixed instructions in
-  [`spec/prompts/case_generation.md`](../spec/prompts/case_generation.md).
+  [`spec/prompts/case_generation.md`](../spec/prompts/case_generation.md);
+- for a refinement request also the cases already tried and what each
+  version did with them: the `repr` of the returned value (at most 120
+  characters), the exception type, or a timeout, with the instructions in
+  [`spec/prompts/case_refinement.md`](../spec/prompts/case_refinement.md).
 
 Your code is never sent anywhere else. The provider's own data policy
 applies to what it receives.
