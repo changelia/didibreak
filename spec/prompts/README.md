@@ -7,7 +7,8 @@ starts with a version header (`prompt_version: 1`).
   new function.
 - `case_refinement.md` (task 16): when no case showed a difference, asks for
   new cases, listing the cases already tried with what each version did.
-- Intent labelling: written in task 17.
+- `intent_labelling.md` (task 17): labels the findings of a run
+  `expected`, `unexpected` or `unclear` against the intent.
 
 Format: the first line is `prompt_version: N`; `=== system ===` and
 `=== user ===` start the two messages. Placeholders use Python
