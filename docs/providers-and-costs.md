@@ -90,8 +90,9 @@ For each function that is checked, and nothing else from your repository:
   version did with them: the `repr` of the returned value (at most 120
   characters), the exception type, or a timeout, with the instructions in
   [`spec/prompts/case_refinement.md`](../spec/prompts/case_refinement.md);
-- for the labelling request: the `--intent` text, the latest commit message
-  when `--base` is an earlier commit, and each finding (function, input and
+- for the labelling request: the `--intent` text, the messages of the
+  commits between `--base` and HEAD (newest first, about 4,000 characters at
+  most), and each finding (function, input and
   both versions' results), with the instructions in
   [`spec/prompts/intent_labelling.md`](../spec/prompts/intent_labelling.md).
 

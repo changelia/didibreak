@@ -154,19 +154,21 @@ def test_malformed_labels_leave_findings_unclear_with_the_reason(
     assert "intent labelling failed: invalid llm response" in err
 
 
-def test_commit_message_is_the_intent_when_the_base_is_an_earlier_commit(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+def test_all_commit_messages_since_the_base_are_the_intent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     fixture = build_fixture_repository("intended_change", tmp_path / "repo")
     fixture.repository.commit("Add an exclamation mark to greetings")
+    fixture.repository.write("README.md", "docs\n")
+    fixture.repository.commit("Document greetings")
     label_prompts = install(monkeypatch, fixture.expected)
     monkeypatch.chdir(fixture.repository.path)
 
-    assert main(["check", "--base", "HEAD~1"]) == EXIT_OK
+    assert main(["check", "--base", "HEAD~2"]) == EXIT_OK
 
     assert (
-        "Latest commit message:\nAdd an exclamation mark to greetings"
-        in label_prompts[0]
+        "Commit messages since the base (newest first):\n- Document greetings\n\n"
+        "- Add an exclamation mark to greetings" in label_prompts[0]
     )
 
 

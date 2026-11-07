@@ -1,8 +1,8 @@
 """Intent labelling: what the change was meant to do, and labels for findings.
 
 Pure functions over data; the LLM call is made by the session. The intent is
-the ``--intent`` text and, when the base is not HEAD, the latest commit
-message (the commits since the base are the change). Labels never remove a
+the ``--intent`` text and the messages of the commits since the base (the
+commits in base..HEAD are part of the change). Labels never remove a
 finding; without an intent every finding is ``unclear`` (Spec).
 """
 
@@ -15,15 +15,35 @@ from didibreak.cases import PromptTemplate, describe_call, describe_outcome
 from didibreak.compare import Finding
 from didibreak.llm.common import Message
 
-COMMIT_MESSAGE_LIMIT = 2000
+# Owner decision 2026-11-07 (task 17 review): all commit messages in
+# base..HEAD, newest first, up to about this many characters in total.
+COMMIT_MESSAGES_LIMIT = 4000
+COMMIT_MESSAGES_HEADER = "Commit messages since the base (newest first):"
 
 
-def intent_text(intent: str | None, commit_message: str | None) -> str | None:
+def _commit_messages_text(messages: Sequence[str]) -> str:
+    kept: list[str] = []
+    used = 0
+    for message in (m.strip() for m in messages):
+        if not message:
+            continue
+        room = COMMIT_MESSAGES_LIMIT - used
+        if room <= 0:
+            break
+        # Whole messages are kept while they fit; only the first may be cut.
+        if len(message) > room and kept:
+            break
+        kept.append(message[:room])
+        used += len(kept[-1])
+    return "\n\n".join(f"- {message}" for message in kept)
+
+
+def intent_text(intent: str | None, commit_messages: Sequence[str]) -> str | None:
     """The intent shown to the LLM, or None when there is none.
 
     Args:
         intent: The ``--intent`` text.
-        commit_message: The latest commit message, when the base is not HEAD.
+        commit_messages: Messages of the commits in base..HEAD, newest first.
 
     Returns:
         Both parts, labelled, or None when both are empty.
@@ -31,9 +51,9 @@ def intent_text(intent: str | None, commit_message: str | None) -> str | None:
     parts = []
     if intent and intent.strip():
         parts.append(f"Stated by the user: {intent.strip()}")
-    if commit_message and commit_message.strip():
-        message = commit_message.strip()[:COMMIT_MESSAGE_LIMIT]
-        parts.append(f"Latest commit message:\n{message}")
+    messages = _commit_messages_text(commit_messages)
+    if messages:
+        parts.append(f"{COMMIT_MESSAGES_HEADER}\n{messages}")
     return "\n\n".join(parts) or None
 
 

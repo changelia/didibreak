@@ -52,8 +52,10 @@ meant to do:
 | `unclear` | The intent is vague, or the relation cannot be decided. |
 | `new_function` | The function is new; there is no old behavior to compare with. |
 
-The intent is the `--intent` text and, when `--base` is an earlier commit,
-the latest commit message. One LLM request labels all findings of a run,
+The intent is the `--intent` text and the messages of all commits between
+`--base` and HEAD, newest first (about 4,000 characters at most; older
+messages are left out first), so a change one of those commits announced is
+not labelled unexpected. One LLM request labels all findings of a run,
 with a one-sentence reason each. The LLM never removes a finding and never
 decides what changed; it only relates each measured difference to the
 intent. Findings stay `unclear`, with the reason shown, when there is no

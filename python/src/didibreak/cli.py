@@ -36,7 +36,7 @@ from didibreak.gitdiff import (
     ChangedFiles,
     GitError,
     changed_python_files,
-    commit_message,
+    commit_messages,
     read_base_file,
     repository_root,
     resolve_base,
@@ -588,11 +588,10 @@ CASES_FILE_REASON = "intent labelling needs the LLM, which --cases-file runs do 
 
 
 def _intent(config: Config, root: Path, base_sha: str) -> str | None:
-    # The latest commit message describes the change only when the base is
-    # an earlier commit; against HEAD the change is uncommitted (task 17).
-    head = resolve_base(root, "HEAD")
-    message = commit_message(root) if base_sha != head else None
-    return intent_text(config.intent, message)
+    # The commits in base..HEAD are part of the change, so their messages
+    # describe its intent (owner decision 2026-11-07); against HEAD there
+    # are none.
+    return intent_text(config.intent, commit_messages(root, base_sha))
 
 
 def _run_check(arguments: argparse.Namespace) -> int:

@@ -38,7 +38,7 @@ in snake_case.
 | Flag | Config key | Type | Default | Meaning |
 | --- | --- | --- | --- | --- |
 | `--base REF` | `base` | git ref | `HEAD` | Version to compare the working tree against. |
-| `--intent TEXT` | `intent` | string | none | What the change was supposed to do; used only to label findings (`expected`, `unexpected`, `unclear`). When `--base` is an earlier commit, the latest commit message is used as well. Without either, findings are `unclear`. |
+| `--intent TEXT` | `intent` | string | none | What the change was supposed to do; used only to label findings (`expected`, `unexpected`, `unclear`). When `--base` is an earlier commit, the messages of the commits since then are used as well. Without either, findings are `unclear`. |
 | `--format` | `format` | `text` or `json` | `text` | Report format on stdout. |
 | `--fail-on` | `fail_on` | `unclear` or `unexpected` | `unclear` | Exit 1 on `unexpected`, `unclear` or `new_function` findings (`unclear`), or on `unexpected` findings only. |
 | `--max-functions N` | `max_functions` | integer ≥ 1 | `10` | Maximum functions checked per run. |
