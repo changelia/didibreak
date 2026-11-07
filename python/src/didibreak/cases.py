@@ -9,7 +9,7 @@ into the package at build time). Every proposed argument must pass
 import ast
 import keyword
 import textwrap
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from importlib import resources
 from string import Template
@@ -17,10 +17,14 @@ from typing import Any
 
 from didibreak.compare import finding_id
 from didibreak.functions import ChangedFunction
-from didibreak.harness import Case
+from didibreak.harness import Case, Outcome
 from didibreak.llm.common import Message
 
 PROMPT_FILE = "case_generation.md"
+REFINEMENT_PROMPT_FILE = "case_refinement.md"
+# Previous results in a refinement prompt: keep it short and bounded.
+OUTCOME_TEXT_LIMIT = 120
+MAX_PREVIOUS_CASES = 50
 _SYSTEM_MARKER = "=== system ==="
 _USER_MARKER = "=== user ==="
 
@@ -156,6 +160,79 @@ def build_messages(
         task=NEW_TASK if is_new else CHANGED_TASK,
         old_source=(function.old_source or NO_OLD_SOURCE).rstrip(),
         new_source=function.new_source.rstrip(),
+        count=count,
+    )
+    return [Message("system", template.system), Message("user", user)]
+
+
+@dataclass(frozen=True)
+class CaseRun:
+    """A case and what both versions did with it (base None for new functions)."""
+
+    case: Case
+    before: Outcome | None
+    after: Outcome
+
+
+def describe_call(qualname: str, case: Case) -> str:
+    """``name(arg, key=value)`` as written in the case."""
+    name = qualname.rsplit(".", 1)[-1]
+    arguments = [*case.args, *(f"{k}={v}" for k, v in case.kwargs.items())]
+    return f"{name}({', '.join(arguments)})"
+
+
+def describe_outcome(outcome: Outcome) -> str:
+    """Short text of one outcome for a refinement prompt."""
+    if outcome.kind == "exception":
+        text = f"raises {outcome.type_name}"
+    elif outcome.kind == "timeout":
+        text = "timed out"
+    else:
+        text = outcome.repr[:OUTCOME_TEXT_LIMIT]
+    return text if outcome.stable else f"{text} (not repeatable)"
+
+
+def _previous_lines(qualname: str, previous: Sequence[CaseRun]) -> str:
+    lines = []
+    for run in previous[-MAX_PREVIOUS_CASES:]:
+        call = describe_call(qualname, run.case)
+        if run.before is None:
+            lines.append(f"- {call} -> {describe_outcome(run.after)}")
+        else:
+            lines.append(
+                f"- {call} -> old: {describe_outcome(run.before)}; "
+                f"new: {describe_outcome(run.after)}"
+            )
+    return "\n".join(lines) or "(none)"
+
+
+def build_refinement_messages(
+    function: ChangedFunction,
+    count: int,
+    template: PromptTemplate,
+    previous: Sequence[CaseRun],
+) -> list[Message]:
+    """The refinement conversation: the generation inputs plus the cases tried.
+
+    Args:
+        function: A function whose cases showed no difference.
+        count: Number of new cases to request.
+        template: The parsed refinement template.
+        previous: Cases already tried with both outcomes, oldest first; at
+            most MAX_PREVIOUS_CASES (the latest) are listed.
+
+    Returns:
+        System and user messages.
+    """
+    is_new = function.old_source is None
+    user = Template(template.user).substitute(
+        function=function.report_name,
+        signature=signature(function.new_source),
+        docstring=docstring(function.new_source),
+        task=NEW_TASK if is_new else CHANGED_TASK,
+        old_source=(function.old_source or NO_OLD_SOURCE).rstrip(),
+        new_source=function.new_source.rstrip(),
+        previous=_previous_lines(function.qualname, previous),
         count=count,
     )
     return [Message("system", template.system), Message("user", user)]
