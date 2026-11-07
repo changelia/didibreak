@@ -18,7 +18,12 @@ dependencies = [
 didibreak = "didibreak.cli:main"
 
 [dependency-groups]
-dev = ["pytest", "ruff", "mypy"]
+dev = [
+    "pytest",
+    "ruff",
+    "mypy",
+    "jsonschema==4.26.0",  # dev only: validates reports against spec/report.schema.json
+]
 
 [tool.ruff]
 target-version = "py311"
