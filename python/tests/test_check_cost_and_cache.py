@@ -12,7 +12,7 @@ from fixture_repos import FixtureRepository, build_fixture_repository
 
 from didibreak import cli, llm
 from didibreak.cache import GITIGNORE_TEXT
-from didibreak.cli import EXIT_FINDINGS, EXIT_OK, main
+from didibreak.cli import EXIT_ERROR, EXIT_FINDINGS, EXIT_OK, main
 from didibreak.config import Config
 
 FUNCTION = "app/utils/phone.py::normalize_phone"
@@ -187,15 +187,55 @@ def test_cost_limit_skips_cleanly_and_reports_it(
     assert f"skipped: {FUNCTION} (cost limit)" in err
 
 
-def test_unknown_model_shows_tokens_only(
+def test_unpriced_remote_model_exits_2_with_a_hint(
     events: list[str], capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assert main(["check", "--model", "my-private-model"]) == EXIT_FINDINGS
+    assert main(["check", "--model", "my-private-model"]) == EXIT_ERROR
 
+    assert events == []  # no estimate, no request
     err = capsys.readouterr().err
-    assert "no price is known for my-private-model" in err
-    assert "$" not in err.split("Estimated:")[1].splitlines()[0]
-    assert "cost unknown (no price for this model)" in err
+    assert "no price is known for model 'my-private-model'" in err
+    assert (
+        '[tool.didibreak.prices] "my-private-model" = { input = ..., output = ... }'
+        in err
+    )
+
+
+@pytest.mark.parametrize("host", ["localhost:11434", "127.0.0.1:1234"])
+def test_local_endpoint_without_a_price_costs_nothing(
+    events: list[str],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    host: str,
+) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY")
+    argv = ["check", "--provider", "openai", "--base-url", f"http://{host}/v1"]
+    (Path.cwd() / "pyproject.toml").write_text(
+        '[tool.didibreak]\nmodel = "llama3.2"\napi_key_env = ""\n', encoding="utf-8"
+    )
+
+    assert main(argv) == EXIT_FINDINGS
+
+    assert events == ["estimate", "request"]
+    err = capsys.readouterr().err
+    assert "Estimated: 1 LLM calls with llama3.2" in err
+    assert ", cost $0 (local)" in err
+    assert "output tokens (400 reasoning) · cost $0 (local)" in err
+
+
+def test_unpriced_model_with_all_cases_cached_needs_no_price(
+    events: list[str], monkeypatch: pytest.MonkeyPatch, repo: FixtureRepository
+) -> None:
+    (repo.repository.path / "pyproject.toml").write_text(
+        '[tool.didibreak.prices]\n"my-private-model" = { input = 1.0, output = 2.0 }\n',
+        encoding="utf-8",
+    )
+    assert main(["check", "--model", "my-private-model"]) == EXIT_FINDINGS
+    (repo.repository.path / "pyproject.toml").unlink()
+    events.clear()
+
+    assert main(["check", "--model", "my-private-model"]) == EXIT_FINDINGS
+    assert events == []  # all cached: no request, no price needed
 
 
 def test_configured_price_gives_a_cost_for_an_unknown_model(

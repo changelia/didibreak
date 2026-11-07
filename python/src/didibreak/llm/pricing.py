@@ -8,7 +8,9 @@ no price: didibreak then shows tokens only and never guesses a cost.
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
+from didibreak.config import ConfigError
 from didibreak.llm.common import TokenUsage
 
 PRICES_CHECKED = "2026-11-06"
@@ -90,6 +92,47 @@ def price_for(model: str, overrides: Mapping[str, Price] | None = None) -> Price
     if overrides and model in overrides:
         return overrides[model]
     return BUILT_IN_PRICES.get(model)
+
+
+# Owner decision 2026-11-07: a model served on this machine costs nothing;
+# any other model needs a price so that max_cost can be enforced.
+LOCAL_HOSTS = ("localhost", "127.0.0.1")
+LOCAL = "local"
+LOCAL_PRICE = Price(input=0.0, output=0.0, source=LOCAL)
+
+
+def is_local(base_url: str) -> bool:
+    """Whether the endpoint runs on this machine (localhost or 127.0.0.1)."""
+    return urlparse(base_url).hostname in LOCAL_HOSTS
+
+
+def required_price(
+    model: str, base_url: str, overrides: Mapping[str, Price] | None = None
+) -> Price:
+    """The model's price; a local endpoint without one costs 0.
+
+    Args:
+        model: Model name.
+        base_url: API base URL of the provider.
+        overrides: Prices from the ``prices`` setting.
+
+    Returns:
+        The configured or built-in price, or LOCAL_PRICE for a local endpoint.
+
+    Raises:
+        ConfigError: A non-local model has no price, so max_cost could not be
+            enforced.
+    """
+    price = price_for(model, overrides)
+    if price is not None:
+        return price
+    if is_local(base_url):
+        return LOCAL_PRICE
+    raise ConfigError(
+        f"no price is known for model {model!r}, so max_cost cannot be enforced; "
+        f'add it in pyproject.toml: [tool.didibreak.prices] "{model}" = '
+        "{ input = ..., output = ... } (US dollars per million tokens)"
+    )
 
 
 def cost_usd(usage: TokenUsage, price: Price) -> float:

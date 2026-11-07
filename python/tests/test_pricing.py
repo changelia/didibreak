@@ -7,11 +7,14 @@ from didibreak.config import ConfigError, read_config_table, validate
 from didibreak.llm.common import TokenUsage
 from didibreak.llm.pricing import (
     BUILT_IN_PRICES,
+    LOCAL_PRICE,
     PRICES_CHECKED,
     Price,
     cost_usd,
+    is_local,
     price_for,
     prices_from_config,
+    required_price,
 )
 
 
@@ -98,3 +101,35 @@ def test_prices_setting_is_read_from_pyproject(tmp_path: Path) -> None:
 def test_invalid_prices_are_rejected(value: object, message: str) -> None:
     with pytest.raises(ConfigError, match=re.escape(message)):
         validate("prices", value)
+
+
+@pytest.mark.parametrize(
+    ("url", "local"),
+    [
+        ("http://localhost:11434/v1", True),
+        ("http://127.0.0.1:1234/v1", True),
+        ("https://api.openai.com/v1", False),
+        ("http://192.168.1.5:11434/v1", False),
+        ("https://localhost.example.com/v1", False),
+    ],
+)
+def test_local_endpoints_are_localhost_and_127_0_0_1(url: str, local: bool) -> None:
+    assert is_local(url) is local
+
+
+def test_required_price_prefers_a_known_price_then_local_zero() -> None:
+    overrides = prices_from_config({"llama": {"input": 0.2, "output": 0.4}})
+
+    assert (
+        required_price("gpt-6-luna", "https://api.openai.com/v1")
+        == BUILT_IN_PRICES["gpt-6-luna"]
+    )
+    assert required_price("llama", "http://localhost:11434/v1", overrides).input == 0.2
+    assert required_price("llama", "http://localhost:11434/v1") == LOCAL_PRICE
+
+
+def test_unpriced_remote_model_is_a_configuration_error() -> None:
+    with pytest.raises(
+        ConfigError, match=r'add it in pyproject.toml: \[tool.didibreak.prices\] "x"'
+    ):
+        required_price("x", "https://openrouter.ai/api/v1")

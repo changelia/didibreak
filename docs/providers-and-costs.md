@@ -48,8 +48,12 @@ docs on 2026-11-06:
 | `gpt-6-luna` | 0.10 | 0.01 | 0.50 | over 272,000 prompt tokens: 0.20 / 0.02 / 0.75 | [model page](https://developers.openai.com/api/docs/models/gpt-6-luna) |
 | `claude-haiku-5-5` | 0.10 | 0.01 | 0.50 | over 100,000 prompt tokens: 0.50 / 0.05 / 2.50 | [pricing](https://platform.claude.com/docs/en/about-claude/pricing) |
 
-For any other model didibreak shows tokens only, never a guessed price, and
-cannot enforce `max_cost`. Add a price with the `prices` setting:
+A model on this machine (`base_url` on `localhost` or `127.0.0.1`, such as
+Ollama or LM Studio) without a price costs nothing: the estimate and the
+usage line show `cost $0 (local)`. Any other model without a price stops
+`check` with exit code 2 before any request, because `max_cost` could not be
+enforced; didibreak never guesses a price. Add one with the `prices`
+setting:
 
 ```toml
 [tool.didibreak.prices]

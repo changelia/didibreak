@@ -9,7 +9,7 @@ import argparse
 import os
 import sys
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from didibreak import __version__
@@ -45,7 +45,7 @@ from didibreak.gitdiff import (
 from didibreak.harness import Case, HarnessSettings, Outcome
 from didibreak.llm import client_settings, create_client, resolve_provider
 from didibreak.llm.common import LLMAuthError, LLMModelError, TokenUsage
-from didibreak.llm.pricing import price_for, prices_from_config
+from didibreak.llm.pricing import LOCAL, prices_from_config, required_price
 from didibreak.pipeline import (
     Analysis,
     Estimate,
@@ -332,22 +332,19 @@ def _money(amount: float) -> str:
 
 
 def _print_estimate(
-    estimate: Estimate, model: str, max_cost: float, cached: int
+    estimate: Estimate, model: str, max_cost: float, cached: int, local: bool
 ) -> None:
     usage = estimate.usage
     tokens = f"~{usage.input_tokens:,} input + ~{usage.output_tokens:,} output tokens"
-    if estimate.cost_usd is None:
-        cost = (
-            f"; no price is known for {model}, so no cost is shown and max_cost "
-            "cannot be enforced (add it to prices in [tool.didibreak])"
-        )
+    if local:
+        cost = ", cost $0 (local)"
     else:
-        cost = f", ~${estimate.cost_usd:.4f} (limit {_money(max_cost)})"
+        cost = f", ~${estimate.cost_usd or 0:.4f} (limit {_money(max_cost)})"
     print(
         f"Estimated: {estimate.calls} LLM calls with {model}, {tokens}{cost}",
         file=sys.stderr,
     )
-    if estimate.cost_usd is not None and estimate.cost_usd > max_cost:
+    if not local and (estimate.cost_usd or 0) > max_cost:
         print(
             "The estimate is above max_cost: functions after the limit are skipped.",
             file=sys.stderr,
@@ -368,29 +365,44 @@ def _confirmed(arguments: argparse.Namespace, config: Config) -> bool:
     return answer.strip().lower() in ("", "y", "yes")
 
 
+@dataclass(frozen=True)
+class _LLMCases:
+    """Generated (and cached) cases, and whether the model runs locally."""
+
+    generation: Generation
+    local: bool = False
+
+
 def _generate(
     config: Config,
     functions: Sequence[ChangedFunction],
     arguments: argparse.Namespace,
-) -> Generation | None:
+) -> _LLMCases | None:
     """LLM cases for the functions; None when the user declined the cost."""
     # client_settings raises ConfigError for a missing provider, model or
     # key before any LLM call (exit 2, Detailed Design section 10).
     settings = client_settings(config, os.environ)
     provider = resolve_provider(config, os.environ)
     template = load_template()
-    price = price_for(settings.model, prices_from_config(config.prices))
     cache = None
     if not config.no_cache:
         output_dir = Path(config.output_dir)
         cache = CaseCache(output_dir, provider, settings.model, template.version)
     cached = _cached_cases(cache, functions, config.cases)
     missing = [f for f in functions if f.report_name not in cached]
-    generation = Generation({}, (), 0, TokenUsage(), None if price is None else 0.0)
+    generation = Generation({}, (), 0, TokenUsage(), 0.0)
+    local = False
     if missing:
+        # A non-local model without a price is a ConfigError (exit 2): the
+        # cost limit could not be enforced (owner decision 2026-11-07).
+        overrides = prices_from_config(config.prices)
+        price = required_price(settings.model, settings.base_url, overrides)
+        local = price.source == LOCAL
         estimate = estimate_generation(missing, config.cases, template, price)
         if not arguments.quiet:
-            _print_estimate(estimate, settings.model, config.max_cost, len(cached))
+            _print_estimate(
+                estimate, settings.model, config.max_cost, len(cached), local
+            )
         if not _confirmed(arguments, config):
             return None
         with create_client(config, os.environ) as client:
@@ -398,7 +410,7 @@ def _generate(
                 client, missing, config.cases, template, price, config.max_cost
             )
         _store_cases(cache, missing, generation, config.cases)
-    return replace(generation, cases={**cached, **generation.cases})
+    return _LLMCases(replace(generation, cases={**cached, **generation.cases}), local)
 
 
 def _analyze(
@@ -432,17 +444,19 @@ def _describe(outcome: Outcome | None) -> str:
     return outcome.repr
 
 
-def _report_generation(generation: Generation) -> None:
+def _report_generation(generation: Generation, local: bool) -> None:
     usage = generation.usage
     reasoning = (
         f" ({usage.reasoning_tokens} reasoning)"
         if usage.reasoning_tokens is not None
         else ""
     )
-    if generation.cost_usd is not None:
+    if local:
+        cost = " · cost $0 (local)"
+    elif generation.cost_usd is not None:
         cost = f" · cost ${generation.cost_usd:.4f}"
     else:
-        cost = " · cost unknown (no price for this model)" if usage.calls else ""
+        cost = ""
     print(
         f"LLM: {usage.calls} calls · {usage.input_tokens} input tokens · "
         f"{usage.output_tokens} output tokens{reasoning}{cost}",
@@ -456,10 +470,11 @@ def _report_generation(generation: Generation) -> None:
         )
 
 
-def _report_analysis(analysis: Analysis, generation: Generation | None) -> None:
+def _report_analysis(analysis: Analysis, llm_cases: _LLMCases | None) -> None:
     # Minimal listing on stderr until the text report (task 18).
-    if generation is not None:
-        _report_generation(generation)
+    generation = llm_cases.generation if llm_cases else None
+    if llm_cases is not None:
+        _report_generation(llm_cases.generation, llm_cases.local)
     print(
         f"{analysis.cases_run} cases · {len(analysis.findings)} behavior "
         f"changes · {analysis.flaky_dropped} flaky dropped",
@@ -515,18 +530,18 @@ def _run_check(arguments: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
         return EXIT_OK
-    generation: Generation | None = None
+    llm_cases: _LLMCases | None = None
     functions = detection.functions
     if cases is None:
         try:
-            generation = _generate(config, functions, arguments)
+            llm_cases = _generate(config, functions, arguments)
         except (ConfigError, LLMAuthError, LLMModelError) as error:
             print(f"didibreak: error: {error}", file=sys.stderr)
             return EXIT_ERROR
-        if generation is None:
+        if llm_cases is None:
             print("Cancelled: no LLM request was sent.", file=sys.stderr)
             return EXIT_OK
-        cases = generation.cases
+        cases = llm_cases.generation.cases
         functions = tuple(f for f in functions if f.report_name in cases)
     try:
         analysis = _analyze(config, root, base_sha, files, functions, cases)
@@ -534,7 +549,7 @@ def _run_check(arguments: argparse.Namespace) -> int:
         print(f"didibreak: error: {error}", file=sys.stderr)
         return EXIT_ERROR
     if config.format == "text":
-        _report_analysis(analysis, generation)
+        _report_analysis(analysis, llm_cases)
     # TODO(task 18): print the JSON report for --format json.
     return exit_code_for(
         [finding.label for finding in analysis.findings if finding.label],
