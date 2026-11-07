@@ -111,3 +111,26 @@ def test_src_layout_imports_from_the_package_root(
     (finding,) = analysis.findings
     assert finding.before is not None
     assert finding.before.repr == "'p.core'"
+
+
+def test_analysis_keeps_every_run_with_both_outcomes(
+    git_repository: GitRepository,
+) -> None:
+    git_repository.write("m.py", "def f(x):\n    return x\n")
+    git_repository.commit()
+    git_repository.write(
+        "m.py", "def f(x):\n    return x * 2\n\ndef g(x):\n    return 1 / x\n"
+    )
+
+    analysis = run(
+        git_repository.path,
+        {"m.py::f": (Case(("0",)), Case(("2",))), "m.py::g": (Case(("1",)),)},
+    )
+
+    f_runs = analysis.runs["m.py::f"]
+    assert [run.case.args for run in f_runs] == [("0",), ("2",)]
+    assert f_runs[1].before is not None
+    assert (f_runs[1].before.repr, f_runs[1].after.repr) == ("2", "4")
+    (g_run,) = analysis.runs["m.py::g"]
+    assert g_run.before is None  # new function
+    assert g_run.after.repr == "1.0"

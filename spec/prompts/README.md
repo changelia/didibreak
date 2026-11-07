@@ -4,7 +4,9 @@ Versioned LLM prompt templates shared by all didibreak packages. Each template
 starts with a version header (`prompt_version: 1`).
 
 - `case_generation.md` (task 14): asks for input cases for one changed or
-  new function. Refinement follows in task 16.
+  new function.
+- `case_refinement.md` (task 16): when no case showed a difference, asks for
+  new cases, listing the cases already tried with what each version did.
 - Intent labelling: written in task 17.
 
 Format: the first line is `prompt_version: N`; `=== system ===` and

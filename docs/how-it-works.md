@@ -30,6 +30,16 @@ only; it never predicts results and never decides what changed.
 A rejected API key (HTTP 401 or 403) or an unknown model (HTTP 404) stops the
 run with exit code 2.
 
+### Refinement
+
+When none of a function's cases shows a difference, didibreak asks the LLM
+once more (`refine_rounds`, default 1, at most 3). The new request lists the
+cases already tried and what each version did with them, and asks for
+different cases aimed at the branches those cases did not reach. The new
+cases go through the same validation, execution and comparison. A function
+is not refined further once a round finds a difference, or when the LLM
+proposes only cases that were already tried (`no new cases`).
+
 ## Comparison rules
 
 Each case runs on the base version and on the current version, twice on

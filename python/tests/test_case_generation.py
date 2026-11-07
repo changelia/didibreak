@@ -5,9 +5,14 @@ from typing import Any
 
 import pytest
 
-from didibreak.cases import build_messages, load_template
+from didibreak.cases import (
+    REFINEMENT_PROMPT_FILE,
+    CaseRun,
+    build_messages,
+    load_template,
+)
 from didibreak.functions import ChangedFunction
-from didibreak.harness import Case
+from didibreak.harness import Case, Outcome
 from didibreak.llm.common import (
     LLMAuthError,
     LLMInvalidResponseError,
@@ -22,9 +27,11 @@ from didibreak.llm.pricing import Price, cost_usd
 from didibreak.pipeline import (
     COST_LIMIT_REASON,
     INVALID_RESPONSE_REASON,
+    NO_NEW_CASES_REASON,
     NO_VALID_CASES_REASON,
     OUTPUT_TOKENS_PER_CASE,
     UNAVAILABLE_REASON,
+    Budget,
     estimate_call,
     estimate_generation,
     generate_cases,
@@ -240,3 +247,63 @@ def test_failed_attempts_are_counted_in_the_cost() -> None:
     result = generate_cases(client, [function("f")], 5, load_template(), PRICE, 10.0)
 
     assert result.cost_usd == pytest.approx((1000 * 1.0 + 1000 * 10.0) / 1_000_000)
+
+
+def run_of(case: Case, value: str) -> CaseRun:
+    same = Outcome("return", "builtins.str", value)
+    return CaseRun(case, same, same)
+
+
+def test_refinement_sends_previous_results_and_drops_tried_cases() -> None:
+    tried = [run_of(Case(("1",), {}, "r"), "'x'")]
+    client = FakeClient({"f": cases("1", "2")})  # "1" was already tried
+
+    result = generate_cases(
+        client,
+        [function("f")],
+        5,
+        load_template(REFINEMENT_PROMPT_FILE),
+        previous={"app/m.py::f": tried},
+    )
+
+    assert "- f(1) -> old: 'x'; new: 'x'" in client.prompts[0]
+    assert result.cases == {"app/m.py::f": (Case(("2",), {}, "r"),)}
+    assert result.invalid_cases_dropped == 0
+
+
+def test_refinement_with_only_tried_cases_is_reported() -> None:
+    tried = [run_of(Case(("1",), {}, "r"), "'x'")]
+    client = FakeClient({"f": cases("1")})
+
+    result = generate_cases(
+        client,
+        [function("f")],
+        5,
+        load_template(REFINEMENT_PROMPT_FILE),
+        previous={"app/m.py::f": tried},
+    )
+
+    assert [f.skip_reason for f in result.skipped] == [NO_NEW_CASES_REASON]
+
+
+def test_a_shared_budget_limits_all_rounds_and_rounds_report_their_own_usage() -> None:
+    heavy = TokenUsage(2000, 5000, 4000, 0, 1)
+    client = FakeClient({"f": cases("1"), "g": cases("2")}, usage=heavy)
+    budget = Budget(PRICE, cost_usd(heavy, PRICE) * 1.5, 5)
+
+    first = generate_cases(client, [function("f")], 5, load_template(), budget=budget)
+    second = generate_cases(
+        client,
+        [function("g")],
+        5,
+        load_template(REFINEMENT_PROMPT_FILE),
+        budget=budget,
+        previous={"app/m.py::g": []},
+    )
+
+    assert first.usage == heavy
+    assert first.cost_usd == pytest.approx(cost_usd(heavy, PRICE))
+    assert [f.skip_reason for f in second.skipped] == [COST_LIMIT_REASON]
+    assert second.usage.calls == 0
+    assert second.cost_usd == 0.0
+    assert budget.usage == heavy

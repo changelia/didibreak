@@ -68,6 +68,12 @@ the Python package and `js-v*` for the JS/TS package.
   for the default models and a `prices` setting for others.
 - Generated cases are cached in `.didibreak/cache/cases/`; `--no-cache`
   ignores the cache.
+- A model without a known price exits with code 2 and a hint to add a
+  `prices` entry; models on `localhost` / `127.0.0.1` cost 0 ("local").
+- Refinement: a function whose cases found no difference gets up to
+  `refine_rounds` (default 1) more rounds of LLM cases, built from the cases
+  already tried and their results; counted in the estimate and the cost
+  limit, and cached per round.
 
 ## JS/TS package
 

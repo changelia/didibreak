@@ -17,11 +17,14 @@ from typing import Any
 from didibreak.cases import (
     CASES_SCHEMA,
     CASES_SCHEMA_NAME,
+    MAX_PREVIOUS_CASES,
+    CaseRun,
     PromptTemplate,
     accept_cases,
     build_messages,
+    build_refinement_messages,
 )
-from didibreak.compare import Comparison, Finding, compare_cases
+from didibreak.compare import Comparison, Finding, compare_cases, finding_id
 from didibreak.config import ConfigError, find_pyproject
 from didibreak.functions import ChangedFunction, import_root, module_name
 from didibreak.gitdiff import base_worktree, working_tree_copy
@@ -42,6 +45,7 @@ NO_CASES_REASON = "no cases"
 INVALID_RESPONSE_REASON = "invalid llm response"
 UNAVAILABLE_REASON = "llm unavailable"
 NO_VALID_CASES_REASON = "no valid cases"
+NO_NEW_CASES_REASON = "no new cases"  # refinement proposed only tried cases
 REQUEST_REJECTED_PREFIX = "llm request rejected: "
 # Until intent labelling exists (task 17), the relation of a finding to the
 # intent cannot be decided: "unclear" (Detailed Design section 5.3).
@@ -121,6 +125,8 @@ class Analysis:
         cases_run: Cases run for the checked functions.
         flaky_dropped: Cases dropped as flaky.
         timeouts_dropped: Cases dropped because both versions timed out.
+        runs: Every case run, with both outcomes, by report name (input for
+            the refinement round).
     """
 
     findings: tuple[Finding, ...]
@@ -129,6 +135,7 @@ class Analysis:
     cases_run: int
     flaky_dropped: int
     timeouts_dropped: int
+    runs: Mapping[str, tuple[CaseRun, ...]] = field(default_factory=dict)
 
 
 def tree_import_root(tree: Path, path: str) -> str:
@@ -158,7 +165,7 @@ def _run(
     trees: tuple[Path, Path],
     base_path: str,
     settings: HarnessSettings,
-) -> Comparison | str:
+) -> tuple[Comparison, tuple[CaseRun, ...]] | str:
     """Run one function on both versions; a str is the skip reason."""
     base_tree, current_tree = trees
     before = None
@@ -173,9 +180,15 @@ def _run(
     current = run_cases(current_target, cases, settings)
     if current.skip_reason is not None:
         return current.skip_reason
-    return compare_cases(
+    comparison = compare_cases(
         function.report_name, cases, before, current.outcomes, function.raised_types
     )
+    olds = before if before is not None else (None,) * len(cases)
+    runs = tuple(
+        CaseRun(case, old, new)
+        for case, old, new in zip(cases, olds, current.outcomes, strict=True)
+    )
+    return comparison, runs
 
 
 def analyze(
@@ -214,6 +227,7 @@ def analyze(
     comparisons: list[Comparison] = []
     checked: list[ChangedFunction] = []
     skipped: list[ChangedFunction] = []
+    runs: dict[str, tuple[CaseRun, ...]] = {}
     with base_worktree(root, base_sha) as base, working_tree_copy(root, skip) as copy:
         for function in functions:
             function_cases = cases.get(function.report_name, ())
@@ -226,7 +240,8 @@ def analyze(
                 skipped.append(replace(function, skip_reason=result))
             else:
                 checked.append(function)
-                comparisons.append(result)
+                comparisons.append(result[0])
+                runs[function.report_name] = result[1]
     return Analysis(
         findings=tuple(
             finding if finding.label else replace(finding, label=UNLABELLED)
@@ -238,6 +253,7 @@ def analyze(
         cases_run=sum(comparison.cases_run for comparison in comparisons),
         flaky_dropped=sum(comparison.flaky_dropped for comparison in comparisons),
         timeouts_dropped=sum(c.timeouts_dropped for c in comparisons),
+        runs=runs,
     )
 
 
@@ -248,6 +264,9 @@ def analyze(
 CHARS_PER_TOKEN = 3
 OUTPUT_TOKENS_PER_CASE = 180
 COST_LIMIT_REASON = "cost limit"
+# A refinement prompt also lists the cases already tried: about this many
+# characters per case (call plus both outcomes).
+PREVIOUS_CHARS_PER_CASE = 160
 
 
 @dataclass(frozen=True)
@@ -317,9 +336,45 @@ def estimate_generation(
     return Estimate(len(functions), usage, cost)
 
 
+def estimate_refinement(
+    rounds: Sequence[tuple[ChangedFunction, int]],
+    count: int,
+    template: PromptTemplate,
+    price: Price | None,
+) -> Estimate:
+    """Upper bound for refinement requests, one per (function, round).
+
+    Args:
+        rounds: Functions with the refinement round each request would be.
+        count: Cases requested per call.
+        template: The refinement prompt template.
+        price: The model's price, or None (tokens only).
+
+    Returns:
+        The estimate if every listed refinement is needed.
+    """
+    usage = TokenUsage()
+    for function, round_number in rounds:
+        messages = build_refinement_messages(function, count, template, ())
+        listed = min(count * round_number, MAX_PREVIOUS_CASES)
+        call = estimate_call(messages, count, OUTPUT_TOKENS_PER_CASE)
+        extra = math.ceil(listed * PREVIOUS_CHARS_PER_CASE / CHARS_PER_TOKEN)
+        usage += replace(call, input_tokens=call.input_tokens + extra)
+    cost = None if price is None else cost_usd(usage, price)
+    return Estimate(len(rounds), usage, cost)
+
+
 @dataclass
-class _Spending:
-    """Usage and cost so far, and whether the next request fits the limit."""
+class Budget:
+    """Usage and cost of a run so far, shared by all rounds.
+
+    Attributes:
+        price: The model's price; None means no cost and no limit.
+        max_cost: Limit in US dollars; None for no limit.
+        count: Cases requested per call, for the output estimate.
+        usage: Tokens of all calls so far.
+        cost: US dollars of all calls so far.
+    """
 
     price: Price | None
     max_cost: float | None
@@ -328,11 +383,13 @@ class _Spending:
     cost: float = 0.0
 
     def add(self, usage: TokenUsage) -> None:
+        """Record the usage of finished calls."""
         self.usage += usage
         if self.price is not None:
             self.cost += cost_usd(usage, self.price)
 
     def allows(self, messages: Sequence[Message]) -> bool:
+        """Whether one more request with these messages fits under max_cost."""
         if self.price is None or self.max_cost is None:
             return True  # without a price the limit cannot be enforced
         observed = self.usage.calls and self.usage.output_tokens / (
@@ -348,7 +405,7 @@ _UNAVAILABLE = object()
 
 
 def _ask(
-    client: LLMClient, messages: Sequence[Message], spending: _Spending
+    client: LLMClient, messages: Sequence[Message], spending: Budget
 ) -> LLMReply | str | object:
     """The reply, a skip reason for this function, or _UNAVAILABLE."""
     try:
@@ -372,6 +429,8 @@ def generate_cases(
     template: PromptTemplate,
     price: Price | None = None,
     max_cost: float | None = None,
+    budget: Budget | None = None,
+    previous: Mapping[str, Sequence[CaseRun]] | None = None,
 ) -> Generation:
     """Ask the LLM for cases for each function and keep the valid ones.
 
@@ -379,28 +438,39 @@ def generate_cases(
         client: The configured LLM client.
         functions: Testable changed and new functions.
         count: Cases to request per function (``cases``).
-        template: The case generation prompt template.
+        template: The case generation or, with ``previous``, the refinement
+            prompt template.
         price: The model's price; None means tokens only and no limit.
         max_cost: Stop before a request whose estimated cost would take the
             total above this many US dollars.
+        budget: Shared spending of the run (all rounds); when given, it
+            replaces ``price`` and ``max_cost``.
+        previous: For a refinement round, the cases already run per report
+            name; their results go into the prompt and repeated cases are
+            dropped.
 
     Returns:
-        Accepted cases, skipped functions, usage and cost. An invalid reply
-        (after the client's one retry) skips that function; an unavailable
-        provider or the cost limit skips it and all remaining functions; any
-        other rejected request (HTTP 4xx except 401/403/404) skips that
-        function.
+        Accepted cases, skipped functions, and the usage and cost of this
+        round. An invalid reply (after the client's one retry) skips that
+        function; an unavailable provider or the cost limit skips it and all
+        remaining functions; any other rejected request (HTTP 4xx except
+        401/403/404) skips that function.
 
     Raises:
         LLMAuthError: The key was rejected (HTTP 401/403).
         LLMModelError: The model was not found (HTTP 404).
     """
+    spending = budget or Budget(price, max_cost, count)
+    usage_before, cost_before = spending.usage, spending.cost
     cases: dict[str, tuple[Case, ...]] = {}
     skipped: list[ChangedFunction] = []
     invalid = 0
-    spending = _Spending(price, max_cost, count)
     for index, function in enumerate(functions):
-        messages = build_messages(function, count, template)
+        tried = tuple((previous or {}).get(function.report_name, ()))
+        if previous is None:
+            messages = build_messages(function, count, template)
+        else:
+            messages = build_refinement_messages(function, count, template, tried)
         stop = None if spending.allows(messages) else COST_LIMIT_REASON
         result = _ask(client, messages, spending) if stop is None else None
         if result is _UNAVAILABLE:
@@ -413,9 +483,32 @@ def generate_cases(
             continue
         batch = accept_cases(result.data, count, function.report_name)
         invalid += batch.invalid
-        if batch.cases:
-            cases[function.report_name] = batch.cases
+        new = _not_tried(function.report_name, batch.cases, tried)
+        if new:
+            cases[function.report_name] = new
         else:
-            skipped.append(replace(function, skip_reason=NO_VALID_CASES_REASON))
-    cost = None if price is None else spending.cost
-    return Generation(cases, tuple(skipped), invalid, spending.usage, cost)
+            reason = NO_NEW_CASES_REASON if batch.cases else NO_VALID_CASES_REASON
+            skipped.append(replace(function, skip_reason=reason))
+    usage = _usage_since(spending.usage, usage_before)
+    cost = None if spending.price is None else spending.cost - cost_before
+    return Generation(cases, tuple(skipped), invalid, usage, cost)
+
+
+def _not_tried(
+    function: str, cases: tuple[Case, ...], tried: Sequence[CaseRun]
+) -> tuple[Case, ...]:
+    seen = {finding_id(function, run.case) for run in tried}
+    return tuple(case for case in cases if finding_id(function, case) not in seen)
+
+
+def _usage_since(total: TokenUsage, before: TokenUsage) -> TokenUsage:
+    def difference(now: int | None, then: int | None) -> int | None:
+        return None if now is None else now - (then or 0)
+
+    return TokenUsage(
+        input_tokens=total.input_tokens - before.input_tokens,
+        output_tokens=total.output_tokens - before.output_tokens,
+        reasoning_tokens=difference(total.reasoning_tokens, before.reasoning_tokens),
+        cached_input_tokens=total.cached_input_tokens - before.cached_input_tokens,
+        calls=total.calls - before.calls,
+    )
