@@ -5,7 +5,8 @@ Supported LLM providers and local models, what data is sent, and how cost is con
 `didibreak check` asks the LLM for input cases for each changed function it
 can test: one request per function (at most `max_functions`, default 10),
 plus one more if a reply is unusable, plus up to `refine_rounds` (default 1)
-refinement requests for a function whose cases found no difference. Cases
+refinement requests for a function whose cases found no difference, plus one
+request per run that labels the findings when there is an intent. Cases
 are cached, so an unchanged function costs nothing on the next run.
 
 ## Cost control
@@ -27,9 +28,10 @@ LLM: 0 calls · 0 input tokens · 0 output tokens · cost $0.0000
 - The question is asked only in text mode on a terminal. `--yes`,
   `--format json` and a non-terminal stdin (CI, AI agents) skip it.
   Answering `n` sends nothing.
-- The estimate counts every refinement request that could be needed, so it
-  is an upper bound ("up to"); refinement is skipped for functions whose
-  first cases already find a difference.
+- The estimate counts every refinement request that could be needed and,
+  with an intent, the labelling request, so it is an upper bound ("up to");
+  refinement is skipped for functions whose first cases already find a
+  difference. Labels are never cached.
 - Input tokens are estimated from the exact prompt; output tokens from
   180 tokens per requested case at first, then from the output tokens the
   run actually used. Reasoning tokens count as output: in a live check of
@@ -87,7 +89,11 @@ For each function that is checked, and nothing else from your repository:
 - for a refinement request also the cases already tried and what each
   version did with them: the `repr` of the returned value (at most 120
   characters), the exception type, or a timeout, with the instructions in
-  [`spec/prompts/case_refinement.md`](../spec/prompts/case_refinement.md).
+  [`spec/prompts/case_refinement.md`](../spec/prompts/case_refinement.md);
+- for the labelling request: the `--intent` text, the latest commit message
+  when `--base` is an earlier commit, and each finding (function, input and
+  both versions' results), with the instructions in
+  [`spec/prompts/intent_labelling.md`](../spec/prompts/intent_labelling.md).
 
 Your code is never sent anywhere else. The provider's own data policy
 applies to what it receives.

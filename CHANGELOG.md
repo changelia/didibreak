@@ -70,6 +70,10 @@ the Python package and `js-v*` for the JS/TS package.
   ignores the cache.
 - A model without a known price exits with code 2 and a hint to add a
   `prices` entry; models on `localhost` / `127.0.0.1` cost 0 ("local").
+- Intent labels: with `--intent` (or the latest commit message when `--base`
+  is an earlier commit) one LLM request labels every finding `expected`,
+  `unexpected` or `unclear` with a reason; without an intent findings are
+  `unclear`. The exit code follows the labels.
 - Refinement: a function whose cases found no difference gets up to
   `refine_rounds` (default 1) more rounds of LLM cases, built from the cases
   already tried and their results; counted in the estimate and the cost
