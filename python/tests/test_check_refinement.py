@@ -75,7 +75,7 @@ def test_refinement_finds_the_regression_the_first_cases_missed(
         "- normalize_phone('555 12 34 56') -> old: '+995555123456'; "
         "new: '+995555123456'" in refinement
     )
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert f"{FUNCTION}('995 555 12 34 56')" in err
     assert "before '+995555123456' → after '+995995555123456'" in err
     assert "Refinement: 1 function(s) got 1 more cases" in err
@@ -92,7 +92,7 @@ def test_without_refinement_the_regression_is_missed(
     assert main(["check", "--refine-rounds", "0"]) == EXIT_OK
 
     assert len(prompts) == 1
-    assert "1 cases · 0 behavior changes" in capsys.readouterr().err
+    assert "1 cases · 0 behavior changes" in "".join(capsys.readouterr())
 
 
 def test_default_is_exactly_one_refinement_round(
@@ -127,7 +127,7 @@ def test_estimate_counts_the_refinement_rounds(
 
     main(["check", "--refine-rounds", "3"])
 
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert "Estimated: up to 4 LLM calls (1 + up to 3 refinement)" in err
 
 
@@ -144,7 +144,7 @@ def test_cost_limit_covers_refinement(
     assert main(["check", "--max-cost", limit]) == EXIT_OK
 
     assert len(prompts) == 1
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert f"refinement skipped: {FUNCTION} (cost limit)" in err
 
 

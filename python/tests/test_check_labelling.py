@@ -97,7 +97,7 @@ def test_labels_and_exit_codes_follow_the_documented_intent(
     assert code == (
         EXIT_FINDINGS if any(f["label"] in failing for f in findings) else EXIT_OK
     )
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     for finding in findings:
         heading = finding["label"].upper().replace("_", "-")
         assert (
@@ -117,7 +117,7 @@ def test_intended_change_passes_once_labelled_expected(
     monkeypatch.chdir(fixture.repository.path)
 
     assert main(["check", "--intent", fixture.expected["intent"]]) == EXIT_OK
-    assert "matches the fixture" in capsys.readouterr().err
+    assert "matches the fixture" in "".join(capsys.readouterr())
 
 
 def test_without_intent_nothing_is_labelled_and_findings_are_unclear(
@@ -130,7 +130,7 @@ def test_without_intent_nothing_is_labelled_and_findings_are_unclear(
     assert main(["check"]) == EXIT_FINDINGS
 
     assert label_prompts == []
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert "UNCLEAR      app/greetings.py::greeting('Ada')" in err
     assert NO_INTENT_REASON in err
 
@@ -149,7 +149,7 @@ def test_malformed_labels_leave_findings_unclear_with_the_reason(
     assert main(["check", "--intent", fixture.expected["intent"]]) == EXIT_FINDINGS
 
     assert len(label_prompts) == 2  # one retry
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert "UNCLEAR" in err
     assert "intent labelling failed: invalid llm response" in err
 
@@ -195,7 +195,7 @@ def test_cases_file_runs_are_not_labelled(
 
     argv = ["check", "--cases-file", str(path), "--intent", "add an exclamation mark"]
     assert main(argv) == EXIT_FINDINGS
-    assert CASES_FILE_REASON in capsys.readouterr().err
+    assert CASES_FILE_REASON in "".join(capsys.readouterr())
 
 
 def test_estimate_counts_the_labelling_request(
@@ -207,5 +207,5 @@ def test_estimate_counts_the_labelling_request(
 
     main(["check", "--intent", "x"])
 
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling)" in err

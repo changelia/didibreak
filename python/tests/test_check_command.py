@@ -66,7 +66,7 @@ def test_check_without_pyproject_uses_defaults_and_succeeds(
     assert load_config({}, repository) == expected
 
     assert main(["check"]) == EXIT_OK
-    assert "Nothing to check" in capsys.readouterr().err
+    assert "Nothing to check" in "".join(capsys.readouterr())
 
 
 def test_flags_override_pyproject_which_overrides_defaults(repository: Path) -> None:
@@ -152,7 +152,7 @@ def test_python_name_missing_from_path_exits_with_error(
     repository: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert main(["check", "--python", "no-such-python-9"]) == EXIT_ERROR
-    assert "'no-such-python-9' was not found on PATH" in capsys.readouterr().err
+    assert "'no-such-python-9' was not found on PATH" in "".join(capsys.readouterr())
 
 
 def test_python_path_that_does_not_exist_exits_with_error(
@@ -163,7 +163,7 @@ def test_python_path_that_does_not_exist_exits_with_error(
     )
 
     assert main(["check"]) == EXIT_ERROR
-    error_output = capsys.readouterr().err
+    error_output = "".join(capsys.readouterr())
     assert "[tool.didibreak] in" in error_output
     assert "venv/bin/python' does not exist" in error_output
 
@@ -188,7 +188,7 @@ def test_check_outside_a_repository_exits_with_error(
     monkeypatch.chdir(tmp_path)
 
     assert main(["check"]) == EXIT_ERROR
-    assert "is not inside a git repository" in capsys.readouterr().err
+    assert "is not inside a git repository" in "".join(capsys.readouterr())
 
 
 def test_invalid_pyproject_value_exits_with_error(
@@ -199,7 +199,7 @@ def test_invalid_pyproject_value_exits_with_error(
     )
 
     assert main(["check"]) == EXIT_ERROR
-    assert "format must be one of text, json; got 'xml'" in capsys.readouterr().err
+    assert "format must be one of text, json; got 'xml'" in "".join(capsys.readouterr())
 
 
 @pytest.mark.parametrize(
@@ -218,7 +218,7 @@ def test_invalid_flags_exit_with_usage_error(
         main(["check", *argv])
 
     assert exit_info.value.code == EXIT_ERROR
-    assert message in capsys.readouterr().err
+    assert message in "".join(capsys.readouterr())
 
 
 def test_cases_file_option_is_hidden_from_help(
@@ -270,7 +270,7 @@ def test_check_counts_changed_and_new_functions(
 
     assert main(["check", "-v"]) == EXIT_OK
 
-    error_output = capsys.readouterr().err
+    error_output = "".join(capsys.readouterr())
     assert "2 changed function(s) to check (1 new)" in error_output
     assert "  changed: lib.py::f\n  new: new.py::g" in error_output
 
@@ -281,7 +281,7 @@ def test_check_with_only_constant_changes_has_nothing_to_check(
     (repository / "app.py").write_text("VALUE = 2\n", encoding="utf-8")
 
     assert main(["check"]) == EXIT_OK
-    assert "no changed Python functions" in capsys.readouterr().err
+    assert "no changed Python functions" in "".join(capsys.readouterr())
 
 
 def test_check_reports_functions_cut_by_the_limit(
@@ -292,7 +292,7 @@ def test_check_reports_functions_cut_by_the_limit(
 
     assert main(["check", "--max-functions", "2", "-v"]) == EXIT_OK
 
-    error_output = capsys.readouterr().err
+    error_output = "".join(capsys.readouterr())
     assert "1 more not checked (max_functions = 2)" in error_output
     assert "  limit: many.py::f2" in error_output
 
@@ -305,7 +305,7 @@ def test_check_reports_files_with_syntax_errors_and_deleted_files(
 
     assert main(["check"]) == EXIT_OK
 
-    error_output = capsys.readouterr().err
+    error_output = "".join(capsys.readouterr())
     assert "skipped broken.py: syntax error in the current version, line 1" in (
         error_output
     )
@@ -315,7 +315,7 @@ def test_check_with_unknown_base_exits_with_error(
     repository: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert main(["check", "--base", "no-such-branch"]) == EXIT_ERROR
-    assert "unknown base ref 'no-such-branch'" in capsys.readouterr().err
+    assert "unknown base ref 'no-such-branch'" in "".join(capsys.readouterr())
 
 
 def test_check_in_a_repository_without_commits_exits_with_error(
@@ -325,7 +325,7 @@ def test_check_in_a_repository_without_commits_exits_with_error(
     monkeypatch.chdir(empty.path)
 
     assert main(["check"]) == EXIT_ERROR
-    assert "has no commits yet" in capsys.readouterr().err
+    assert "has no commits yet" in "".join(capsys.readouterr())
 
 
 def _change_with_exclusions(repository: Path) -> None:
@@ -342,7 +342,7 @@ def test_check_reports_the_number_of_excluded_files(
 
     assert main(["check"]) == EXIT_OK
 
-    error_output = capsys.readouterr().err
+    error_output = "".join(capsys.readouterr())
     assert "2 files excluded" in error_output
     assert "excluded: conftest.py" not in error_output
 
@@ -354,7 +354,7 @@ def test_verbose_check_lists_excluded_files(
 
     assert main(["check", "-v"]) == EXIT_OK
 
-    error_output = capsys.readouterr().err
+    error_output = "".join(capsys.readouterr())
     assert "  excluded: conftest.py\n  excluded: tests/test_app.py" in error_output
 
 
@@ -364,7 +364,7 @@ def test_json_format_does_not_print_the_exclusion_line(
     _change_with_exclusions(repository)
 
     assert main(["check", "--format", "json"]) == EXIT_OK
-    assert "excluded" not in capsys.readouterr().err
+    assert "excluded" not in "".join(capsys.readouterr())
 
 
 def test_check_reports_skipped_functions_with_reasons_in_verbose_mode(
@@ -378,7 +378,7 @@ def test_check_reports_skipped_functions_with_reasons_in_verbose_mode(
 
     assert main(["check", "-v"]) == EXIT_OK
 
-    error_output = capsys.readouterr().err
+    error_output = "".join(capsys.readouterr())
     assert "1 function(s) skipped: not testable in v0.1" in error_output
     assert "  skipped: mixed.py::run (obvious I/O: subprocess.run)" in error_output
     assert "  new: mixed.py::pure" in error_output
@@ -393,7 +393,7 @@ def test_check_warns_when_all_changed_functions_are_skipped(
 
     assert main(["check"]) == EXIT_OK
 
-    error_output = capsys.readouterr().err
+    error_output = "".join(capsys.readouterr())
     assert "Warning: checked 0 functions" in error_output
     assert "  skipped: gen.py::numbers (generator)" in error_output
     assert "Nothing to check" not in error_output

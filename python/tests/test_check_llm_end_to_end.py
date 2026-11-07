@@ -86,7 +86,7 @@ def test_llm_cases_reproduce_the_documented_findings(
         f for f in expected_functions if f not in with_findings and f in replies
     )
     assert code == (EXIT_FINDINGS if fixture.expected["findings"] else EXIT_OK)
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     for finding in fixture.expected["findings"]:
         assert f"{finding['function']}({', '.join(finding['args'])})" in err
     if asked:
@@ -107,7 +107,7 @@ def test_malicious_cases_are_dropped_counted_and_never_run(
     monkeypatch.chdir(fixture.repository.path)
 
     assert main(["check"]) == EXIT_FINDINGS
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert "1 invalid cases dropped" in err
     assert "pwned" not in err
     assert "3 cases" in err  # only the documented cases ran
@@ -140,7 +140,7 @@ def test_other_rejected_request_skips_the_function_and_continues(
     monkeypatch.chdir(fixture.repository.path)
 
     assert main(["check"]) == EXIT_FINDINGS  # price_with_tax still ran
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert (
         "app/stats.py::mean (llm request rejected: HTTP 400: context too long)" in err
     )
@@ -165,6 +165,6 @@ def test_rejected_key_exits_2(
     monkeypatch.chdir(fixture.repository.path)
 
     assert main(["check"]) == EXIT_ERROR
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert "rejected the API key" in err
     assert "sk-fake-rejected" not in err

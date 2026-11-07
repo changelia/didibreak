@@ -11,6 +11,7 @@ import sys
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import TextIO
 
 from didibreak import __version__
 from didibreak.config import (
@@ -41,7 +42,7 @@ from didibreak.gitdiff import (
     repository_root,
     resolve_base,
 )
-from didibreak.harness import Case, HarnessSettings, Outcome
+from didibreak.harness import Case, HarnessSettings
 from didibreak.intent import NO_INTENT_REASON, intent_text, mark_unclear
 from didibreak.llm import create_client
 from didibreak.llm.common import LLMAuthError, LLMModelError
@@ -53,6 +54,9 @@ from didibreak.pipeline import (
     load_cases_file,
     tree_import_root,
 )
+from didibreak.report import Report, ReportUsage, SkippedItem
+from didibreak.report.json import render_json
+from didibreak.report.text import header_lines, results_text
 
 EXIT_OK = 0
 EXIT_FINDINGS = 1
@@ -210,17 +214,6 @@ def load_config(cli_values: Mapping[str, object], working_directory: Path) -> Co
     return config
 
 
-def _report_excluded(excluded: Sequence[str], verbose: bool) -> None:
-    # Owner decision (task 05 review): exclusions are never silent.
-    if not excluded:
-        return
-    noun = "file" if len(excluded) == 1 else "files"
-    print(f"{len(excluded)} {noun} excluded", file=sys.stderr)
-    if verbose:
-        for path in excluded:
-            print(f"  excluded: {path}", file=sys.stderr)
-
-
 def load_source_files(
     root: Path, base_sha: str, files: ChangedFiles
 ) -> list[SourceFile]:
@@ -261,51 +254,15 @@ def load_source_files(
     return sources
 
 
-def _report_detection(detection: Detection, max_functions: int, verbose: bool) -> None:
-    for skipped in detection.skipped_files:
-        print(f"skipped {skipped.path}: {skipped.reason}", file=sys.stderr)
-    new = sum(1 for function in detection.functions if function.kind == "new")
-    print(
-        f"{len(detection.functions)} changed function(s) to check ({new} new)",
-        file=sys.stderr,
-    )
-    if detection.skipped:
-        print(
-            f"{len(detection.skipped)} function(s) skipped: not testable in v0.1",
-            file=sys.stderr,
-        )
-    if detection.limited:
-        print(
-            f"{len(detection.limited)} more not checked "
-            f"(max_functions = {max_functions})",
-            file=sys.stderr,
-        )
-    all_skipped = bool(detection.skipped) and not detection.functions
-    if all_skipped:
-        print(
-            "Warning: checked 0 functions; all changed functions were skipped",
-            file=sys.stderr,
-        )
-    if verbose or all_skipped:
-        for function in detection.skipped:
-            print(
-                f"  skipped: {function.report_name} ({function.skip_reason})",
-                file=sys.stderr,
-            )
-    if verbose:
-        for function in detection.functions:
-            print(f"  {function.kind}: {function.report_name}", file=sys.stderr)
-        for function in detection.limited:
-            print(f"  limit: {function.report_name}", file=sys.stderr)
-
-
 def _money(amount: float) -> str:
     # Two decimals for limits like $0.50; more below a cent, so a tiny limit
     # does not show as $0.00.
     return f"${amount:.2f}" if amount >= 0.01 or amount == 0 else f"${amount:.6f}"
 
 
-def _print_estimate(plan: Plan, session: LLMSession, functions: int) -> None:
+def _print_estimate(
+    plan: Plan, session: LLMSession, functions: int, stream: TextIO
+) -> None:
     estimate, model, max_cost = (
         plan.estimate,
         session.settings.model,
@@ -326,15 +283,15 @@ def _print_estimate(plan: Plan, session: LLMSession, functions: int) -> None:
         calls = f"up to {plan.calls} LLM calls ({' + '.join(parts)})"
     else:
         calls = f"{plan.calls} LLM calls"
-    print(f"Estimated: {calls} with {model}, {tokens}{cost}", file=sys.stderr)
+    print(f"Estimated: {calls} with {model}, {tokens}{cost}", file=stream)
     if not session.local and (estimate.cost_usd or 0) > max_cost:
         print(
             "The estimate is above max_cost: functions after the limit are skipped.",
-            file=sys.stderr,
+            file=stream,
         )
     cached = functions - plan.initial
     if cached:
-        print(f"{cached} function(s) use cached cases", file=sys.stderr)
+        print(f"{cached} function(s) use cached cases", file=stream)
 
 
 def _confirmed(arguments: argparse.Namespace, config: Config) -> bool:
@@ -390,7 +347,10 @@ def _start_llm(
     if not plan.calls:
         return session  # every case is cached
     if not arguments.quiet:
-        _print_estimate(plan, session, len(functions))
+        # Part of the text report; in JSON mode stdout holds only the report.
+        stream = sys.stdout if config.format == "text" else sys.stderr
+        _print_estimate(plan, session, len(functions), stream)
+        stream.flush()
     return session if _confirmed(arguments, config) else None
 
 
@@ -504,84 +464,66 @@ def _analyze(
     return analyze(root, base_sha, functions, base_paths, cases, settings, skip)
 
 
-def _describe(outcome: Outcome | None) -> str:
-    if outcome is None:
-        return "(new function)"
-    if outcome.kind == "exception":
-        return f"raises {outcome.type_name}"
-    return outcome.repr
-
-
-def _report_generation(generation: Generation, local: bool) -> None:
-    usage = generation.usage
-    reasoning = (
-        f" ({usage.reasoning_tokens} reasoning)"
-        if usage.reasoning_tokens is not None
-        else ""
-    )
-    if local:
-        cost = " · cost $0 (local)"
-    elif generation.cost_usd is not None:
-        cost = f" · cost ${generation.cost_usd:.4f}"
-    else:
-        cost = ""
-    print(
-        f"LLM: {usage.calls} calls · {usage.input_tokens} input tokens · "
-        f"{usage.output_tokens} output tokens{reasoning}{cost}",
-        file=sys.stderr,
-    )
-    if generation.invalid_cases_dropped:
-        print(
-            f"{generation.invalid_cases_dropped} invalid cases dropped "
-            "(not Python literals)",
-            file=sys.stderr,
-        )
-
-
-def _report_refinement(llm_cases: _LLMCases) -> None:
-    if llm_cases.refined:
-        print(
-            f"Refinement: {llm_cases.refined} function(s) got "
-            f"{llm_cases.refinement_cases} more cases",
-            file=sys.stderr,
-        )
-    for function in llm_cases.refinement_skipped:
-        print(
-            f"  refinement skipped: {function.report_name} ({function.skip_reason})",
-            file=sys.stderr,
-        )
-
-
-def _report_analysis(analysis: Analysis, llm_cases: _LLMCases | None) -> None:
-    # Minimal listing on stderr until the text report (task 18).
+def _build_report(
+    config: Config,
+    base_sha: str,
+    intent: str | None,
+    detection: Detection,
+    analysis: Analysis,
+    llm_cases: _LLMCases | None,
+) -> Report:
     generation = llm_cases.generation if llm_cases else None
-    if llm_cases is not None:
-        _report_generation(llm_cases.generation, llm_cases.local)
-        _report_refinement(llm_cases)
-    print(
-        f"{analysis.cases_run} cases · {len(analysis.findings)} behavior "
-        f"changes · {analysis.flaky_dropped} flaky dropped",
-        file=sys.stderr,
+    skipped = [
+        *(SkippedItem(f.path, f.reason) for f in detection.skipped_files),
+        *(SkippedItem(f.report_name, f.skip_reason or "") for f in detection.skipped),
+        *(SkippedItem(f.report_name, "limit") for f in detection.limited),
+        *(
+            SkippedItem(f.report_name, f.skip_reason or "")
+            for f in (generation.skipped if generation else ())
+        ),
+        *(SkippedItem(f.report_name, f.skip_reason or "") for f in analysis.skipped),
+    ]
+    usage = ReportUsage()
+    if generation is not None:
+        tokens = generation.usage
+        cost = generation.cost_usd if tokens.calls else 0.0
+        usage = ReportUsage(
+            tokens.calls,
+            tokens.input_tokens,
+            tokens.output_tokens,
+            tokens.reasoning_tokens,
+            0.0 if llm_cases and llm_cases.local else cost,
+            bool(llm_cases and llm_cases.local),
+        )
+    return Report(
+        version=__version__,
+        base_ref=config.base,
+        base_sha=base_sha,
+        intent=intent,
+        findings=analysis.findings,
+        functions_checked=len(analysis.checked),
+        cases_run=analysis.cases_run,
+        flaky_dropped=analysis.flaky_dropped,
+        invalid_cases_dropped=generation.invalid_cases_dropped if generation else 0,
+        skipped=tuple(skipped),
+        removed=detection.removed,
+        usage=usage,
+        refined=llm_cases.refined if llm_cases else 0,
+        refinement_cases=llm_cases.refinement_cases if llm_cases else 0,
+        refinement_skipped=tuple(
+            SkippedItem(f.report_name, f.skip_reason or "")
+            for f in (llm_cases.refinement_skipped if llm_cases else ())
+        ),
     )
-    for finding in analysis.findings:
-        name, _, qualname = finding.function.rpartition("::")
-        arguments = [*finding.case.args]
-        arguments += [f"{key}={value}" for key, value in finding.case.kwargs.items()]
-        label = (finding.label or "").upper().replace("_", "-")
-        print(
-            f"  {label:<13}{name}::{qualname}({', '.join(arguments)})\n"
-            f"  {'':<13}before {_describe(finding.before)} → "
-            f"after {_describe(finding.after)}",
-            file=sys.stderr,
-        )
-        if finding.reason:
-            print(f"  {'':<13}{finding.reason}", file=sys.stderr)
-    skipped = (*(generation.skipped if generation else ()), *analysis.skipped)
-    for function in skipped:
-        print(
-            f"  skipped: {function.report_name} ({function.skip_reason})",
-            file=sys.stderr,
-        )
+
+
+def _print_report(report: Report, config: Config, llm: bool) -> None:
+    if config.format == "json":
+        sys.stdout.write(render_json(report))
+        return
+    # Colors only on a terminal and without NO_COLOR (Detailed Design 7).
+    color = sys.stdout.isatty() and "NO_COLOR" not in os.environ
+    sys.stdout.write(results_text(report, color=color, llm=llm))
 
 
 CASES_FILE_REASON = "intent labelling needs the LLM, which --cases-file runs do not use"
@@ -614,16 +556,27 @@ def _run_check(arguments: argparse.Namespace) -> int:
         print(f"didibreak: error: {error}", file=sys.stderr)
         return EXIT_ERROR
     detection = detect_changed_functions(sources, config.max_functions)
-    if config.format == "text":
-        _report_excluded(files.excluded, verbose=arguments.verbose)
-        _report_detection(detection, config.max_functions, verbose=arguments.verbose)
+    text = config.format == "text"
+    if text:
+        header = header_lines(
+            __version__,
+            config.base,
+            base_sha,
+            files.excluded,
+            detection,
+            config.max_functions,
+            arguments.verbose,
+        )
+        print("\n".join(header), flush=True)
+    empty = Analysis((), (), (), 0, 0, 0)
     if not detection.functions:
-        if not detection.skipped:
+        if text and not detection.skipped:
             print(
                 "Nothing to check: no changed Python functions compared with "
-                f"{config.base}",
-                file=sys.stderr,
+                f"{config.base}"
             )
+        report = _build_report(config, base_sha, None, detection, empty, None)
+        _print_report(report, config, llm=False)
         return EXIT_OK
     llm_cases: _LLMCases | None = None
     functions = detection.functions
@@ -650,9 +603,8 @@ def _run_check(arguments: argparse.Namespace) -> int:
     except (ConfigError, LLMAuthError, LLMModelError, GitError, OSError) as error:
         print(f"didibreak: error: {error}", file=sys.stderr)
         return EXIT_ERROR
-    if config.format == "text":
-        _report_analysis(analysis, llm_cases)
-    # TODO(task 18): print the JSON report for --format json.
+    report = _build_report(config, base_sha, intent, detection, analysis, llm_cases)
+    _print_report(report, config, llm=llm_cases is not None)
     return exit_code_for(
         [finding.label for finding in analysis.findings if finding.label],
         config.fail_on,

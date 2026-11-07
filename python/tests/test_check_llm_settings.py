@@ -56,14 +56,16 @@ def test_missing_provider_exits_2_with_how_to_fix(
     changed_function: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert main(["check"]) == EXIT_ERROR
-    assert 'set provider = "openai" or "anthropic"' in capsys.readouterr().err
+    assert 'set provider = "openai" or "anthropic"' in "".join(capsys.readouterr())
 
 
 def test_missing_key_exits_2_naming_the_variable(
     changed_function: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert main(["check", "--provider", "anthropic"]) == EXIT_ERROR
-    assert "set the environment variable ANTHROPIC_API_KEY" in capsys.readouterr().err
+    assert "set the environment variable ANTHROPIC_API_KEY" in "".join(
+        capsys.readouterr()
+    )
 
 
 def test_custom_key_variable_is_named(
@@ -75,7 +77,7 @@ def test_custom_key_variable_is_named(
     )
 
     assert main(["check"]) == EXIT_ERROR
-    assert "MY_LLM_KEY" in capsys.readouterr().err
+    assert "MY_LLM_KEY" in "".join(capsys.readouterr())
 
 
 def test_custom_base_url_without_model_exits_2(
@@ -87,7 +89,7 @@ def test_custom_base_url_without_model_exits_2(
     argv = ["check", "--provider", "openai", "--base-url", "http://localhost:11434/v1"]
 
     assert main(argv) == EXIT_ERROR
-    assert "set model" in capsys.readouterr().err
+    assert "set model" in "".join(capsys.readouterr())
 
 
 def test_complete_settings_reach_the_llm_without_showing_the_key(
@@ -99,7 +101,7 @@ def test_complete_settings_reach_the_llm_without_showing_the_key(
     monkeypatch.setenv("OPENAI_API_KEY", "sk-secret-in-env")
 
     assert main(["check", "--provider", "openai"]) == EXIT_OK
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert fake_llm == ["https://api.openai.com/v1/chat/completions"]
     assert "app.py::f (no valid cases)" in err
     assert "sk-secret-in-env" not in err
@@ -112,7 +114,7 @@ def test_cases_file_runs_need_no_llm_settings(
     cases.write_text('{"cases": [{"function": "app.py::f", "args": ["1"]}]}')
 
     assert main(["check", "--cases-file", str(cases)]) == 1  # one unclear finding
-    assert "provider" not in capsys.readouterr().err
+    assert "provider" not in "".join(capsys.readouterr())
 
 
 def test_provider_is_inferred_from_the_only_key_set(
@@ -125,7 +127,7 @@ def test_provider_is_inferred_from_the_only_key_set(
 
     assert main(["check"]) == EXIT_OK
     assert fake_llm == ["https://api.anthropic.com/v1/messages"]
-    assert "provider" not in capsys.readouterr().err
+    assert "provider" not in "".join(capsys.readouterr())
 
 
 def test_both_keys_without_provider_exit_2(
@@ -137,8 +139,8 @@ def test_both_keys_without_provider_exit_2(
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-2")
 
     assert main(["check"]) == EXIT_ERROR
-    assert (
-        "both OPENAI_API_KEY and ANTHROPIC_API_KEY are set" in capsys.readouterr().err
+    assert "both OPENAI_API_KEY and ANTHROPIC_API_KEY are set" in "".join(
+        capsys.readouterr()
     )
 
 
@@ -159,7 +161,7 @@ def test_nothing_to_check_needs_no_llm_settings(
     monkeypatch.chdir(git_repository.path)
 
     assert main(["check"]) == EXIT_OK
-    assert "Nothing to check" in capsys.readouterr().err
+    assert "Nothing to check" in "".join(capsys.readouterr())
 
 
 def test_only_skipped_functions_need_no_llm_settings(
@@ -174,6 +176,6 @@ def test_only_skipped_functions_need_no_llm_settings(
     monkeypatch.chdir(git_repository.path)
 
     assert main(["check"]) == EXIT_OK
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert "checked 0 functions" in err
     assert "provider" not in err

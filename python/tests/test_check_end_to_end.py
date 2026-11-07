@@ -93,7 +93,7 @@ def test_check_exit_code_and_listing(
     code = main(["check", "--cases-file", str(path)])
 
     assert code == exit_code_without_intent(fixture.expected)
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     for finding in fixture.expected["findings"]:
         assert f"{finding['function']}({', '.join(finding['args'])})" in err
     assert fixture.repository.status() == status  # working tree untouched
@@ -132,7 +132,7 @@ def test_listing_shows_outcomes(
 
     main(["check", "--cases-file", str(path)])
 
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert "3 cases · 1 behavior changes · 0 flaky dropped" in err
     assert "UNCLEAR      app/parsing.py::parse_age('')" in err
     assert "before raises builtins.ValueError → after raises builtins.IndexError" in err
@@ -145,7 +145,7 @@ def test_invalid_cases_file_is_a_configuration_error(
     monkeypatch.chdir(fixture.repository.path)
 
     assert main(["check", "--cases-file", "missing.json"]) == EXIT_ERROR
-    assert "cases file" in capsys.readouterr().err
+    assert "cases file" in "".join(capsys.readouterr())
 
 
 def test_ctrl_c_exits_with_130(
@@ -161,7 +161,7 @@ def test_ctrl_c_exits_with_130(
     monkeypatch.setattr(cli, "analyze", interrupt)
 
     assert main(["check", "--cases-file", str(path)]) == EXIT_INTERRUPTED
-    assert "interrupted" in capsys.readouterr().err
+    assert "interrupted" in "".join(capsys.readouterr())
 
 
 def test_ctrl_c_during_execution_removes_the_worktree_and_the_copy(
