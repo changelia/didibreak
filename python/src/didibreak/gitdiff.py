@@ -405,6 +405,23 @@ def working_tree_copy(root: Path, skip: Sequence[str] = ()) -> Iterator[Path]:
         shutil.rmtree(temporary, ignore_errors=True)
 
 
+def commit_messages(root: Path, base_sha: str) -> list[str]:
+    """Messages of the commits in base..HEAD, newest first.
+
+    Args:
+        root: Repository root.
+        base_sha: The base commit; its own message is not included.
+
+    Returns:
+        Non-empty messages without surrounding whitespace; empty when HEAD is
+        the base or git cannot list the commits.
+    """
+    result = _git(root, "log", "--format=%B%x00", f"{base_sha}..HEAD", "--")
+    if result.returncode != 0:
+        return []
+    return [text.strip() for text in result.stdout.split("\0") if text.strip()]
+
+
 def commit_message(root: Path, ref: str = "HEAD") -> str | None:
     """The full message of a commit, or None if it cannot be read.
 

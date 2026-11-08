@@ -70,14 +70,20 @@ the Python package and `js-v*` for the JS/TS package.
   ignores the cache.
 - A model without a known price exits with code 2 and a hint to add a
   `prices` entry; models on `localhost` / `127.0.0.1` cost 0 ("local").
-- Intent labels: with `--intent` (or the latest commit message when `--base`
-  is an earlier commit) one LLM request labels every finding `expected`,
+- Intent labels: with `--intent` (and the messages of the commits since
+  `--base`) one LLM request labels every finding `expected`,
   `unexpected` or `unclear` with a reason; without an intent findings are
   `unclear`. The exit code follows the labels.
 - Refinement: a function whose cases found no difference gets up to
   `refine_rounds` (default 1) more rounds of LLM cases, built from the cases
   already tried and their results; counted in the estimate and the cost
   limit, and cached per round.
+- Text and JSON reports on stdout: the text report groups findings
+  `UNEXPECTED`, `UNCLEAR`, `EXPECTED`, `NEW-FUNCTION`, lists skipped
+  functions with reasons and ends with the LLM usage line; `--format json`
+  writes one report (`schema_version: 1`, `spec/report.schema.json`) with a
+  stable key order, and the estimate goes to stderr. See
+  `docs/output-format.md`.
 
 ## JS/TS package
 

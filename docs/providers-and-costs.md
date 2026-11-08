@@ -17,16 +17,19 @@ too low for even one request (nothing is sent):
 
 ```text
 $ didibreak check --max-cost 0.000001
+didibreak 0.1.0.dev0 · working tree vs HEAD (0bd2306bffdf)
 1 changed function(s) to check (0 new)
 Estimated: up to 2 LLM calls (1 + up to 1 refinement) with gpt-6-luna, ~2,094 input + ~4,320 output tokens, ~$0.0024 (limit $0.000001)
 The estimate is above max_cost: functions after the limit are skipped.
-LLM: 0 calls · 0 input tokens · 0 output tokens · cost $0.0000
 0 cases · 0 behavior changes · 0 flaky dropped
   skipped: app/utils/phone.py::normalize_phone (cost limit)
+LLM: 0 calls · 0 input tokens · 0 output tokens · cost $0.0000
 ```
 
 - The question is asked only in text mode on a terminal. `--yes`,
-  `--format json` and a non-terminal stdin (CI, AI agents) skip it.
+  `--format json` and a non-terminal stdin (CI, AI agents) skip it. With
+  `--format json` the estimate goes to stderr, so stdout holds only the
+  JSON report.
   Answering `n` sends nothing.
 - The estimate counts every refinement request that could be needed and,
   with an intent, the labelling request, so it is an upper bound ("up to");
@@ -90,8 +93,9 @@ For each function that is checked, and nothing else from your repository:
   version did with them: the `repr` of the returned value (at most 120
   characters), the exception type, or a timeout, with the instructions in
   [`spec/prompts/case_refinement.md`](../spec/prompts/case_refinement.md);
-- for the labelling request: the `--intent` text, the latest commit message
-  when `--base` is an earlier commit, and each finding (function, input and
+- for the labelling request: the `--intent` text, the messages of the
+  commits between `--base` and HEAD (newest first, about 4,000 characters at
+  most), and each finding (function, input and
   both versions' results), with the instructions in
   [`spec/prompts/intent_labelling.md`](../spec/prompts/intent_labelling.md).
 

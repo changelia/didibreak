@@ -1,7 +1,8 @@
 """Structural checks of spec/report.schema.json.
 
-Full validation of real reports against the schema is task 18; these tests
-only guard the top-level contract from Detailed Design section 6.
+These tests guard the top-level contract from Detailed Design section 6;
+reports are validated against the schema in test_report_json.py and
+test_check_reports.py.
 """
 
 import json

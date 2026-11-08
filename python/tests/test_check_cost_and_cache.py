@@ -79,7 +79,7 @@ def test_estimate_is_printed_before_any_request(
     assert main(["check"]) == EXIT_FINDINGS
 
     assert events == ["estimate", "request"]
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert (
         "Estimated: up to 2 LLM calls (1 + up to 1 refinement) with gpt-6-luna" in err
     )
@@ -92,7 +92,7 @@ def test_actual_tokens_and_cost_are_reported(
     main(["check"])
 
     expected = (1000 * 0.10 + 600 * 0.50) / 1_000_000
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert (
         "LLM: 1 calls · 1000 input tokens · 600 output tokens (400 reasoning) · "
         f"cost ${expected:.4f}"
@@ -111,7 +111,7 @@ def test_declining_the_estimate_sends_nothing(
     assert main(["check"]) == EXIT_OK
 
     assert events == ["estimate"]
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert "Continue? [Y/n]" in err
     assert "Cancelled: no LLM request was sent." in err
 
@@ -138,7 +138,7 @@ def test_yes_and_json_mode_do_not_ask(
     main(["check", *flags])
 
     assert events == ["estimate", "request"]
-    assert "Continue?" not in capsys.readouterr().err
+    assert "Continue?" not in "".join(capsys.readouterr())
 
 
 def test_second_run_uses_the_cache_without_any_request(
@@ -148,7 +148,7 @@ def test_second_run_uses_the_cache_without_any_request(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     assert main(["check"]) == EXIT_FINDINGS
-    first = capsys.readouterr().err
+    first = "".join(capsys.readouterr())
     events.clear()
 
     def no_network(config: Config, environment: Mapping[str, str]) -> object:
@@ -157,7 +157,7 @@ def test_second_run_uses_the_cache_without_any_request(
     monkeypatch.setattr(cli, "create_client", no_network)
 
     assert main(["check"]) == EXIT_FINDINGS
-    second = capsys.readouterr().err
+    second = "".join(capsys.readouterr())
     assert "request" not in events  # the estimate may still list a refinement
     assert "LLM: 0 calls" in second
     assert f"{FUNCTION}('995 555 12 34 56')" in first
@@ -183,7 +183,7 @@ def test_cost_limit_skips_cleanly_and_reports_it(
     assert main(["check", "--max-cost", "0.000001"]) == EXIT_OK
 
     assert events == ["estimate"]  # the request would exceed the limit
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert "(limit $0.000001)" in err
     assert "The estimate is above max_cost" in err
     assert f"skipped: {FUNCTION} (cost limit)" in err
@@ -195,7 +195,7 @@ def test_unpriced_remote_model_exits_2_with_a_hint(
     assert main(["check", "--model", "my-private-model"]) == EXIT_ERROR
 
     assert events == []  # no estimate, no request
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert "no price is known for model 'my-private-model'" in err
     assert (
         '[tool.didibreak.prices] "my-private-model" = { input = ..., output = ... }'
@@ -219,7 +219,7 @@ def test_local_endpoint_without_a_price_costs_nothing(
     assert main(argv) == EXIT_FINDINGS
 
     assert events == ["estimate", "request"]
-    err = capsys.readouterr().err
+    err = "".join(capsys.readouterr())
     assert "Estimated: up to 2 LLM calls (1 + up to 1 refinement) with llama3.2" in err
     assert ", cost $0 (local)" in err
     assert "output tokens (400 reasoning) · cost $0 (local)" in err
@@ -252,7 +252,7 @@ def test_configured_price_gives_a_cost_for_an_unknown_model(
     main(["check", "--model", "my-private-model"])
 
     expected = (1000 * 1.0 + 600 * 2.0) / 1_000_000
-    assert f"cost ${expected:.4f}" in capsys.readouterr().err
+    assert f"cost ${expected:.4f}" in "".join(capsys.readouterr())
 
 
 def test_quiet_mode_prints_no_estimate(
@@ -261,4 +261,4 @@ def test_quiet_mode_prints_no_estimate(
     main(["check", "-q"])
 
     assert events == ["request"]
-    assert "Estimated" not in capsys.readouterr().err
+    assert "Estimated" not in "".join(capsys.readouterr())

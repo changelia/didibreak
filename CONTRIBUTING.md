@@ -120,18 +120,22 @@ in the file is listed as skipped (`no cases`). Example on the
 
 ```text
 $ didibreak check --cases-file ../cases.json
+didibreak 0.1.0.dev0 · working tree vs HEAD (2d27f6e4b7e6)
 1 changed function(s) to check (0 new)
 3 cases · 2 behavior changes · 0 flaky dropped
   UNCLEAR      app/utils/phone.py::normalize_phone('+1 202 555 0100')
                before '+99512025550100' → after '+12025550100'
+               no intent was given (--intent or a commit message)
   UNCLEAR      app/utils/phone.py::normalize_phone('995 555 12 34 56')
                before '+995555123456' → after '+995995555123456'
+               no intent was given (--intent or a commit message)
 $ echo $?
 1
 ```
 
-Findings are `unclear` until intent labelling exists, and this listing on
-stderr is replaced by the text and JSON reports later.
+Cases from a file are never labelled, so findings are `unclear`. The report
+goes to stdout; add `--format json` for the JSON report
+([output-format.md](docs/output-format.md)).
 `tests/test_check_end_to_end.py` runs every fixture this way.
 
 ## Adding a comparison rule
