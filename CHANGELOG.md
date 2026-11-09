@@ -95,6 +95,9 @@ the Python package and `js-v*` for the JS/TS package.
   Code, Codex and Cursor (not verified with any agent yet), the check loop,
   what to do per label, and running reproducing tests only for
   `unexpected` and `unclear` findings.
+- The `init-agents` snippet also says what to do with `new_function`
+  findings, that exit code 2 is a setup problem to report, and to stop
+  after 3 check rounds.
 
 ## JS/TS package
 

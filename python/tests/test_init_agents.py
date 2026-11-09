@@ -14,6 +14,9 @@ After changing Python functions, run:
     didibreak check --intent "<the user's request in one sentence>" --format json
 If any finding has label "unexpected", fix the code so that behavior is preserved,
 then run the check again. Report "unclear" findings to the user instead of guessing.
+"new_function" findings: fix a real crash or timeout bug, else report it to the user.
+Exit code 2 means a setup problem: report it to the user.
+Stop after 3 check rounds and report what is left.
 """
 
 
