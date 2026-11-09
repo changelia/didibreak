@@ -96,6 +96,11 @@ behavior.
 
 ### When a function cannot be run
 
+Before the first LLM request, every function's module is imported once in
+both versions (nothing is called), so a function that cannot be imported is
+skipped with one of these reasons without costing tokens. Runs with
+`--cases-file` send no requests and skip this step.
+
 | Reason | When |
 | --- | --- |
 | `import failed: <ExceptionType>` | Importing the module raised an exception. |

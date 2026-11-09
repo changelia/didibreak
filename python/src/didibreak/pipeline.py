@@ -26,9 +26,16 @@ from didibreak.cases import (
 )
 from didibreak.compare import Comparison, Finding, compare_cases, finding_id
 from didibreak.config import ConfigError, find_pyproject
+from didibreak.contracts import case_contradicts
 from didibreak.functions import ChangedFunction, import_root, module_name
 from didibreak.gitdiff import base_worktree, working_tree_copy
-from didibreak.harness import Case, HarnessSettings, Target, run_cases
+from didibreak.harness import (
+    Case,
+    HarnessSettings,
+    Target,
+    check_import,
+    run_cases,
+)
 from didibreak.llm.common import (
     LLMClient,
     LLMInvalidResponseError,
@@ -125,6 +132,8 @@ class Analysis:
         cases_run: Cases run for the checked functions.
         flaky_dropped: Cases dropped as flaky.
         timeouts_dropped: Cases dropped because both versions timed out.
+        type_mismatch_dropped: Findings dropped because their inputs
+            contradict the function's type annotations (task 21a).
         runs: Every case run, with both outcomes, by report name (input for
             the refinement round).
     """
@@ -136,6 +145,7 @@ class Analysis:
     flaky_dropped: int
     timeouts_dropped: int
     runs: Mapping[str, tuple[CaseRun, ...]] = field(default_factory=dict)
+    type_mismatch_dropped: int = 0
 
 
 def tree_import_root(tree: Path, path: str) -> str:
@@ -182,6 +192,16 @@ def _run(
         return current.skip_reason
     comparison = compare_cases(
         function.report_name, cases, before, current.outcomes, function.raised_types
+    )
+    # Inputs outside the annotated contract rarely matter (task 21: all 25
+    # false alarms); their findings are dropped and counted.
+    kept = tuple(
+        f for f in comparison.findings if not case_contradicts(function, f.case)
+    )
+    comparison = replace(
+        comparison,
+        findings=kept,
+        type_mismatch_dropped=len(comparison.findings) - len(kept),
     )
     olds = before if before is not None else (None,) * len(cases)
     runs = tuple(
@@ -254,7 +274,67 @@ def analyze(
         flaky_dropped=sum(comparison.flaky_dropped for comparison in comparisons),
         timeouts_dropped=sum(c.timeouts_dropped for c in comparisons),
         runs=runs,
+        type_mismatch_dropped=sum(c.type_mismatch_dropped for c in comparisons),
     )
+
+
+def _import_problem(
+    function: ChangedFunction,
+    trees: tuple[Path, Path],
+    base_path: str,
+    settings: HarnessSettings,
+) -> str | None:
+    base_tree, current_tree = trees
+    if function.kind == "changed":
+        target = _target(base_tree, base_path, function.qualname)
+        reason = check_import(target, settings)
+        if reason is not None:
+            return f"{reason} (base version)"
+    return check_import(
+        _target(current_tree, function.file, function.qualname), settings
+    )
+
+
+def check_imports(
+    root: Path,
+    base_sha: str,
+    functions: Sequence[ChangedFunction],
+    base_paths: Mapping[str, str],
+    settings: HarnessSettings,
+    skip: Sequence[str] = (),
+) -> tuple[tuple[ChangedFunction, ...], tuple[ChangedFunction, ...]]:
+    """Import every function's module in both versions before any LLM request.
+
+    Same trees and skip reasons as ``analyze``; nothing is called.
+
+    Args:
+        root: Repository root.
+        base_sha: Base commit.
+        functions: Testable changed and new functions.
+        base_paths: Base path of each working-tree file, for renamed files.
+        settings: Harness settings.
+        skip: Repository-relative folders not copied (the output folder).
+
+    Returns:
+        The importable functions, and the others with ``skip_reason`` set.
+
+    Raises:
+        GitError: If the base worktree or the copy cannot be created.
+        OSError: If a file cannot be copied.
+    """
+    if not functions:
+        return (), ()
+    importable: list[ChangedFunction] = []
+    skipped: list[ChangedFunction] = []
+    with base_worktree(root, base_sha) as base, working_tree_copy(root, skip) as copy:
+        for function in functions:
+            base_path = base_paths.get(function.file, function.file)
+            reason = _import_problem(function, (base, copy), base_path, settings)
+            if reason is None:
+                importable.append(function)
+            else:
+                skipped.append(replace(function, skip_reason=reason))
+    return tuple(importable), tuple(skipped)
 
 
 # Cost estimate (task 15). Prompts are measured exactly; 3 characters per

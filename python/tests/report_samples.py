@@ -67,6 +67,7 @@ def sample_report() -> Report:
         cases_run=14,
         flaky_dropped=1,
         invalid_cases_dropped=2,
+        type_mismatch_dropped=3,
         skipped=(SkippedItem("app/db.py::save_user", "obvious I/O: session.commit"),),
         removed=("app/old.py::legacy",),
         usage=ReportUsage(3, 3400, 810, 400, 0.0018),

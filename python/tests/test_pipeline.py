@@ -134,3 +134,42 @@ def test_analysis_keeps_every_run_with_both_outcomes(
     (g_run,) = analysis.runs["m.py::g"]
     assert g_run.before is None  # new function
     assert g_run.after.repr == "1.0"
+
+
+def test_findings_on_inputs_outside_the_annotations_are_dropped_and_counted(
+    git_repository: GitRepository,
+) -> None:
+    git_repository.write(
+        "m.py",
+        "def quote(text: str) -> str:\n    return text[:1]\n\n"
+        "def loose(text):\n    return text[:1]\n",
+    )
+    git_repository.commit()
+    git_repository.write(
+        "m.py",
+        "def quote(text: str) -> str:\n    return str(text)[:1]\n\n"
+        "def loose(text):\n    return str(text)[:1]\n",
+    )
+    wrong_type = Case(("b'ab'",))
+
+    analysis = run(
+        git_repository.path,
+        {"m.py::quote": (wrong_type,), "m.py::loose": (wrong_type,)},
+    )
+
+    assert [f.function for f in analysis.findings] == ["m.py::loose"]
+    assert analysis.type_mismatch_dropped == 1
+
+
+def test_input_accepted_by_the_base_annotation_is_still_reported(
+    git_repository: GitRepository,
+) -> None:
+    git_repository.write("m.py", "def half(n: int | str) -> str:\n    return str(n)\n")
+    git_repository.commit()
+    git_repository.write("m.py", "def half(n: int) -> str:\n    return str(n // 2)\n")
+
+    analysis = run(git_repository.path, {"m.py::half": (Case(("'8'",)),)})
+
+    (finding,) = analysis.findings
+    assert finding.after.kind == "exception"
+    assert analysis.type_mismatch_dropped == 0

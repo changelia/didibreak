@@ -1,0 +1,62 @@
+{
+  "scenario": {
+    "id": "packaging-replay-0625596",
+    "repo": "packaging",
+    "kind": "replay",
+    "commit": "0625596e502163179b9a82796aee82c178efc16d",
+    "intent": "Refactor the utils module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "0625596e502163179b9a82796aee82c178efc16d",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the utils module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 0,
+  "seconds": 0.2,
+  "stderr": "",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.1.0.dev0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "0625596e502163179b9a82796aee82c178efc16d"
+    },
+    "intent": null,
+    "findings": [],
+    "summary": {
+      "functions_checked": 0,
+      "cases_run": 0,
+      "findings": {
+        "expected": 0,
+        "unexpected": 0,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cost_usd": 0.0
+    }
+  }
+}

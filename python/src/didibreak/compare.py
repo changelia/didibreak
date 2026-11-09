@@ -66,12 +66,15 @@ class Comparison:
         flaky_dropped: Cases dropped because a version gave different
             outcomes in its two runs.
         timeouts_dropped: Cases dropped because both versions timed out.
+        type_mismatch_dropped: Findings dropped later because their inputs
+            contradict the type annotations (set by the pipeline).
     """
 
     findings: tuple[Finding, ...]
     cases_run: int
     flaky_dropped: int
     timeouts_dropped: int
+    type_mismatch_dropped: int = 0
 
 
 def floats_close(before: float, after: float) -> bool:

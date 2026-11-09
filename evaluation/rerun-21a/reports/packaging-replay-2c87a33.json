@@ -1,0 +1,305 @@
+{
+  "scenario": {
+    "id": "packaging-replay-2c87a33",
+    "repo": "packaging",
+    "kind": "replay",
+    "commit": "2c87a33f665828b7aa0f650b1b50243b3ab95695",
+    "intent": "Refactor the licenses module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "2c87a33f665828b7aa0f650b1b50243b3ab95695",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the licenses module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 19.1,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~12,364 input + ~7,200 output tokens, ~$0.0048 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.1.0.dev0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "2c87a33f665828b7aa0f650b1b50243b3ab95695"
+    },
+    "intent": "Stated by the user: Refactor the licenses module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "8b49de77ee7a",
+        "function": "src/packaging/licenses/__init__.py::canonicalize_license_expression",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the canonicalized output differs.",
+        "confidence": "high",
+        "args": [
+          "'LicenseRef-Alpha OR licenseref-alpha'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-Alpha OR LicenseRef-Alpha'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-alpha OR LicenseRef-alpha'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ybn767se/out/tests/test_canonicalize_license_expression.py"
+      },
+      {
+        "id": "5894b4ddc586",
+        "function": "src/packaging/licenses/__init__.py::canonicalize_license_expression",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the canonicalized output differs.",
+        "confidence": "high",
+        "args": [
+          "'licenseref-bravo AND LicenseRef-BRAVO'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-bravo AND LicenseRef-bravo'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-BRAVO AND LicenseRef-BRAVO'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ybn767se/out/tests/test_canonicalize_license_expression.py"
+      },
+      {
+        "id": "ac14ad87fa80",
+        "function": "src/packaging/licenses/__init__.py::canonicalize_license_expression",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the canonicalized output differs.",
+        "confidence": "high",
+        "args": [
+          "'LicenseRef-Charlie OR LICENSEREF-charlie OR licenseref-CHARLIE'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-Charlie OR LicenseRef-Charlie OR LicenseRef-Charlie'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-CHARLIE OR LicenseRef-CHARLIE OR LicenseRef-CHARLIE'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ybn767se/out/tests/test_canonicalize_license_expression.py"
+      },
+      {
+        "id": "9cc98881e6f0",
+        "function": "src/packaging/licenses/__init__.py::canonicalize_license_expression",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the canonicalized output differs.",
+        "confidence": "high",
+        "args": [
+          "'LicenseRef-Delta AND LicenseRef-delta AND LicenseRef-DELTA'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-Delta AND LicenseRef-Delta AND LicenseRef-Delta'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-DELTA AND LicenseRef-DELTA AND LicenseRef-DELTA'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ybn767se/out/tests/test_canonicalize_license_expression.py"
+      },
+      {
+        "id": "0abb3036400e",
+        "function": "src/packaging/licenses/__init__.py::canonicalize_license_expression",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the canonicalized output differs.",
+        "confidence": "high",
+        "args": [
+          "'(LicenseRef-Echo OR licenseref-ECHO) AND LicenseRef-echo'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'(LicenseRef-Echo OR LicenseRef-Echo) AND LicenseRef-Echo'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'(LicenseRef-echo OR LicenseRef-echo) AND LicenseRef-echo'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ybn767se/out/tests/test_canonicalize_license_expression.py"
+      },
+      {
+        "id": "46d74671d0b8",
+        "function": "src/packaging/licenses/__init__.py::canonicalize_license_expression",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the canonicalized output differs.",
+        "confidence": "high",
+        "args": [
+          "'licenseref-foxtrot OR (LicenseRef-FOXTROT AND LicenseRef-Foxtrot)'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-foxtrot OR (LicenseRef-foxtrot AND LicenseRef-foxtrot)'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-Foxtrot OR (LicenseRef-Foxtrot AND LicenseRef-Foxtrot)'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ybn767se/out/tests/test_canonicalize_license_expression.py"
+      },
+      {
+        "id": "c446abc7fa57",
+        "function": "src/packaging/licenses/__init__.py::canonicalize_license_expression",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the canonicalized output differs.",
+        "confidence": "high",
+        "args": [
+          "'LicenseRef-Golf AND LicenseRef-HOTEL OR licenseref-golf AND licenseref-hotel'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-Golf AND LicenseRef-HOTEL OR LicenseRef-Golf AND LicenseRef-HOTEL'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-golf AND LicenseRef-hotel OR LicenseRef-golf AND LicenseRef-hotel'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ybn767se/out/tests/test_canonicalize_license_expression.py"
+      },
+      {
+        "id": "2e6e3924fc4e",
+        "function": "src/packaging/licenses/__init__.py::canonicalize_license_expression",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the canonicalized output differs.",
+        "confidence": "high",
+        "args": [
+          "'LicenseRef-Juliet AND licenseref-juliet OR LicenseRef-JULIET AND licenseref-JULIET'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-Juliet AND LicenseRef-Juliet OR LicenseRef-Juliet AND LicenseRef-Juliet'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-JULIET AND LicenseRef-JULIET OR LicenseRef-JULIET AND LicenseRef-JULIET'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ybn767se/out/tests/test_canonicalize_license_expression.py"
+      },
+      {
+        "id": "43bf16e2db55",
+        "function": "src/packaging/licenses/__init__.py::canonicalize_license_expression",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the canonicalized output differs.",
+        "confidence": "high",
+        "args": [
+          "'LicenseRef-Kilo OR LicenseRef-LIMA OR licenseref-kilo OR licenseref-lima'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-Kilo OR LicenseRef-LIMA OR LicenseRef-Kilo OR LicenseRef-LIMA'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-kilo OR LicenseRef-lima OR LicenseRef-kilo OR LicenseRef-lima'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ybn767se/out/tests/test_canonicalize_license_expression.py"
+      },
+      {
+        "id": "4f682483972f",
+        "function": "src/packaging/licenses/__init__.py::canonicalize_license_expression",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the canonicalized output differs.",
+        "confidence": "high",
+        "args": [
+          "'(licenseref-mike AND LicenseRef-MIKE) OR (LicenseRef-mike AND licenseref-Mike)'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'(LicenseRef-mike AND LicenseRef-mike) OR (LicenseRef-mike AND LicenseRef-mike)'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'(LicenseRef-Mike AND LicenseRef-Mike) OR (LicenseRef-Mike AND LicenseRef-Mike)'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ybn767se/out/tests/test_canonicalize_license_expression.py"
+      },
+      {
+        "id": "0043a869534b",
+        "function": "src/packaging/licenses/__init__.py::canonicalize_license_expression",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the canonicalized output differs.",
+        "confidence": "high",
+        "args": [
+          "'LicenseRef-November OR licenseref-november AND LicenseRef-NOVEMBER OR licenseref-NOVEMBER'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-November OR LicenseRef-November AND LicenseRef-November OR LicenseRef-November'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'LicenseRef-NOVEMBER OR LicenseRef-NOVEMBER AND LicenseRef-NOVEMBER OR LicenseRef-NOVEMBER'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ybn767se/out/tests/test_canonicalize_license_expression.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 11,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 4303,
+      "output_tokens": 1476,
+      "cost_usd": 0.0011683000000000002
+    }
+  }
+}

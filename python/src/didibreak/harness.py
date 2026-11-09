@@ -239,7 +239,10 @@ def _start_child(
     )
     killed = False
     try:
-        process.wait(timeout=settings.timeout * len(cases) + _KILL_GRACE_SECONDS)
+        # An import check runs no case but still gets one timeout to import.
+        process.wait(
+            timeout=settings.timeout * max(len(cases), 1) + _KILL_GRACE_SECONDS
+        )
     except subprocess.TimeoutExpired:
         killed = True
     finally:
@@ -287,6 +290,34 @@ def _run_once(
                 break
             outcomes.append(_process_exited(run.exit_code))
     return HarnessResult(tuple(outcomes))
+
+
+def check_import(
+    target: Target,
+    settings: HarnessSettings,
+    environment: Mapping[str, str] | None = None,
+) -> str | None:
+    """Import the target's module in a child process without calling anything.
+
+    Used before any LLM request (task 21a), so a function whose module cannot
+    be imported costs no tokens.
+
+    Args:
+        target: The function and the tree to import it from.
+        settings: Interpreter and timeout (one timeout for the import).
+        environment: Parent environment; defaults to ``os.environ``.
+
+    Returns:
+        None when the function was found after import, else the skip reason
+        ``run_cases`` would give.
+    """
+    parent = os.environ if environment is None else environment
+    with tempfile.TemporaryDirectory(prefix="didibreak-harness-") as folder:
+        run = _start_child(target, (), settings, parent, Path(folder))
+    if not run.records:
+        return _import_ended_reason(run)
+    reason = run.records[0].get("skip_reason")
+    return None if reason is None else str(reason)
 
 
 def _result_key(outcome: Outcome) -> tuple[object, ...]:

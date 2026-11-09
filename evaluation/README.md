@@ -7,6 +7,17 @@ findings are real bugs** on the evaluation repositories.
 Everything here was produced by real `didibreak check` runs with the default
 OpenAI model (`gpt-6-luna`) on 2026-11-09. Nothing is simulated.
 
+> **Scope of these numbers.** The libraries were chosen *because* they have
+> many functions with literal-friendly arguments (strings, numbers, simple
+> collections). Application code — for example FastAPI or Django apps, where
+> functions take request objects, ORM models, sessions or dates — will show
+> higher skip rates (instance methods, obvious I/O, no valid literal cases)
+> and may show lower precision. These results do not measure that.
+
+Two runs are recorded: the original task 21 run (`reports/`, `labels.json`)
+and the task 21a re-run with the same plan after the wrong-type and import
+changes (`rerun-21a/`). The task 21a results are at the end.
+
 ## Files
 
 | Path | What it is |
@@ -189,6 +200,80 @@ was skipped with `import failed: ModuleNotFoundError`.
    imported still costs one LLM call (humanize, twice); an import check
    before case generation would save it.
 5. **Tree copy:** no change needed.
+
+## Task 21a re-run (2026-11-09)
+
+Changes since task 21 (owner decisions on the task 21 proposals): case
+generation asks for values of the annotated type (prompt version 2);
+findings whose inputs contradict a simple annotation in every version are
+dropped and counted (`summary.type_mismatch_dropped`); every module is
+imported in both versions before any LLM request. Same plan, same rubric,
+labels in `rerun-21a/labels.json`.
+
+| Repository | Runs | Checked | Skipped | Unexpected / unclear / expected / new_function | Real / labelled unexpected | Precision | Cost |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| humanize | 8 | 7 | 1 | 60 / 2 / 4 / 0 | 60 / 60 | 100% | $0.0104 |
+| python-slugify | 2 | 2 | 0 | 12 / 0 / 0 / 0 | 12 / 12 | 100% | $0.0033 |
+| more-itertools | 6 | 6 | 0 | 36 / 0 / 0 / 6 | 23 / 36 | 64% | $0.0107 |
+| boltons | 7 | 5 | 2 | 22 / 0 / 2 / 11 | 22 / 22 | 100% | $0.0068 |
+| validators | 7 | 6 | 1 | 34 / 0 / 0 / 0 | 34 / 34 | 100% | $0.0098 |
+| packaging | 5 | 3 | 0 | 17 / 0 / 3 / 0 | 17 / 17 | 100% | $0.0041 |
+| sqlparse | 3 | 2 | 1 | 12 / 0 / 0 / 0 | 0 / 12 | 0% | $0.0036 |
+| **All** | 38 | 31 | 5 | 193 / 2 / 9 / 17 | 168 / 193 | 87% | $0.0487 |
+
+| Measure | Task 21 | Task 21a |
+| --- | --- | --- |
+| Precision (real / unexpected) | 87% (170 / 195) | **87% (168 / 193)** |
+| `new_function` findings (real bugs) | 36 (0) | **17 (0)** |
+| Findings dropped by the annotation check | — | 0 |
+| Replayed bug found (of 22) | 15 | **14** |
+| LLM calls on unimportable modules | 2 | 0 |
+| Cost of the run | $0.0486 | $0.0487 |
+
+What changed and why precision did not move:
+
+- **All 25 false alarms of the re-run are in unannotated functions**
+  (sqlparse `remove_quotes` 12, more-itertools `exactly_n` 10 and
+  `nth_permutation` 3; more-itertools keeps its annotations in stub files,
+  which didibreak does not read). The annotation check cannot act there by
+  design (unannotated functions are unchanged), so it dropped nothing.
+- In annotated functions there were **no** false alarms in the re-run. The
+  four task 21 false alarms in humanize `ordinal` (lists, bytes for a
+  `NumberOrString` parameter, an alias the check does not resolve) did not
+  recur: the prompt now asks for annotated types. Applied to the task 21
+  reports, the check would have dropped one `unexpected` finding (validators
+  `_isin_checksum([0])`, a list for a `str`) and 3 of the 36 `new_function`
+  findings (boltons `human_readable_list`, the only annotated new function).
+- `new_function` findings halved (36 → 17), all still wrong-type inputs or a
+  slow huge input in unannotated new functions (`ellipsize`,
+  `subfactorial`); none real, none an implicit subclass of an explicitly
+  raised type.
+- Recall: the validators `cron` replay was missed this time because all 12
+  proposed cases were invalid literals (`no valid cases`); in task 21 it was
+  found. This is run-to-run variance of the LLM, not a code change in that
+  path. The other 21 replays behaved as in task 21.
+- The import check removed the LLM call for the humanize forward commit
+  (`PackageNotFoundError`): 0 calls instead of 1.
+
+### Independent label check
+
+A separate agent that had not seen these labels labelled a random sample
+(seed 21) of **60** of the 193 `unexpected` findings from the function
+sources, the inputs, both outcomes, the intent and the rubric
+(`rerun-21a/independent/`). It agreed on **60 of 60** (Cohen's kappa 1.0);
+precision recomputed with its labels where they disagree stays **87.0%
+(168 / 193)**. It named borderline cases it still labelled real:
+a too-short string for the private ISIN checksum, `exactly_n` at
+`sys.maxsize`, `IndexError` → `ValueError` on already-invalid sizes, and
+`ordinal(',123')`. Both labellers are models applying the same written
+rubric; a human review of the borderline cases is still advisable.
+
+### Spend
+
+Task 21 saved reports $0.0486, task 21 unrecorded at most $0.1013, task 21a
+saved reports $0.0487, and $0.0023 for two task 21a runs that ran twice
+(two parallel runners overlapped; the second result was kept): **about
+$0.20 of the $5 budget**.
 
 ## Reproduce
 

@@ -1,0 +1,62 @@
+{
+  "scenario": {
+    "id": "boltons-forward-1b1d378",
+    "repo": "boltons",
+    "kind": "forward",
+    "commit": "1b1d37875f5702a7c86990e3f415093fb360db4d",
+    "intent": "feat(strutils): add human_readable_list function to format lists of strings",
+    "patch": null
+  },
+  "base_sha": "6b9a2bf202e3e2c5a56718b4fea5914de5a97107",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "feat(strutils): add human_readable_list function to format lists of strings",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 0,
+  "seconds": 27.6,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,299 input + ~7,200 output tokens, ~$0.0041 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.1.0.dev0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "6b9a2bf202e3e2c5a56718b4fea5914de5a97107"
+    },
+    "intent": "Stated by the user: feat(strutils): add human_readable_list function to format lists of strings",
+    "findings": [],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 18,
+      "findings": {
+        "expected": 0,
+        "unexpected": 0,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 6,
+      "type_mismatch_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 1897,
+      "output_tokens": 2721,
+      "cost_usd": 0.0015502
+    }
+  }
+}

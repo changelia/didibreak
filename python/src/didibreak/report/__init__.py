@@ -55,6 +55,8 @@ class Report:
         cases_run: Cases run, refinement included.
         flaky_dropped: Cases dropped as flaky.
         invalid_cases_dropped: LLM cases that were not Python literals.
+        type_mismatch_dropped: Findings dropped because their inputs
+            contradict the function's type annotations (task 21a).
         skipped: Functions (and unreadable files) not checked, with reasons.
         removed: ``path::qualname`` of removed functions.
         usage: LLM use.
@@ -82,6 +84,7 @@ class Report:
     refinement_skipped: tuple[SkippedItem, ...] = ()
     test_files: tuple[str, ...] = ()
     no_tests: tuple[SkippedItem, ...] = ()
+    type_mismatch_dropped: int = 0
 
     def by_label(self) -> list[tuple[str, list[Finding]]]:
         """Findings grouped in report order: unexpected, unclear, expected, new."""

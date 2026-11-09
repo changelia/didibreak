@@ -98,6 +98,15 @@ the Python package and `js-v*` for the JS/TS package.
 - The `init-agents` snippet also says what to do with `new_function`
   findings, that exit code 2 is a setup problem to report, and to stop
   after 3 check rounds.
+- Findings whose inputs contradict the function's simple type annotations
+  (for example `bytes` for a `str` parameter) are dropped and counted in
+  `summary.type_mismatch_dropped`; the JSON report is now
+  `schema_version: 2`.
+- Case generation and refinement ask for values that match the parameters'
+  type annotations (prompt version 2; cached cases from version 1 are not
+  reused).
+- Each function's module is imported in both versions before any LLM
+  request, so a function that cannot be imported costs no tokens.
 
 ## JS/TS package
 

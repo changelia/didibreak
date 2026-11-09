@@ -2,12 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/changelia/didibreak/spec/report.schema.json",
   "title": "didibreak JSON report",
-  "description": "Output of `didibreak check --format json`, schema_version 1 (Detailed Design section 6).",
+  "description": "Output of `didibreak check --format json`, schema_version 2 (Detailed Design section 6).",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "tool", "base", "intent", "findings", "summary", "usage"],
   "properties": {
-    "schema_version": {"const": 1},
+    "schema_version": {"const": 2},
     "tool": {
       "type": "object",
       "additionalProperties": false,
@@ -96,7 +96,7 @@
       "additionalProperties": false,
       "required": [
         "functions_checked", "cases_run", "findings", "flaky_dropped",
-        "invalid_cases_dropped", "skipped", "removed"
+        "invalid_cases_dropped", "type_mismatch_dropped", "skipped", "removed"
       ],
       "properties": {
         "functions_checked": {"type": "integer", "minimum": 0},
@@ -114,6 +114,11 @@
         },
         "flaky_dropped": {"type": "integer", "minimum": 0},
         "invalid_cases_dropped": {"type": "integer", "minimum": 0},
+        "type_mismatch_dropped": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Findings dropped because their inputs contradict the function's type annotations."
+        },
         "skipped": {
           "type": "array",
           "items": {

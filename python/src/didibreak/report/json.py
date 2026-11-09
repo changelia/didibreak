@@ -11,7 +11,7 @@ from didibreak.compare import Finding
 from didibreak.harness import Outcome
 from didibreak.report import Report
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 # Summary order of Detailed Design section 6 (the same labels as LABEL_ORDER).
 SUMMARY_LABELS = ("expected", "unexpected", "unclear", "new_function")
 
@@ -60,6 +60,7 @@ def report_json(report: Report) -> dict[str, Any]:
             "findings": {label: counts[label] for label in SUMMARY_LABELS},
             "flaky_dropped": report.flaky_dropped,
             "invalid_cases_dropped": report.invalid_cases_dropped,
+            "type_mismatch_dropped": report.type_mismatch_dropped,
             "skipped": [
                 {"function": item.function, "reason": item.reason}
                 for item in report.skipped
