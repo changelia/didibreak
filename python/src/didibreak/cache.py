@@ -96,13 +96,22 @@ class CaseCache:
         }
         try:
             self.folder.mkdir(parents=True, exist_ok=True)
-            ignore = self.output_dir / ".gitignore"
-            if not ignore.exists():
-                ignore.write_text(GITIGNORE_TEXT, encoding="utf-8")
+            ignore_output_dir(self.output_dir)
             _write_atomically(path, json.dumps(data, indent=2))
         except OSError:
             return False  # a cache that cannot be written only costs a new call
         return True
+
+
+def ignore_output_dir(output_dir: Path) -> None:
+    """Create the output folder's own ``.gitignore`` if it is missing.
+
+    Raises:
+        OSError: The file cannot be written.
+    """
+    ignore = output_dir / ".gitignore"
+    if not ignore.exists():
+        ignore.write_text(GITIGNORE_TEXT, encoding="utf-8")
 
 
 def _write_atomically(path: Path, text: str) -> None:
