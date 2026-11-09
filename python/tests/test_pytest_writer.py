@@ -1,5 +1,6 @@
 """Reproducing pytest files: rendering, file names, conftest and writing."""
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -306,3 +307,34 @@ def _int(number: int) -> dict[str, object]:
 
 def _bool() -> dict[str, object]:
     return {"type": "bool", "value": True}
+
+
+def test_generated_conftest_runs_tests_in_utc(tmp_path: Path) -> None:
+    source = "import time\n\n\ndef offset_hour(seconds):\n"
+    source += "    return time.localtime(seconds).tm_hour\n"
+    folder = tmp_path / "app" / "utils"
+    folder.mkdir(parents=True)
+    (folder / "phone.py").write_text(source)
+    subject = Subject(
+        "app/utils/phone.py::offset_hour", "app.utils.phone", "offset_hour", tmp_path
+    )
+    hour = Outcome("return", "builtins.int", "0", {"type": "int", "value": 0})
+    case = Case(("0",))
+    tests = tmp_path / ".didibreak" / "tests"
+    tests.mkdir(parents=True)
+    (tests / "test_offset_hour.py").write_text(
+        render(finding(hour, case=case), subject=subject)
+    )
+    (tests / "conftest.py").write_text(render_conftest(["../.."]))
+    environment = {**os.environ, "TZ": "Asia/Tbilisi"}  # UTC+4
+
+    run = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", str(tests)],
+        cwd=tmp_path,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert run.returncode == 0, run.stdout

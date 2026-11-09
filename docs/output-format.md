@@ -284,9 +284,11 @@ How the base outcome is asserted:
 
 - A test file is replaced each time its function has findings; test files
   of other functions are left alone.
-- `conftest.py` in the same folder puts your import roots on `sys.path`
-  and calls `random.seed(0)` before each test, as didibreak's harness
-  does, so plain `pytest` can run the files from the repository root.
+- `conftest.py` in the same folder puts your import roots on `sys.path`,
+  sets `TZ=UTC` (with `time.tzset()`) and calls `random.seed(0)` before
+  each test, as didibreak's harness does, so plain `pytest` can run the
+  files from the repository root. `PYTHONHASHSEED` is not reproduced: it
+  must be set before Python starts.
   If you move a test into your own test suite, your suite's setup must
   make the module importable.
 - Findings labelled `expected` get no test (`no test: ... (expected
