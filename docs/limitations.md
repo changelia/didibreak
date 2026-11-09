@@ -102,9 +102,12 @@ checked in the order of the table; the first match is the reason.
 - Values that are not Python literals (objects, dataclasses, `nan`,
   truncated long values) are checked by their type only, so such a test can
   pass on the change even though didibreak reported a difference.
-- The tests seed `random` like the harness, but they do not set
-  `PYTHONHASHSEED`, `TZ=UTC` or remove credential variables, so code that
-  depends on those can behave differently under plain pytest.
+- The tests set `TZ=UTC` and seed `random` like the harness, but
+  `PYTHONHASHSEED` is not reproduced (it must be set before Python starts)
+  and credential variables are not removed. Code whose result depends on
+  the hash seed, such as the iteration order of a set of strings, or on
+  those variables, can behave differently under plain pytest; run
+  `PYTHONHASHSEED=0 pytest .didibreak/tests` to match the harness.
 - A test file's name comes from the function name; if your test suite has a
   file with the same name and you run both together, pytest may refuse to
   import one of them. Rename or move the generated file.

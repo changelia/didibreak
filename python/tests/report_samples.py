@@ -29,7 +29,6 @@ def sample_report() -> Report:
             "high",
             "expected",
             "intent covers international numbers",
-            TEST_FILE,
         ),
         Finding(
             "30040f8bc543",
@@ -75,6 +74,10 @@ def sample_report() -> Report:
         refinement_cases=4,
         test_files=(TEST_FILE,),
         no_tests=(
+            SkippedItem(
+                f"{PHONE}('+1 202 555 0100')",
+                "expected change",
+            ),
             SkippedItem(
                 "app/text.py::initials('', strict=True)",
                 "new function: no base behavior to assert",

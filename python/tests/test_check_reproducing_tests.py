@@ -41,9 +41,14 @@ def test_generated_tests_pass_on_the_base_and_fail_on_the_change(
     main(["check", "--cases-file", str(path), "--format", "json"])
 
     report = json.loads(capsys.readouterr().out)
-    with_base = [f for f in report["findings"] if f["before"] is not None]
+    with_base = [
+        f
+        for f in report["findings"]
+        if f["before"] is not None and f["label"] != "expected"
+    ]
     assert all(f["test_file"] for f in with_base)
-    assert all(f["test_file"] is None for f in report["findings"] if not f["before"])
+    others = [f for f in report["findings"] if f not in with_base]
+    assert all(f["test_file"] is None for f in others)
     if not with_base:
         assert not (repository / ".didibreak" / "tests").exists()
         return

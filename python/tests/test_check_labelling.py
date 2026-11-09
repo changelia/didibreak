@@ -209,3 +209,18 @@ def test_estimate_counts_the_labelling_request(
 
     err = "".join(capsys.readouterr())
     assert "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling)" in err
+
+
+def test_expected_findings_get_no_reproducing_test(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fixture = build_fixture_repository("intended_change", tmp_path / "repo")
+    install(monkeypatch, fixture.expected)
+    monkeypatch.chdir(fixture.repository.path)
+
+    assert main(["check", "--intent", fixture.expected["intent"]]) == EXIT_OK
+
+    out = capsys.readouterr().out
+    assert "no test: app/greetings.py::greeting('Ada') (expected change)" in out
+    assert "Reproducing tests" not in out
+    assert not (fixture.repository.path / ".didibreak" / "tests").exists()

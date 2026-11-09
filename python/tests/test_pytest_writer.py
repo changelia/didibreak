@@ -1,5 +1,6 @@
 """Reproducing pytest files: rendering, file names, conftest and writing."""
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -146,10 +147,15 @@ def test_function_named_like_a_local_is_imported_under_an_alias() -> None:
     assert "result = subject_result('995 555 12 34 56')" in text
 
 
-def test_expected_findings_say_the_test_can_be_deleted() -> None:
-    text = render(finding(text_value("x"), label="expected"))
+def test_expected_findings_get_no_test(tmp_path: Path) -> None:
+    expected = finding(text_value("x"), label="expected")
 
-    assert "# The change matched the intent: delete this test if wanted." in text
+    written = write_tests(tmp_path, tmp_path / "out", [expected], "0.1.0", "a1b")
+
+    assert no_test_reason(expected) == "expected change"
+    assert written.files == ()
+    assert written.findings[0].test_file is None
+    assert written.not_written == ((f"{PHONE}('995 555 12 34 56')", "expected change"),)
 
 
 @pytest.mark.parametrize(
@@ -301,3 +307,34 @@ def _int(number: int) -> dict[str, object]:
 
 def _bool() -> dict[str, object]:
     return {"type": "bool", "value": True}
+
+
+def test_generated_conftest_runs_tests_in_utc(tmp_path: Path) -> None:
+    source = "import time\n\n\ndef offset_hour(seconds):\n"
+    source += "    return time.localtime(seconds).tm_hour\n"
+    folder = tmp_path / "app" / "utils"
+    folder.mkdir(parents=True)
+    (folder / "phone.py").write_text(source)
+    subject = Subject(
+        "app/utils/phone.py::offset_hour", "app.utils.phone", "offset_hour", tmp_path
+    )
+    hour = Outcome("return", "builtins.int", "0", {"type": "int", "value": 0})
+    case = Case(("0",))
+    tests = tmp_path / ".didibreak" / "tests"
+    tests.mkdir(parents=True)
+    (tests / "test_offset_hour.py").write_text(
+        render(finding(hour, case=case), subject=subject)
+    )
+    (tests / "conftest.py").write_text(render_conftest(["../.."]))
+    environment = {**os.environ, "TZ": "Asia/Tbilisi"}  # UTC+4
+
+    run = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", str(tests)],
+        cwd=tmp_path,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert run.returncode == 0, run.stdout

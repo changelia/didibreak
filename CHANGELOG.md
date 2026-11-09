@@ -86,8 +86,15 @@ the Python package and `js-v*` for the JS/TS package.
   `docs/output-format.md`.
 - Reproducing pytest files: `check` writes one test file per function to
   `.didibreak/tests/`, one test per finding asserting the base behavior, so
-  it passes on the base and fails on the change; `test_file` in the JSON
-  report and a `Reproducing tests:` line in the text report point to it.
+  it passes on the base and fails on the change. Findings labelled
+  `expected` get no test, so an agent is never pushed to undo an intended
+  change. `test_file` in the JSON report and a `Reproducing tests:` line in
+  the text report point to the file; the generated `conftest.py` sets
+  `TZ=UTC` and seeds `random` like the harness.
+- `docs/ai-agents.md`: where to put the `init-agents` snippet for Claude
+  Code, Codex and Cursor (not verified with any agent yet), the check loop,
+  what to do per label, and running reproducing tests only for
+  `unexpected` and `unclear` findings.
 
 ## JS/TS package
 

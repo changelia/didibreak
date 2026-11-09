@@ -10,6 +10,7 @@
   skipped: app/db.py::save_user (obvious I/O: session.commit)
 Removed: app/old.py::legacy
 Reproducing tests: .didibreak/tests/test_normalize_phone.py
+  no test: app/utils/phone.py::normalize_phone('+1 202 555 0100') (expected change)
   no test: app/text.py::initials('', strict=True) (new function: no base behavior to assert)
 2 invalid cases dropped (not Python literals)
 Refinement: 1 function(s) got 4 more cases
