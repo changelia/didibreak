@@ -44,7 +44,7 @@ def function(old: str | None = OLD, new: str = NEW) -> ChangedFunction:
 def test_packaged_template_has_a_version_and_both_messages() -> None:
     template = load_template()
 
-    assert template.version == 1
+    assert template.version == 2
     assert "Python literal" in template.system
     assert "$new_source" in template.user
 
@@ -115,7 +115,7 @@ def outcome(repr_text: str, kind: str = "return", stable: bool = True) -> Outcom
 def test_refinement_template_is_packaged() -> None:
     template = load_template(REFINEMENT_PROMPT_FILE)
 
-    assert template.version == 1
+    assert template.version == 2
     assert "$previous" in template.user
     assert "differ from all cases already tried" in template.system
 
@@ -176,3 +176,12 @@ def test_refinement_lists_at_most_the_latest_cases_and_cuts_long_values() -> Non
     assert "normalize_phone(4) ->" not in user.content
     assert f"normalize_phone({MAX_PREVIOUS_CASES + 4}) ->" in user.content
     assert "v" * (OUTCOME_TEXT_LIMIT + 1) not in user.content
+
+
+@pytest.mark.parametrize("name", [None, REFINEMENT_PROMPT_FILE])
+def test_both_case_templates_ask_for_inputs_matching_the_annotations(
+    name: str | None,
+) -> None:
+    template = load_template() if name is None else load_template(name)
+
+    assert "every value for it must match that annotation" in template.system

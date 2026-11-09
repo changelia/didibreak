@@ -16,6 +16,11 @@ only; it never predicts results and never decides what changed.
   `False`, `None`, and lists, tuples, dicts and sets of these. A case with
   anything else (a call, a name, an operator, an f-string) or an argument
   longer than 2,000 characters is dropped and counted as an invalid case.
+- For annotated parameters the LLM is asked for values of the annotated
+  type only. If a finding's input still contradicts a simple annotation
+  (builtin types, `None`, `Optional`/`Union`, `list`/`dict`/`tuple`/`set`
+  of these) in every version, the finding is dropped and counted in
+  `type_mismatch_dropped`. Unannotated parameters are not restricted.
 - Cases with the same values are kept once; at most `cases` are used.
 - A reply that is not valid JSON for the requested schema is asked for once
   more; if it fails again, the function is skipped.

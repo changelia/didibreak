@@ -102,6 +102,9 @@ the Python package and `js-v*` for the JS/TS package.
   (for example `bytes` for a `str` parameter) are dropped and counted in
   `summary.type_mismatch_dropped`; the JSON report is now
   `schema_version: 2`.
+- Case generation and refinement ask for values that match the parameters'
+  type annotations (prompt version 2; cached cases from version 1 are not
+  reused).
 
 ## JS/TS package
 
