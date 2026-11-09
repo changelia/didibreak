@@ -37,8 +37,8 @@ The I/O check looks at:
 ## What didibreak writes
 
 didibreak writes only inside its output folder (`output_dir`, default
-`.didibreak/` at the repository root): the case cache now, reports and
-reproducing tests later. The folder ignores itself with its own
+`.didibreak/` at the repository root): the case cache and the reproducing
+tests (`.didibreak/tests/`). The folder ignores itself with its own
 `.gitignore` containing `*`, so it never shows up in `git status`. Your own
 `.gitignore` and your code are never edited.
 
