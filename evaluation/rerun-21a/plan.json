@@ -1,0 +1,317 @@
+{
+  "budget": 5.0,
+  "max_cost_per_run": 0.1,
+  "extra_spent": 0.1499,
+  "extra_spent_note": "Spent before this re-run: task 21 saved reports ($0.0486) and its unrecorded spend ($0.1013 upper bound).",
+  "repos": {
+    "humanize": {
+      "url": "https://github.com/python-humanize/humanize",
+      "head": "d16e635",
+      "setup": {
+        "src/humanize/_version.py": "__version__ = \"0+evaluation\"\n"
+      }
+    },
+    "python-slugify": {
+      "url": "https://github.com/un33k/python-slugify",
+      "head": "35aca63"
+    },
+    "more-itertools": {
+      "url": "https://github.com/more-itertools/more-itertools",
+      "head": "f42dadd"
+    },
+    "boltons": {
+      "url": "https://github.com/mahmoud/boltons",
+      "head": "d31d821"
+    },
+    "validators": {
+      "url": "https://github.com/python-validators/validators",
+      "head": "22786cc"
+    },
+    "packaging": {
+      "url": "https://github.com/pypa/packaging",
+      "head": "713d0d7"
+    },
+    "sqlparse": {
+      "url": "https://github.com/andialbrecht/sqlparse",
+      "head": "09dbe1e"
+    }
+  },
+  "scenarios": [
+    {
+      "id": "humanize-replay-392aef7",
+      "repo": "humanize",
+      "kind": "replay",
+      "commit": "392aef707c0e74341ab4a51420984e9ea6b566c5",
+      "intent": "Refactor the time module for readability; behavior must not change."
+    },
+    {
+      "id": "humanize-replay-ca892b3",
+      "repo": "humanize",
+      "kind": "replay",
+      "commit": "ca892b368a535a79cc5e2181d052245b94fd6652",
+      "intent": "Refactor the number module for readability; behavior must not change."
+    },
+    {
+      "id": "humanize-replay-e46732e",
+      "repo": "humanize",
+      "kind": "replay",
+      "commit": "e46732ed235019682b7bfc6c44443e247b332e95",
+      "intent": "Refactor the number module for readability; behavior must not change."
+    },
+    {
+      "id": "humanize-replay-823ad60",
+      "repo": "humanize",
+      "kind": "replay",
+      "commit": "823ad6096e1e5ba82ea876ce761fc2efebd76157",
+      "intent": "Refactor the filesize module for readability; behavior must not change."
+    },
+    {
+      "id": "humanize-replay-08cf2c3",
+      "repo": "humanize",
+      "kind": "replay",
+      "commit": "08cf2c3026cfd7c553e397e1d91ea069eb2a4978",
+      "intent": "Refactor the number module for readability; behavior must not change."
+    },
+    {
+      "id": "python-slugify-replay-2f23599",
+      "repo": "python-slugify",
+      "kind": "replay",
+      "commit": "2f23599bfb2efe4ceecfad64997fda0a2c1f9f0d",
+      "intent": "Refactor the special module for readability; behavior must not change."
+    },
+    {
+      "id": "more-itertools-replay-adeda34",
+      "repo": "more-itertools",
+      "kind": "replay",
+      "commit": "adeda34bd11ff636f5f19238cf422a73e1455483",
+      "intent": "Refactor the more module for readability; behavior must not change."
+    },
+    {
+      "id": "more-itertools-replay-06f3181",
+      "repo": "more-itertools",
+      "kind": "replay",
+      "commit": "06f31819121eb0620d3165fda73a44cbf71b140d",
+      "intent": "Refactor the more module for readability; behavior must not change."
+    },
+    {
+      "id": "more-itertools-replay-def2d82",
+      "repo": "more-itertools",
+      "kind": "replay",
+      "commit": "def2d821c0a15ede86578660e7dc48e44bad9579",
+      "intent": "Refactor the more module for readability; behavior must not change."
+    },
+    {
+      "id": "more-itertools-replay-cf186b5",
+      "repo": "more-itertools",
+      "kind": "replay",
+      "commit": "cf186b5de4797602fef76c3391da2d110b88a954",
+      "intent": "Refactor the more module for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-replay-1e61524",
+      "repo": "boltons",
+      "kind": "replay",
+      "commit": "1e61524a798ea73632029a013a7686036d5c126f",
+      "intent": "Refactor the strutils module for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-replay-ead236e",
+      "repo": "boltons",
+      "kind": "replay",
+      "commit": "ead236e278ca0466bf468de746b5960fb12d7e5b",
+      "intent": "Refactor the iterutils module for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-replay-3e9983d",
+      "repo": "boltons",
+      "kind": "replay",
+      "commit": "3e9983db7b59578add73c01cd31fa7ecd8da2e04",
+      "intent": "Refactor the iterutils module for readability; behavior must not change."
+    },
+    {
+      "id": "validators-replay-bea386c",
+      "repo": "validators",
+      "kind": "replay",
+      "commit": "bea386c6c81ccb8b3ca46b341fcd2b15958f8df7",
+      "intent": "Refactor the slug module for readability; behavior must not change."
+    },
+    {
+      "id": "validators-replay-aa5d83b",
+      "repo": "validators",
+      "kind": "replay",
+      "commit": "aa5d83bf160caf84ca6c15ad8a1417cf350d3826",
+      "intent": "Refactor the cron module for readability; behavior must not change."
+    },
+    {
+      "id": "validators-replay-a55c62d",
+      "repo": "validators",
+      "kind": "replay",
+      "commit": "a55c62ddd300f386d18993c3a9a356ed46199c4d",
+      "intent": "Refactor the card module for readability; behavior must not change."
+    },
+    {
+      "id": "validators-replay-474496d",
+      "repo": "validators",
+      "kind": "replay",
+      "commit": "474496de3e47579b0301c7567eeba50d0db25159",
+      "intent": "Refactor the finance module for readability; behavior must not change."
+    },
+    {
+      "id": "packaging-replay-0625596",
+      "repo": "packaging",
+      "kind": "replay",
+      "commit": "0625596e502163179b9a82796aee82c178efc16d",
+      "intent": "Refactor the utils module for readability; behavior must not change."
+    },
+    {
+      "id": "packaging-replay-8af7590",
+      "repo": "packaging",
+      "kind": "replay",
+      "commit": "8af75907bf1140071a6a706874fcf1d73cc39c71",
+      "intent": "Refactor the utils module for readability; behavior must not change."
+    },
+    {
+      "id": "packaging-replay-2c87a33",
+      "repo": "packaging",
+      "kind": "replay",
+      "commit": "2c87a33f665828b7aa0f650b1b50243b3ab95695",
+      "intent": "Refactor the licenses module for readability; behavior must not change."
+    },
+    {
+      "id": "sqlparse-replay-f66d12c",
+      "repo": "sqlparse",
+      "kind": "replay",
+      "commit": "f66d12c245412f28c58f045b646eb53c0e691b8b",
+      "intent": "Refactor the sql module for readability; behavior must not change."
+    },
+    {
+      "id": "sqlparse-replay-73c8ba3",
+      "repo": "sqlparse",
+      "kind": "replay",
+      "commit": "73c8ba3ae88b608d39740c0776fb15064232258e",
+      "intent": "Refactor the others module for readability; behavior must not change."
+    },
+    {
+      "id": "humanize-seeded-refactor-apnumber",
+      "repo": "humanize",
+      "kind": "seeded",
+      "commit": "d16e6352c9785c5ab86de0133222bd22e89b0db2",
+      "patch": "../patches/humanize-seeded-refactor-apnumber.diff",
+      "intent": "Refactor apnumber() for readability; behavior must not change."
+    },
+    {
+      "id": "humanize-seeded-feature-ordinal",
+      "repo": "humanize",
+      "kind": "seeded",
+      "commit": "d16e6352c9785c5ab86de0133222bd22e89b0db2",
+      "patch": "../patches/humanize-seeded-feature-ordinal.diff",
+      "intent": "ordinal() also accepts numeric strings with thousands separators, such as '1,000'."
+    },
+    {
+      "id": "boltons-seeded-refactor-ordinalize",
+      "repo": "boltons",
+      "kind": "seeded",
+      "commit": "d31d821d56c8f7756af9c30a864077f2e5855321",
+      "patch": "../patches/boltons-seeded-refactor-ordinalize.diff",
+      "intent": "Refactor ordinalize() for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-seeded-feature-ordinalize",
+      "repo": "boltons",
+      "kind": "seeded",
+      "commit": "d31d821d56c8f7756af9c30a864077f2e5855321",
+      "patch": "../patches/boltons-seeded-feature-ordinalize.diff",
+      "intent": "ordinalize() ignores whitespace around the number, so ' 3 ' gives '3rd'."
+    },
+    {
+      "id": "more-itertools-seeded-refactor-all_equal",
+      "repo": "more-itertools",
+      "kind": "seeded",
+      "commit": "f42daddf205f335fea6e200dad46049f33e71221",
+      "patch": "../patches/more-itertools-seeded-refactor-all_equal.diff",
+      "intent": "Refactor all_equal() for readability; behavior must not change."
+    },
+    {
+      "id": "packaging-seeded-refactor-canonicalize_version",
+      "repo": "packaging",
+      "kind": "seeded",
+      "commit": "713d0d78924ab2686c513dde058ce6aafc63e766",
+      "patch": "../patches/packaging-seeded-refactor-canonicalize_version.diff",
+      "intent": "Refactor canonicalize_version() for readability; behavior must not change."
+    },
+    {
+      "id": "packaging-seeded-feature-canonicalize_version",
+      "repo": "packaging",
+      "kind": "seeded",
+      "commit": "713d0d78924ab2686c513dde058ce6aafc63e766",
+      "patch": "../patches/packaging-seeded-feature-canonicalize_version.diff",
+      "intent": "canonicalize_version() strips surrounding whitespace from version strings before parsing them."
+    },
+    {
+      "id": "validators-seeded-refactor-slug",
+      "repo": "validators",
+      "kind": "seeded",
+      "commit": "22786cc6e7283a0fa452c179797e447f798db9f0",
+      "patch": "../patches/validators-seeded-refactor-slug.diff",
+      "intent": "Refactor slug() for readability; behavior must not change."
+    },
+    {
+      "id": "python-slugify-seeded-refactor-smart_truncate",
+      "repo": "python-slugify",
+      "kind": "seeded",
+      "commit": "35aca63fc2672cba2c739ff6dff685a4f26a4f9a",
+      "patch": "../patches/python-slugify-seeded-refactor-smart_truncate.diff",
+      "intent": "Refactor smart_truncate() for readability; behavior must not change."
+    },
+    {
+      "id": "sqlparse-seeded-refactor-remove_quotes",
+      "repo": "sqlparse",
+      "kind": "seeded",
+      "commit": "09dbe1eec31ed1b3cd05366748865f11ba427d32",
+      "patch": "../patches/sqlparse-seeded-refactor-remove_quotes.diff",
+      "intent": "Refactor remove_quotes() for readability; behavior must not change."
+    },
+    {
+      "id": "more-itertools-forward-842a2b1",
+      "repo": "more-itertools",
+      "kind": "forward",
+      "commit": "842a2b17a8e3f78462fe20cd4a88abd32085c111",
+      "intent": "Add subfactorial()"
+    },
+    {
+      "id": "boltons-forward-673e010",
+      "repo": "boltons",
+      "kind": "forward",
+      "commit": "673e010d0afabc2f530e8d1f67f0a47c37afa7f4",
+      "intent": "strutils: add ellipsize for word-boundary-aware truncation"
+    },
+    {
+      "id": "boltons-forward-1b1d378",
+      "repo": "boltons",
+      "kind": "forward",
+      "commit": "1b1d37875f5702a7c86990e3f415093fb360db4d",
+      "intent": "feat(strutils): add human_readable_list function to format lists of strings"
+    },
+    {
+      "id": "validators-forward-bafe62e",
+      "repo": "validators",
+      "kind": "forward",
+      "commit": "bafe62e757bd99526129f8dffcfc9795817d08d8",
+      "intent": "feat: add Mir card validation support (#420)"
+    },
+    {
+      "id": "validators-forward-5489605",
+      "repo": "validators",
+      "kind": "forward",
+      "commit": "548960557c376c44516e1a9582869c33f4a65673",
+      "intent": "feat: add validator for bsc addresses (#389)"
+    },
+    {
+      "id": "humanize-forward-19726a0",
+      "repo": "humanize",
+      "kind": "forward",
+      "commit": "19726a0fefa5beb3c4024cc6ce64d6df7b93dfc2",
+      "intent": "Add humanize.metric() for converting big/small numbers to SI units."
+    }
+  ]
+}

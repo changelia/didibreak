@@ -1,0 +1,422 @@
+[
+ {
+  "item": 1,
+  "real": true,
+  "category": "real",
+  "note": "New _isin_checksum never accumulates the Luhn sum, so a 12-char ISIN string now returns True where the old code returned False.",
+  "key": "validators-replay-474496d/29aacc566073"
+ },
+ {
+  "item": 2,
+  "real": true,
+  "category": "real",
+  "note": "Removing the final years=round(days/365) makes multi-year deltas floor instead of round (7 years -> 6 years).",
+  "key": "humanize-replay-392aef7/ceca1f855c1d"
+ },
+ {
+  "item": 3,
+  "real": false,
+  "category": "out_of_contract",
+  "note": "A list is not a string; only the error/garbage result for a non-string input differs.",
+  "key": "sqlparse-seeded-refactor-remove_quotes/61bedfcff9a9"
+ },
+ {
+  "item": 4,
+  "real": false,
+  "category": "out_of_contract",
+  "note": "bytes input to a str helper; only the TypeError vs passthrough differs.",
+  "key": "sqlparse-seeded-refactor-remove_quotes/3a4242b97b89"
+ },
+ {
+  "item": 5,
+  "real": false,
+  "category": "out_of_contract",
+  "note": "A tuple is not a string; differing garbage result on a non-string input.",
+  "key": "sqlparse-seeded-refactor-remove_quotes/0d36ecfb24bf"
+ },
+ {
+  "item": 6,
+  "real": true,
+  "category": "real",
+  "note": "For an int r greater than len(iterable) the raised exception changes from IndexError to ValueError, not asked by a refactor intent.",
+  "key": "more-itertools-replay-def2d82/c01ee4b10b59"
+ },
+ {
+  "item": 7,
+  "real": true,
+  "category": "real",
+  "note": "Intent asks only for whitespace stripping, but the new code also lowercases, so invalid versions are no longer returned unaltered.",
+  "key": "packaging-seeded-feature-canonicalize_version/275a3a2e1cdc"
+ },
+ {
+  "item": 8,
+  "real": false,
+  "category": "out_of_contract",
+  "note": "bytes input to a str helper; only the TypeError vs passthrough differs.",
+  "key": "sqlparse-seeded-refactor-remove_quotes/2ddb0c134985"
+ },
+ {
+  "item": 9,
+  "real": false,
+  "category": "out_of_contract",
+  "note": "n=-2.0 is a float where an integer count is expected; only the error differs.",
+  "key": "more-itertools-replay-adeda34/acf21b47c84c"
+ },
+ {
+  "item": 10,
+  "real": true,
+  "category": "real",
+  "note": "Inserting during iteration changes the 'not in' check, so duplicate entries now produce one uppercase pair instead of two.",
+  "key": "python-slugify-replay-2f23599/693f2f18d477"
+ },
+ {
+  "item": 11,
+  "real": true,
+  "category": "real",
+  "note": "Same in-place insertion change: duplicated list entries now yield a different (shorter) result list.",
+  "key": "python-slugify-replay-2f23599/88f390ed9686"
+ },
+ {
+  "item": 12,
+  "real": true,
+  "category": "real",
+  "note": "Years over 1 now floor instead of round (3 years -> 2 years) on a valid float number of seconds.",
+  "key": "humanize-replay-392aef7/f98263aefd51"
+ },
+ {
+  "item": 13,
+  "real": true,
+  "category": "real",
+  "note": "Same in-place insertion change: duplicated entries yield one fewer uppercase pair.",
+  "key": "python-slugify-replay-2f23599/a91f747e39f3"
+ },
+ {
+  "item": 14,
+  "real": true,
+  "category": "real",
+  "note": "Simplified regex accepts 2219... (outside the 2221-2720 range), so an invalid Mastercard now validates.",
+  "key": "validators-replay-a55c62d/1cfe9773ef70"
+ },
+ {
+  "item": 15,
+  "real": true,
+  "category": "real",
+  "note": "Float comparison drops the carry for huge values, so a valid numeric string renders '-1000.0 sextillion' instead of '-1.0 septillion'.",
+  "key": "humanize-replay-ca892b3/134e53c41c24"
+ },
+ {
+  "item": 16,
+  "real": true,
+  "category": "real",
+  "note": "For a short str the old early check returned False while the new code raises IndexError; the input is a string, though shorter than an ISIN.",
+  "key": "validators-replay-474496d/9dde1e9df442"
+ },
+ {
+  "item": 17,
+  "real": true,
+  "category": "real",
+  "note": "Carry handling changed, so 9999999 J renders '10.00 MJ' instead of '10.0 MJ'.",
+  "key": "humanize-replay-e46732e/4d8735d2d257"
+ },
+ {
+  "item": 18,
+  "real": true,
+  "category": "real",
+  "note": "For a valid int n=sys.maxsize, islice(n+1) now raises ValueError where the old code returned False.",
+  "key": "more-itertools-replay-adeda34/b632d0907429"
+ },
+ {
+  "item": 19,
+  "real": true,
+  "category": "real",
+  "note": "With an empty pool and r=3 the exception changes from IndexError to ValueError.",
+  "key": "more-itertools-replay-06f3181/e7d0d25e2cfc"
+ },
+ {
+  "item": 20,
+  "real": true,
+  "category": "real",
+  "note": "Float comparison drops the carry, giving '1000.0 sextillion' instead of '1.0 septillion'.",
+  "key": "humanize-replay-ca892b3/fff085bbc5f4"
+ },
+ {
+  "item": 21,
+  "real": true,
+  "category": "real",
+  "note": "Carry handling changed: 9999.9 W renders '10.00 kW' instead of '10.0 kW'.",
+  "key": "humanize-replay-e46732e/b8f5dbd0af46"
+ },
+ {
+  "item": 22,
+  "real": true,
+  "category": "real",
+  "note": "Rounded-up fractional part is no longer folded into the integer, giving '2 1/1' instead of '3'.",
+  "key": "humanize-replay-08cf2c3/3698d633e0c5"
+ },
+ {
+  "item": 23,
+  "real": true,
+  "category": "real",
+  "note": "Carry handling changed: 99.95 V renders '100.0 V' instead of '100 V'.",
+  "key": "humanize-replay-e46732e/5d111b5c9c15"
+ },
+ {
+  "item": 24,
+  "real": true,
+  "category": "real",
+  "note": "New r>n check wrongly rejects combinations with replacement where r exceeds the pool size; a valid call now raises ValueError.",
+  "key": "more-itertools-replay-06f3181/ff33f1bdc327"
+ },
+ {
+  "item": 25,
+  "real": true,
+  "category": "real",
+  "note": "Dict comprehension keeps the last case variant instead of the first, changing the LicenseRef spelling in the output.",
+  "key": "packaging-replay-2c87a33/46d74671d0b8"
+ },
+ {
+  "item": 26,
+  "real": true,
+  "category": "real",
+  "note": "Intent only asks for whitespace stripping; the added lower() changes the returned invalid version string.",
+  "key": "packaging-seeded-feature-canonicalize_version/fa93b05ac72f"
+ },
+ {
+  "item": 27,
+  "real": true,
+  "category": "real",
+  "note": "strip(' 0') strips zeros, so ordinalize('0') returns '' instead of '0th', beyond the whitespace intent.",
+  "key": "boltons-seeded-feature-ordinalize/194539315440"
+ },
+ {
+  "item": 28,
+  "real": true,
+  "category": "real",
+  "note": "match instead of fullmatch lets a trailing newline through, so 'a\\n' now validates as a slug.",
+  "key": "validators-replay-bea386c/d9d26ed90822"
+ },
+ {
+  "item": 29,
+  "real": true,
+  "category": "real",
+  "note": "Added lower() changes the returned unaltered invalid version string, not asked by the whitespace intent.",
+  "key": "packaging-seeded-feature-canonicalize_version/d251ef5d3c68"
+ },
+ {
+  "item": 30,
+  "real": true,
+  "category": "real",
+  "note": "New condition no longer handles zero, so -0.0 renders '0/1' instead of '0'.",
+  "key": "humanize-replay-08cf2c3/91e53f70eba8"
+ },
+ {
+  "item": 31,
+  "real": true,
+  "category": "real",
+  "note": "match vs fullmatch: trailing newline now accepted as valid slug.",
+  "key": "validators-replay-bea386c/c24c4e4a4550"
+ },
+ {
+  "item": 32,
+  "real": true,
+  "category": "real",
+  "note": "Simplified regex accepts the 2209 prefix, which the old range rejected.",
+  "key": "validators-replay-a55c62d/56b6c934e60e"
+ },
+ {
+  "item": 33,
+  "real": true,
+  "category": "real",
+  "note": "Years over 1 now floor instead of round (8 years -> 7 years).",
+  "key": "humanize-replay-392aef7/0d3107f7eb78"
+ },
+ {
+  "item": 34,
+  "real": true,
+  "category": "real",
+  "note": "In-place insertion during iteration changes the output list for a valid list with a repeated pair.",
+  "key": "python-slugify-replay-2f23599/f1a6d22620f5"
+ },
+ {
+  "item": 35,
+  "real": true,
+  "category": "real",
+  "note": "Broken Luhn accumulation makes an invalid 12-char string return True.",
+  "key": "validators-replay-474496d/5e416cd9ef18"
+ },
+ {
+  "item": 36,
+  "real": true,
+  "category": "real",
+  "note": "match vs fullmatch: trailing newline now accepted as valid slug.",
+  "key": "validators-replay-bea386c/1ff4e63abdba"
+ },
+ {
+  "item": 37,
+  "real": true,
+  "category": "real",
+  "note": "Rounded-up fractional part no longer folded, giving '-1/1' instead of '-1'.",
+  "key": "humanize-replay-08cf2c3/0de041e82356"
+ },
+ {
+  "item": 38,
+  "real": true,
+  "category": "real",
+  "note": "Added lower() changes the returned invalid version, not asked by the whitespace intent.",
+  "key": "packaging-seeded-feature-canonicalize_version/6ec52ea2d8b9"
+ },
+ {
+  "item": 39,
+  "real": true,
+  "category": "real",
+  "note": "Simplified regex accepts the 2730 prefix, outside the old 2221-2720 range.",
+  "key": "validators-replay-a55c62d/c86c431003d5"
+ },
+ {
+  "item": 40,
+  "real": false,
+  "category": "out_of_contract",
+  "note": "n=-1.5 is a float where an integer count is expected; only the error differs.",
+  "key": "more-itertools-replay-adeda34/9ba1d77ca785"
+ },
+ {
+  "item": 41,
+  "real": false,
+  "category": "out_of_contract",
+  "note": "r=1.0 is a float where an integer length is expected; old TypeError vs new result is a garbage-input difference.",
+  "key": "more-itertools-replay-def2d82/46961f2f2250"
+ },
+ {
+  "item": 42,
+  "real": true,
+  "category": "real",
+  "note": "Intent covers thousands separators like '1,000', but stripping every comma also turns the malformed ',123' into '123rd'.",
+  "key": "humanize-seeded-feature-ordinal/96aebc7f8681"
+ },
+ {
+  "item": 43,
+  "real": true,
+  "category": "real",
+  "note": "match vs fullmatch: trailing newline now accepted as valid slug.",
+  "key": "validators-replay-bea386c/c6bb6d735974"
+ },
+ {
+  "item": 44,
+  "real": false,
+  "category": "out_of_contract",
+  "note": "A tuple of ints is not a string; only the error differs.",
+  "key": "sqlparse-seeded-refactor-remove_quotes/2e6fdbd8a3a1"
+ },
+ {
+  "item": 45,
+  "real": true,
+  "category": "real",
+  "note": "In-place insertion changes the result for a valid list whose entries map to the same uppercase pair.",
+  "key": "python-slugify-replay-2f23599/c6a932e0cb9c"
+ },
+ {
+  "item": 46,
+  "real": true,
+  "category": "real",
+  "note": "For an int r greater than the pool size the exception changes from IndexError to ValueError.",
+  "key": "more-itertools-replay-def2d82/1fccef029c28"
+ },
+ {
+  "item": 47,
+  "real": true,
+  "category": "real",
+  "note": "strip(' 0') removes leading zeros ('002' -> '2nd'), which the whitespace intent does not ask for.",
+  "key": "boltons-seeded-feature-ordinalize/f37098865380"
+ },
+ {
+  "item": 48,
+  "real": true,
+  "category": "real",
+  "note": "match vs fullmatch: trailing newline now accepted as valid slug.",
+  "key": "validators-replay-bea386c/7da2cd3f4a4e"
+ },
+ {
+  "item": 49,
+  "real": true,
+  "category": "real",
+  "note": "With an empty pool and r=1 the exception changes from IndexError to ValueError.",
+  "key": "more-itertools-replay-06f3181/aca8861bc1e0"
+ },
+ {
+  "item": 50,
+  "real": true,
+  "category": "real",
+  "note": "match vs fullmatch: trailing newline now accepted as valid slug.",
+  "key": "validators-replay-bea386c/a83755a0f1df"
+ },
+ {
+  "item": 51,
+  "real": true,
+  "category": "real",
+  "note": "New r>n check wrongly rejects a valid combination-with-replacement call that used to return (1, 1, 1).",
+  "key": "more-itertools-replay-06f3181/fe94b46bb518"
+ },
+ {
+  "item": 52,
+  "real": true,
+  "category": "real",
+  "note": "Carry handling changed: 99999.5 Hz renders '100.0 kHz' instead of '100 kHz'.",
+  "key": "humanize-replay-e46732e/2f72f7ade300"
+ },
+ {
+  "item": 53,
+  "real": true,
+  "category": "real",
+  "note": "In-place insertion changes the result when two entries share the same uppercase pair.",
+  "key": "python-slugify-replay-2f23599/f0419c8fff98"
+ },
+ {
+  "item": 54,
+  "real": false,
+  "category": "out_of_contract",
+  "note": "A list of ints is not a string; only the error differs.",
+  "key": "sqlparse-seeded-refactor-remove_quotes/de73d141f436"
+ },
+ {
+  "item": 55,
+  "real": true,
+  "category": "real",
+  "note": "New r>n check wrongly rejects a valid combination-with-replacement call.",
+  "key": "more-itertools-replay-06f3181/ebcd6e8d21cb"
+ },
+ {
+  "item": 56,
+  "real": true,
+  "category": "real",
+  "note": "Broken Luhn accumulation makes an invalid 12-char string return True.",
+  "key": "validators-replay-474496d/41305c7cb609"
+ },
+ {
+  "item": 57,
+  "real": true,
+  "category": "real",
+  "note": "Zero no longer handled by the integer branch, so '0.000' renders '0/1' instead of '0'.",
+  "key": "humanize-replay-08cf2c3/111ba2f08b3a"
+ },
+ {
+  "item": 58,
+  "real": true,
+  "category": "real",
+  "note": "Broken Luhn accumulation makes an invalid 12-char string return True.",
+  "key": "validators-replay-474496d/c6824e49b9b7"
+ },
+ {
+  "item": 59,
+  "real": true,
+  "category": "real",
+  "note": "strip(' 0') strips all zeros, so '000' returns '' instead of '000th'.",
+  "key": "boltons-seeded-feature-ordinalize/e8fd9ee3988c"
+ },
+ {
+  "item": 60,
+  "real": true,
+  "category": "real",
+  "note": "Rounded-up fractional part no longer folded, giving '1/1' instead of '1'.",
+  "key": "humanize-replay-08cf2c3/2877841c0f4a"
+ }
+]

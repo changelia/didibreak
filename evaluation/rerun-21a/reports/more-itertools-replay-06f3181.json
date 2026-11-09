@@ -1,0 +1,365 @@
+{
+  "scenario": {
+    "id": "more-itertools-replay-06f3181",
+    "repo": "more-itertools",
+    "kind": "replay",
+    "commit": "06f31819121eb0620d3165fda73a44cbf71b140d",
+    "intent": "Refactor the more module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "06f31819121eb0620d3165fda73a44cbf71b140d",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the more module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 28.0,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~6,279 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.1.0.dev0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "06f31819121eb0620d3165fda73a44cbf71b140d"
+    },
+    "intent": "Stated by the user: Refactor the more module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "aca8861bc1e0",
+        "function": "more_itertools/more.py::nth_combination_with_replacement",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this input now raises ValueError instead of IndexError.",
+        "confidence": "high",
+        "args": [
+          "[]",
+          "1",
+          "0"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError()",
+          "message": ""
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gdjxja_c/out/tests/test_nth_combination_with_replacement.py"
+      },
+      {
+        "id": "e7d0d25e2cfc",
+        "function": "more_itertools/more.py::nth_combination_with_replacement",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this input now raises ValueError instead of IndexError.",
+        "confidence": "high",
+        "args": [
+          "[]",
+          "3",
+          "-1"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError()",
+          "message": ""
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gdjxja_c/out/tests/test_nth_combination_with_replacement.py"
+      },
+      {
+        "id": "e4fee7393715",
+        "function": "more_itertools/more.py::nth_combination_with_replacement",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this input now raises ValueError instead of returning the tuple (7, 7).",
+        "confidence": "high",
+        "args": [
+          "[7]",
+          "2",
+          "0"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "(7, 7)"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gdjxja_c/out/tests/test_nth_combination_with_replacement.py"
+      },
+      {
+        "id": "7fc147ef77ed",
+        "function": "more_itertools/more.py::nth_combination_with_replacement",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this input now raises ValueError instead of returning the five-element tuple.",
+        "confidence": "high",
+        "args": [
+          "[7]",
+          "5",
+          "-1"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "(7, 7, 7, 7, 7)"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gdjxja_c/out/tests/test_nth_combination_with_replacement.py"
+      },
+      {
+        "id": "fe94b46bb518",
+        "function": "more_itertools/more.py::nth_combination_with_replacement",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this input now raises ValueError instead of returning the tuple (1, 1, 1).",
+        "confidence": "high",
+        "args": [
+          "[1, 2]",
+          "3",
+          "0"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "(1, 1, 1)"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gdjxja_c/out/tests/test_nth_combination_with_replacement.py"
+      },
+      {
+        "id": "32ae2bf22a3f",
+        "function": "more_itertools/more.py::nth_combination_with_replacement",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this input now raises ValueError instead of returning the tuple (1, 2, 2, 2).",
+        "confidence": "high",
+        "args": [
+          "[1, 2]",
+          "4",
+          "3"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "(1, 2, 2, 2)"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gdjxja_c/out/tests/test_nth_combination_with_replacement.py"
+      },
+      {
+        "id": "ff33f1bdc327",
+        "function": "more_itertools/more.py::nth_combination_with_replacement",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this input now raises ValueError instead of returning the tuple (3, 3, 3, 3).",
+        "confidence": "high",
+        "args": [
+          "(1, 2, 3)",
+          "4",
+          "14"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "(3, 3, 3, 3)"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gdjxja_c/out/tests/test_nth_combination_with_replacement.py"
+      },
+      {
+        "id": "ef159633e35c",
+        "function": "more_itertools/more.py::nth_combination_with_replacement",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this input now raises ValueError instead of returning the tuple ('\u00e9', '\u00e9').",
+        "confidence": "high",
+        "args": [
+          "'\u00e9'",
+          "2",
+          "-1"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "('\u00e9', '\u00e9')"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gdjxja_c/out/tests/test_nth_combination_with_replacement.py"
+      },
+      {
+        "id": "ebcd6e8d21cb",
+        "function": "more_itertools/more.py::nth_combination_with_replacement",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this input now raises ValueError instead of returning the tuple ('a', 'a', 'b').",
+        "confidence": "high",
+        "args": [
+          "'ab'",
+          "3",
+          "1"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "('a', 'a', 'b')"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gdjxja_c/out/tests/test_nth_combination_with_replacement.py"
+      },
+      {
+        "id": "1adb84a583b1",
+        "function": "more_itertools/more.py::nth_combination_with_replacement",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this input now raises ValueError instead of returning the tuple ('x', 'y', 'y').",
+        "confidence": "high",
+        "args": [
+          "{'x': 1, 'y': 2}",
+          "3",
+          "2"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "('x', 'y', 'y')"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gdjxja_c/out/tests/test_nth_combination_with_replacement.py"
+      },
+      {
+        "id": "b696d5a61992",
+        "function": "more_itertools/more.py::nth_combination_with_replacement",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this input now raises ValueError instead of returning the tuple (0, 255, 255).",
+        "confidence": "high",
+        "args": [
+          "b'\\x00\\xff'",
+          "3",
+          "-2"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "(0, 255, 255)"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gdjxja_c/out/tests/test_nth_combination_with_replacement.py"
+      },
+      {
+        "id": "8bd50bba881a",
+        "function": "more_itertools/more.py::nth_combination_with_replacement",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this input now raises ValueError instead of returning the five-element tuple.",
+        "confidence": "high",
+        "args": [
+          "['\u03b1', None, 4]",
+          "5",
+          "0"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "('\u03b1', '\u03b1', '\u03b1', '\u03b1', '\u03b1')"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gdjxja_c/out/tests/test_nth_combination_with_replacement.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2353,
+      "output_tokens": 2340,
+      "cost_usd": 0.0014053
+    }
+  }
+}
