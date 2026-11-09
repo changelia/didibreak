@@ -168,3 +168,30 @@ def test_rejected_key_exits_2(
     err = "".join(capsys.readouterr())
     assert "rejected the API key" in err
     assert "sk-fake-rejected" not in err
+
+
+def test_no_llm_request_is_sent_for_a_module_that_does_not_import(
+    git_repository: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    git_repository.write("good.py", "def f(x: int) -> int:\n    return x\n")
+    git_repository.write(
+        "broken.py", "import not_installed_anywhere\n\ndef g(x):\n    return x\n"
+    )
+    git_repository.commit()
+    git_repository.write("good.py", "def f(x: int) -> int:\n    return x + 1\n")
+    git_repository.write(
+        "broken.py", "import not_installed_anywhere\n\ndef g(x):\n    return x + 1\n"
+    )
+    asked = install_fake_llm(monkeypatch, {"good.py::f": []})
+    monkeypatch.chdir(git_repository.path)
+
+    main(["check", "--format", "json", "--refine-rounds", "0"])
+
+    assert asked == ["good.py::f"]
+    report = json.loads(capsys.readouterr().out)
+    assert {
+        "function": "broken.py::g",
+        "reason": "import failed: ModuleNotFoundError (base version)",
+    } in report["summary"]["skipped"]

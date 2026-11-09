@@ -105,6 +105,8 @@ the Python package and `js-v*` for the JS/TS package.
 - Case generation and refinement ask for values that match the parameters'
   type annotations (prompt version 2; cached cases from version 1 are not
   reused).
+- Each function's module is imported in both versions before any LLM
+  request, so a function that cannot be imported costs no tokens.
 
 ## JS/TS package
 

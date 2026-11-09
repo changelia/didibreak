@@ -14,6 +14,7 @@ from didibreak.harness import (
     HarnessSettings,
     Outcome,
     Target,
+    check_import,
     run_cases,
 )
 
@@ -339,3 +340,21 @@ def test_each_case_runs_once_per_child_process(tmp_path: Path) -> None:
     (outcome,) = run_cases(target(tree), [Case(())], SETTINGS).outcomes
 
     assert not outcome.stable  # two processes, two process ids
+
+
+def test_import_check_reports_the_same_reasons_without_calling(tmp_path: Path) -> None:
+    (tmp_path / "ok.py").write_text(
+        "CALLED = []\n\ndef f():\n    raise SystemExit('must not be called')\n"
+    )
+    (tmp_path / "bad.py").write_text("raise ImportError('no')\n")
+    settings = HarnessSettings(python=sys.executable, timeout=5.0)
+
+    def target(module: str, qualname: str) -> Target:
+        return Target(tmp_path, tmp_path, module, qualname)
+
+    assert check_import(target("ok", "f"), settings) is None
+    assert check_import(target("bad", "f"), settings) == "import failed: ImportError"
+    assert (
+        check_import(target("ok", "missing"), settings)
+        == "function not found after import"
+    )

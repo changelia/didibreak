@@ -52,6 +52,7 @@ from didibreak.pipeline import (
     Analysis,
     Generation,
     analyze,
+    check_imports,
     load_cases_file,
     tree_import_root,
 )
@@ -448,14 +449,16 @@ def _check_with_llm(
     return replace(refinement.analysis, findings=findings), llm
 
 
-def _analyze(
-    config: Config,
-    root: Path,
-    base_sha: str,
-    files: ChangedFiles,
-    functions: Sequence[ChangedFunction],
-    cases: Mapping[str, Sequence[Case]],
-) -> Analysis:
+@dataclass(frozen=True)
+class _Trees:
+    """How the base and current trees are built and run for one check."""
+
+    settings: HarnessSettings
+    base_paths: Mapping[str, str]
+    skip: Sequence[str]
+
+
+def _trees(config: Config, root: Path, files: ChangedFiles) -> _Trees:
     settings = HarnessSettings(
         python=config.python or sys.executable,
         timeout=config.timeout,
@@ -468,7 +471,35 @@ def _analyze(
         else []
     )
     base_paths = {item.path: item.old_path for item in files.changed if item.old_path}
-    return analyze(root, base_sha, functions, base_paths, cases, settings, skip)
+    return _Trees(settings, base_paths, skip)
+
+
+def _analyze(
+    config: Config,
+    root: Path,
+    base_sha: str,
+    files: ChangedFiles,
+    functions: Sequence[ChangedFunction],
+    cases: Mapping[str, Sequence[Case]],
+) -> Analysis:
+    trees = _trees(config, root, files)
+    return analyze(
+        root, base_sha, functions, trees.base_paths, cases, trees.settings, trees.skip
+    )
+
+
+def _importable(
+    config: Config,
+    root: Path,
+    base_sha: str,
+    files: ChangedFiles,
+    functions: Sequence[ChangedFunction],
+) -> tuple[tuple[ChangedFunction, ...], tuple[ChangedFunction, ...]]:
+    # Before any LLM request (task 21a): an unimportable module costs nothing.
+    trees = _trees(config, root, files)
+    return check_imports(
+        root, base_sha, functions, trees.base_paths, trees.settings, trees.skip
+    )
 
 
 def _build_report(
@@ -618,12 +649,20 @@ def _run_check(arguments: argparse.Namespace) -> int:
             unclear = mark_unclear(analysis.findings, reason)
             analysis = replace(analysis, findings=unclear)
         else:
-            session = _start_llm(config, functions, arguments, intent)
-            if session is None:
-                print("Cancelled: no LLM request was sent.", file=sys.stderr)
-                return EXIT_OK
-            with session:
-                analysis, llm_cases = _check_with_llm(session, functions, run, intent)
+            functions, unimportable = _importable(
+                config, root, base_sha, files, functions
+            )
+            analysis = empty
+            if functions:
+                session = _start_llm(config, functions, arguments, intent)
+                if session is None:
+                    print("Cancelled: no LLM request was sent.", file=sys.stderr)
+                    return EXIT_OK
+                with session:
+                    analysis, llm_cases = _check_with_llm(
+                        session, functions, run, intent
+                    )
+            analysis = replace(analysis, skipped=(*unimportable, *analysis.skipped))
     except (ConfigError, LLMAuthError, LLMModelError, GitError, OSError) as error:
         print(f"didibreak: error: {error}", file=sys.stderr)
         return EXIT_ERROR
