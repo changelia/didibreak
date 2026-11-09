@@ -372,6 +372,8 @@ def _merge(first: Analysis, second: Analysis) -> Analysis:
         flaky_dropped=first.flaky_dropped + second.flaky_dropped,
         timeouts_dropped=first.timeouts_dropped + second.timeouts_dropped,
         runs=runs,
+        type_mismatch_dropped=first.type_mismatch_dropped
+        + second.type_mismatch_dropped,
     )
 
 

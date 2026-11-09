@@ -26,6 +26,7 @@ from didibreak.cases import (
 )
 from didibreak.compare import Comparison, Finding, compare_cases, finding_id
 from didibreak.config import ConfigError, find_pyproject
+from didibreak.contracts import case_contradicts
 from didibreak.functions import ChangedFunction, import_root, module_name
 from didibreak.gitdiff import base_worktree, working_tree_copy
 from didibreak.harness import Case, HarnessSettings, Target, run_cases
@@ -125,6 +126,8 @@ class Analysis:
         cases_run: Cases run for the checked functions.
         flaky_dropped: Cases dropped as flaky.
         timeouts_dropped: Cases dropped because both versions timed out.
+        type_mismatch_dropped: Findings dropped because their inputs
+            contradict the function's type annotations (task 21a).
         runs: Every case run, with both outcomes, by report name (input for
             the refinement round).
     """
@@ -136,6 +139,7 @@ class Analysis:
     flaky_dropped: int
     timeouts_dropped: int
     runs: Mapping[str, tuple[CaseRun, ...]] = field(default_factory=dict)
+    type_mismatch_dropped: int = 0
 
 
 def tree_import_root(tree: Path, path: str) -> str:
@@ -182,6 +186,16 @@ def _run(
         return current.skip_reason
     comparison = compare_cases(
         function.report_name, cases, before, current.outcomes, function.raised_types
+    )
+    # Inputs outside the annotated contract rarely matter (task 21: all 25
+    # false alarms); their findings are dropped and counted.
+    kept = tuple(
+        f for f in comparison.findings if not case_contradicts(function, f.case)
+    )
+    comparison = replace(
+        comparison,
+        findings=kept,
+        type_mismatch_dropped=len(comparison.findings) - len(kept),
     )
     olds = before if before is not None else (None,) * len(cases)
     runs = tuple(
@@ -254,6 +268,7 @@ def analyze(
         flaky_dropped=sum(comparison.flaky_dropped for comparison in comparisons),
         timeouts_dropped=sum(c.timeouts_dropped for c in comparisons),
         runs=runs,
+        type_mismatch_dropped=sum(c.type_mismatch_dropped for c in comparisons),
     )
 
 

@@ -12,6 +12,9 @@ is an ``int``.
 import ast
 from collections.abc import Mapping, Sequence
 
+from didibreak.functions import ChangedFunction
+from didibreak.harness import Case
+
 _BUILTIN_TYPES: Mapping[str, tuple[type, ...]] = {
     "int": (int,),
     "float": (float, int),
@@ -195,4 +198,30 @@ def contradicts_annotations(
     return any(
         annotation is not None and value_matches(value, annotation) is False
         for value, annotation in pairs
+    )
+
+
+def case_contradicts(function: ChangedFunction, case: Case) -> bool:
+    """Whether a case's inputs fall outside the function's annotated contract.
+
+    A changed function's case counts only if it contradicts the annotations
+    of both versions: an input the base version accepted is still a real
+    input when the new version narrows the annotation.
+
+    Args:
+        function: The changed or new function, with its sources.
+        case: The inputs, as literal source text.
+
+    Returns:
+        True when the finding for this case should be dropped.
+    """
+    args = [ast.literal_eval(text) for text in case.args]
+    kwargs = {name: ast.literal_eval(text) for name, text in case.kwargs.items()}
+    skip_first = function.function_type == "classmethod"
+    sources = [function.new_source]
+    if function.old_source is not None:
+        sources.append(function.old_source)
+    return all(
+        contradicts_annotations(source, args, kwargs, skip_first=skip_first)
+        for source in sources
     )
