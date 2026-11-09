@@ -1,0 +1,18 @@
+diff --git a/sqlparse/utils.py b/sqlparse/utils.py
+index a55fd72..23481e9 100644
+--- a/sqlparse/utils.py
++++ b/sqlparse/utils.py
+@@ -58,9 +58,10 @@ def split_unquoted_newlines(stmt):
+ def remove_quotes(val):
+     """Helper that removes surrounding quotes from strings."""
+     if val is None:
+-        return
+-    if val[0] in ('"', "'", '`') and val[0] == val[-1]:
+-        val = val[1:-1]
++        return None
++    quote = val[0]
++    if quote in '"\'`' and val[-1] == quote:
++        return val[1:-1]
+     return val
+ 
+ 

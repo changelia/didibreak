@@ -1,0 +1,282 @@
+{
+  "scenario": {
+    "id": "validators-replay-a55c62d",
+    "repo": "validators",
+    "kind": "replay",
+    "commit": "a55c62ddd300f386d18993c3a9a356ed46199c4d",
+    "intent": "Refactor the card module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "a55c62ddd300f386d18993c3a9a356ed46199c4d",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the card module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 35.2,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,290 input + ~7,200 output tokens, ~$0.0041 (limit $0.10)\n",
+  "report": {
+    "schema_version": 1,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.1.0.dev0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "a55c62ddd300f386d18993c3a9a356ed46199c4d"
+    },
+    "intent": "Stated by the user: Refactor the card module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "1077025b567c",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this Mastercard input changes from raising a ValidationError to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2220000000000000'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2220000000000000'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hv7tyyyj/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "8f5fb34039fe",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this Mastercard input changes from raising a ValidationError to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2721000000000004'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2721000000000004'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hv7tyyyj/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "89709f1d9738",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this Mastercard input changes from raising a ValidationError to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2722000000000003'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2722000000000003'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hv7tyyyj/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "279377398d48",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this Mastercard input changes from raising a ValidationError to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2729000000000006'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2729000000000006'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hv7tyyyj/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "c86c431003d5",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this Mastercard input changes from raising a ValidationError to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2730000000000003'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2730000000000003'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hv7tyyyj/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "c5089620628c",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this Mastercard input changes from raising a ValidationError to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2740000000000001'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2740000000000001'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hv7tyyyj/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "78fe5afa8c4b",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this Mastercard input changes from raising a ValidationError to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2750000000000008'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2750000000000008'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hv7tyyyj/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "059ae656dc79",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this Mastercard input changes from raising a ValidationError to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2760000000000006'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2760000000000006'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hv7tyyyj/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "bfa51b54267b",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this Mastercard input changes from raising a ValidationError to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2780000000000002'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2780000000000002'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hv7tyyyj/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "036071e62cf9",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The intent requires behavior to remain unchanged, but this Mastercard input changes from raising a ValidationError to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2799000000000001'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2799000000000001'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hv7tyyyj/out/tests/test_mastercard.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 10,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 1754,
+      "output_tokens": 3513,
+      "cost_usd": 0.0019319
+    }
+  }
+}

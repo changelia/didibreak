@@ -1,0 +1,61 @@
+{
+  "scenario": {
+    "id": "python-slugify-seeded-refactor-smart_truncate",
+    "repo": "python-slugify",
+    "kind": "seeded",
+    "commit": "35aca63fc2672cba2c739ff6dff685a4f26a4f9a",
+    "intent": "Refactor smart_truncate() for readability; behavior must not change.",
+    "patch": "patches/python-slugify-seeded-refactor-smart_truncate.diff"
+  },
+  "base_sha": "35aca63fc2672cba2c739ff6dff685a4f26a4f9a",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor smart_truncate() for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 0,
+  "seconds": 40.9,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,786 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 1,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.1.0.dev0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "35aca63fc2672cba2c739ff6dff685a4f26a4f9a"
+    },
+    "intent": "Stated by the user: Refactor smart_truncate() for readability; behavior must not change.",
+    "findings": [],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 24,
+      "findings": {
+        "expected": 0,
+        "unexpected": 0,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2270,
+      "output_tokens": 3248,
+      "cost_usd": 0.0018509999999999998
+    }
+  }
+}

@@ -1,0 +1,24 @@
+diff --git a/boltons/strutils.py b/boltons/strutils.py
+index 39ef449..dcb5d43 100644
+--- a/boltons/strutils.py
++++ b/boltons/strutils.py
+@@ -167,15 +167,10 @@ def ordinalize(number, ext_only=False):
+     """
+     numstr, ext = str(number), ''
+     if numstr and numstr[-1] in string.digits:
+-        try:
+-            # first check for teens
+-            if numstr[-2] == '1':
+-                ext = 'th'
+-            else:
+-                # all other cases
+-                ext = _ORDINAL_MAP.get(numstr[-1], 'th')
+-        except IndexError:
+-            # single digit numbers (will reach here based on [-2] above)
++        # teens always take 'th'; single digits have no tens digit
++        if len(numstr) > 1 and numstr[-2] == '1':
++            ext = 'th'
++        else:
+             ext = _ORDINAL_MAP.get(numstr[-1], 'th')
+     if ext_only:
+         return ext

@@ -1,0 +1,12 @@
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index 52a5356..c2b0f8c 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -129,6 +129,7 @@ def ordinal(value: NumberOrString, gender: str = "male") -> str:
+     """
+     import math
+ 
++    value = str(value).replace(",", "")
+     try:
+         if not math.isfinite(float(value)):
+             return _format_not_finite(float(value))

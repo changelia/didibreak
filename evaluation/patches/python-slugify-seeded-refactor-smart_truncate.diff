@@ -1,0 +1,15 @@
+diff --git a/slugify/_legacy.py b/slugify/_legacy.py
+index c0dfd67..430d321 100644
+--- a/slugify/_legacy.py
++++ b/slugify/_legacy.py
+@@ -78,9 +78,7 @@ def smart_truncate(
+     An empty separator raises ValueError, as in the legacy implementation.
+     """
+     string = string.strip(separator)
+-    if not max_length:
+-        return string
+-    if len(string) < max_length:
++    if not max_length or len(string) < max_length:
+         return string
+     if not word_boundary:
+         return string[:max_length].strip(separator)

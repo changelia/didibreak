@@ -1,0 +1,12 @@
+diff --git a/src/packaging/utils.py b/src/packaging/utils.py
+index 48cc3fd..eb57431 100644
+--- a/src/packaging/utils.py
++++ b/src/packaging/utils.py
+@@ -190,6 +190,7 @@ def canonicalize_version(
+        Added the *strip_trailing_zero* keyword parameter.
+     """
+     if isinstance(version, str):
++        version = version.strip().lower()
+         try:
+             version = Version(version)
+         except InvalidVersion:
