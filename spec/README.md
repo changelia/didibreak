@@ -6,7 +6,7 @@ runtime.
 
 | Path | Contents |
 | --- | --- |
-| `report.schema.json` | JSON Schema of the `--format json` report (`schema_version: 2`). |
+| `report.schema.json` | JSON Schema of the `--format json` report (`schema_version: 1`). |
 | `prompts/` | Versioned LLM prompt templates. |
 | `cases/` | Shared cross-language test cases (data only); added when the first cases exist. |
 

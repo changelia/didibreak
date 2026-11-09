@@ -72,12 +72,12 @@ LLM: 3 calls · 3400 input tokens · 810 output tokens (400 reasoning) · cost $
 ## JSON report
 
 The schema is [`spec/report.schema.json`](../spec/report.schema.json)
-(`schema_version: 2`). Keys always come in the order below, and every object
-is strict: a new key needs a new `schema_version`.
+(`schema_version: 1`). Keys always come in the order below, and every object
+is strict. From the first release on, a new key needs a new `schema_version`.
 
 ```json
 {
-  "schema_version": 2,
+  "schema_version": 1,
   "tool": {
     "name": "didibreak",
     "version": "0.1.0"
@@ -189,7 +189,7 @@ is strict: a new key needs a new `schema_version`.
 
 | Key | Meaning |
 | --- | --- |
-| `schema_version` | Always `2` for this format (2 added `summary.type_mismatch_dropped`). |
+| `schema_version` | Always `1` for this format. |
 | `tool` | `tool.name` is `didibreak`; `tool.version` is the installed version. |
 | `base` | `base.ref` is `--base` as given; `base.sha` is the full commit it resolved to. |
 | `intent` | The intent text used for labelling (`--intent` and the commit messages since the base), or `null`. |
