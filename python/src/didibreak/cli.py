@@ -72,7 +72,7 @@ After changing Python functions, run:
     didibreak check --intent "<the user's request in one sentence>" --format json
 If any finding has label "unexpected", fix the code so that behavior is preserved,
 then run the check again. Report "unclear" findings to the user instead of guessing.
-"new_function" findings: fix a real crash or timeout bug, else report it to the user.
+"new_function" findings do not fail the check; fix one only if it is clearly a real bug.
 Exit code 2 means a setup problem: report it to the user.
 Stop after 3 check rounds and report what is left.
 """
@@ -83,18 +83,17 @@ def exit_code_for(labels: Iterable[str], fail_on: str) -> int:
 
     Args:
         labels: Labels of all findings in the run.
-        fail_on: ``unclear`` (fail on unexpected, unclear or new_function
-            findings) or ``unexpected`` (fail on unexpected only).
+        fail_on: ``unclear`` (fail on unexpected or unclear findings) or
+            ``unexpected`` (fail on unexpected only). new_function findings
+            never fail the run.
 
     Returns:
         1 if any finding should fail the run, otherwise 0.
     """
-    # Owner decision 2026-11-06: new_function findings fail the default run.
-    failing = (
-        {"unexpected"}
-        if fail_on == "unexpected"
-        else {"unexpected", "unclear", "new_function"}
-    )
+    # Owner decision 2026-11-09 (reverses 2026-11-06): new_function findings
+    # are reported but never fail the run; tasks 21 and 21a found 53 of them
+    # and none was a real bug.
+    failing = {"unexpected"} if fail_on == "unexpected" else {"unexpected", "unclear"}
     return EXIT_FINDINGS if any(label in failing for label in labels) else EXIT_OK
 
 

@@ -22,7 +22,7 @@ After changing Python functions, run:
     didibreak check --intent "<the user's request in one sentence>" --format json
 If any finding has label "unexpected", fix the code so that behavior is preserved,
 then run the check again. Report "unclear" findings to the user instead of guessing.
-"new_function" findings: fix a real crash or timeout bug, else report it to the user.
+"new_function" findings do not fail the check; fix one only if it is clearly a real bug.
 Exit code 2 means a setup problem: report it to the user.
 Stop after 3 check rounds and report what is left.
 ```
@@ -53,7 +53,8 @@ $0.50) still limits each run.
    The intent is what the user asked for, in one sentence. Commit messages
    since `--base` are added automatically.
 3. Read the exit code:
-   - `0`: no unexpected, unclear or new-function findings. Done.
+   - `0`: no unexpected or unclear findings. Done. `new_function`
+     findings never change the exit code; they are still in the report.
    - `1`: there are findings; handle them by label (below).
    - `2`: didibreak could not run (missing key, invalid config, not a git
      repository). The error is on stderr and stdout is empty. Report it to
@@ -69,7 +70,7 @@ What to do with each label:
 | `unexpected` | The intent does not cover this change. | Fix the code so the old behavior is preserved, run the reproducing test, then run the check again. |
 | `unclear` | No intent, a vague intent, or labelling failed. | Do not guess. Report the finding to the user with `before` and `after` and ask whether the change is intended. If it is, run the check again with a more precise `--intent`. If it is not, fix it like an `unexpected` finding. |
 | `expected` | The intent describes this change. | Nothing. Never undo it. |
-| `new_function` | A new function raised an exception, crashed or timed out on an input. | Fix it if it is a real bug (a crash or timeout on an input the function should accept). Otherwise report it to the user. |
+| `new_function` | A new function raised an exception, crashed or timed out on an input. Never fails the check. | Fix it only if it is clearly a real bug (a crash or timeout on an input the function should accept). In the evaluation none of 53 was a real bug, so most need nothing. |
 
 ## Reproducing tests
 

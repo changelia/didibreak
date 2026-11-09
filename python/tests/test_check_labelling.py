@@ -93,7 +93,7 @@ def test_labels_and_exit_codes_follow_the_documented_intent(
     code = main(["check", "--intent", fixture.expected["intent"]])
 
     findings = fixture.expected["findings"]
-    failing = {"unexpected", "unclear", "new_function"}
+    failing = {"unexpected", "unclear"}  # new_function never fails the run
     assert code == (
         EXIT_FINDINGS if any(f["label"] in failing for f in findings) else EXIT_OK
     )

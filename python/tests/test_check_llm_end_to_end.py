@@ -85,7 +85,8 @@ def test_llm_cases_reproduce_the_documented_findings(
     assert sorted(asked[len(expected_functions) :]) == sorted(
         f for f in expected_functions if f not in with_findings and f in replies
     )
-    assert code == (EXIT_FINDINGS if fixture.expected["findings"] else EXIT_OK)
+    failing = [f for f in fixture.expected["findings"] if f["label"] != "new_function"]
+    assert code == (EXIT_FINDINGS if failing else EXIT_OK)
     err = "".join(capsys.readouterr())
     for finding in fixture.expected["findings"]:
         assert f"{finding['function']}({', '.join(finding['args'])})" in err
