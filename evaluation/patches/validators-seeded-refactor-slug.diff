@@ -1,0 +1,11 @@
+diff --git a/src/validators/slug.py b/src/validators/slug.py
+index b15c97c..d05c592 100644
+--- a/src/validators/slug.py
++++ b/src/validators/slug.py
+@@ -29,4 +29,5 @@ def slug(value: str, /):
+         (Literal[True]): If `value` is a valid slug.
+         (ValidationError): If `value` is an invalid slug.
+     """
+-    return _SLUG_REGEXP.fullmatch(value) is not None
++    match = _SLUG_REGEXP.fullmatch(value)
++    return bool(match)

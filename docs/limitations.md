@@ -66,6 +66,11 @@ checked in the order of the table; the first match is the reason.
 - Arguments are Python literals only. Functions that need objects (class
   instances, dates, file handles) as arguments get no useful cases and are
   reported as `no valid cases` or show only type errors.
+- The LLM also proposes inputs of types a function does not accept (bytes or
+  lists for a string parameter, floats for a count). When only such an
+  input behaves differently, the finding is real but rarely matters; for new
+  functions most `new_function` findings are of this kind (see
+  `evaluation/README.md`).
 - The LLM picks the inputs, so a change on a path no proposed input reaches
   is not found. Each run may propose different inputs; cached cases are
   reused while the function does not change.
@@ -76,10 +81,17 @@ checked in the order of the table; the first match is the reason.
 
 - Linux and macOS only: per-case timeouts use Unix signals.
 - Files ignored by git (for example `.env` or generated data) are not in the
-  temporary copy the current version runs from. Code that needs them when it
-  is imported or called fails or behaves differently.
-- The working tree is copied for every run, which takes time in very large
-  repositories.
+  temporary copy the current version runs from, nor in the base version.
+  Code that needs them when it is imported or called fails or behaves
+  differently. A common case: packages that import a version file their
+  build backend generates (such as `_version.py` from hatch-vcs or
+  setuptools-scm) fail with `import failed: ModuleNotFoundError`, and
+  packages that read their own version with `importlib.metadata` fail with
+  `import failed: PackageNotFoundError` unless they are installed in the
+  `--python` environment.
+- The working tree is copied for every run. Measured: under 0.1 s for
+  libraries of up to about 150 files, 2.1 s for a 7,000-file repository
+  (Django, macOS, 2026-11-09).
 - The `--python` interpreter must be Python 3.11 or newer.
 - Return values are compared by value for `None`, `bool`, `int`, `float`,
   `str`, `bytes`, and lists, tuples, sets, frozensets and dicts of these.

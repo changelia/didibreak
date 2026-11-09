@@ -1,0 +1,21 @@
+diff --git a/src/humanize/number.py b/src/humanize/number.py
+index 52a5356..7b16e2b 100644
+--- a/src/humanize/number.py
++++ b/src/humanize/number.py
+@@ -329,12 +329,13 @@ def apnumber(value: NumberOrString) -> str:
+     import math
+ 
+     try:
+-        if not math.isfinite(float(value)):
+-            return _format_not_finite(float(value))
++        number = float(value)
++        if not math.isfinite(number):
++            return _format_not_finite(number)
+         value = int(value)
+     except (TypeError, ValueError):
+         return str(value)
+-    if not 0 <= value < 10:
++    if value < 0 or value >= 10:
+         return str(value)
+     return _(_APNUMBER_WORDS[value])
+ 

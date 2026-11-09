@@ -1,0 +1,17 @@
+diff --git a/src/packaging/utils.py b/src/packaging/utils.py
+index 48cc3fd..b6c77f9 100644
+--- a/src/packaging/utils.py
++++ b/src/packaging/utils.py
+@@ -193,8 +193,10 @@ def canonicalize_version(
+         try:
+             version = Version(version)
+         except InvalidVersion:
+-            return str(version)
+-    return str(_TrimmedRelease(version) if strip_trailing_zero else version)
++            return version
++    if strip_trailing_zero:
++        version = _TrimmedRelease(version)
++    return str(version)
+ 
+ 
+ def parse_wheel_filename(

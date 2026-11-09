@@ -1,0 +1,782 @@
+{
+ "boltons-replay-1e61524/f4a9ed20a0d7": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1e61524/a0e788921637": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1e61524/76240638c698": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1e61524/d869d67014a7": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1e61524/73c5ad220666": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1e61524/df39becf687b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1e61524/cfd8bdb3cadd": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1e61524/2a3d77c2bfc7": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1e61524/70096fb7c8c0": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1e61524/7d6aca30af62": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1e61524/ae5b9d49b832": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1e61524/b13cfb2967ed": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-seeded-feature-ordinalize/472455f4664b": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-ordinalize/18714eaed1be": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-ordinalize/3294a64136ed": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-ordinalize/3b1708cb861d": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-ordinalize/3d1e12ddedcc": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-ordinalize/e8fd9ee3988c": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-ordinalize/a8031bfd8742": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-ordinalize/f946d5ca9dc1": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-ordinalize/16e1ee413c17": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-ordinalize/0b845cd05ee4": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-ordinalize/5f609c5b4ce1": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "humanize-replay-08cf2c3/620efe015f34": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-08cf2c3/91e53f70eba8": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-08cf2c3/a3549cf7ecda": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-08cf2c3/da576f28289a": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-08cf2c3/2877841c0f4a": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-08cf2c3/0de041e82356": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-08cf2c3/bbae2a728c92": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-08cf2c3/a9f957cf4958": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-392aef7/ca05e174cb42": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-392aef7/5951f97c39cc": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-392aef7/da0be1eeb2fb": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-392aef7/5f499340e314": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-392aef7/a5bc9c7bad43": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-392aef7/07c9db27cc3b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-392aef7/27042d1c4e50": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-392aef7/a30b6dac4fbd": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-392aef7/32260136fe71": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-392aef7/5a8f223d6758": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-392aef7/7077e99209d2": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-392aef7/d34304d6744e": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-823ad60/68004cbb07d9": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-823ad60/4aa2020b3f74": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-823ad60/f13ab52bf9a9": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-823ad60/d67747ff9e3a": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-823ad60/de2bd7b31fc7": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-823ad60/96fa2cdd4ada": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-823ad60/dbb782737e93": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-823ad60/194857a8db5d": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-823ad60/040422fccef5": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-823ad60/1818b8b956cd": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-823ad60/fd542845f6b8": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-823ad60/a303214c6b58": {
+  "real": true,
+  "note": "reverted bug fix: a custom format now returns a string where the fixed version raised ValueError; a real change, though arguably not worse"
+ },
+ "humanize-replay-ca892b3/fff085bbc5f4": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-ca892b3/4f7fc951f3d2": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-ca892b3/73f3ad3ffeb1": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-ca892b3/50856c28455e": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-ca892b3/ce67e2c8aea7": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-ca892b3/76b34d4d8553": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-ca892b3/3de79c0001bc": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-ca892b3/6ae62fbf3b3d": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-ca892b3/d4f1dd39986c": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-ca892b3/59353ec686bf": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-ca892b3/331f70fc9af9": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-ca892b3/db878e94a844": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-e46732e/7b805e4b6df7": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-e46732e/4fc03ae5b177": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-e46732e/78826a66f60d": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-e46732e/7df039882298": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-e46732e/6f30074308b3": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-e46732e/39ae003245b7": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-e46732e/e9f285872ada": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-e46732e/d2987cdb2cee": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-e46732e/25a6f80b1705": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-e46732e/65c7461cf77b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-replay-e46732e/93b9dd6ccaae": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "humanize-seeded-feature-ordinal/e1e4488e2485": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "humanize-seeded-feature-ordinal/d2321099d18d": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "humanize-seeded-feature-ordinal/28df1a247f8a": {
+  "real": false,
+  "note": "out of contract: a container or bytes instead of a number or str"
+ },
+ "humanize-seeded-feature-ordinal/4f99d3be1081": {
+  "real": false,
+  "note": "out of contract: a container or bytes instead of a number or str"
+ },
+ "humanize-seeded-feature-ordinal/a97c2e38b470": {
+  "real": false,
+  "note": "out of contract: a container or bytes instead of a number or str"
+ },
+ "humanize-seeded-feature-ordinal/8e97cc77d14d": {
+  "real": false,
+  "note": "out of contract: a container or bytes instead of a number or str"
+ },
+ "humanize-seeded-feature-ordinal/9af3922e30dc": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "more-itertools-replay-06f3181/fe94b46bb518": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-06f3181/38fe073acff6": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-06f3181/1ff1dbb6ea55": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-06f3181/b0163604caa6": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-06f3181/aca8861bc1e0": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-06f3181/e4fee7393715": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-06f3181/3dd8dec928fc": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-06f3181/92c6b6cc7ced": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-06f3181/f87ca3fa879b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-06f3181/19da543a81ec": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-06f3181/e3f95363231b": {
+  "real": false,
+  "note": "out of contract: r is a float"
+ },
+ "more-itertools-replay-06f3181/6fb1d2fd1f8d": {
+  "real": false,
+  "note": "out of contract: index is a str"
+ },
+ "more-itertools-replay-adeda34/a5d30ea72e7a": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-adeda34/880a66f82903": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-adeda34/26a676676812": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-adeda34/cc156822e649": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-adeda34/9d27aa9bce11": {
+  "real": false,
+  "note": "out of contract: n is a float"
+ },
+ "more-itertools-replay-adeda34/ea4e9926696a": {
+  "real": false,
+  "note": "out of contract: n is a float"
+ },
+ "more-itertools-replay-adeda34/cb5f64207d6f": {
+  "real": false,
+  "note": "out of contract: n is a float"
+ },
+ "more-itertools-replay-adeda34/985d4216c713": {
+  "real": false,
+  "note": "out of contract: n is a float"
+ },
+ "more-itertools-replay-adeda34/c86defd38956": {
+  "real": false,
+  "note": "out of contract: n is a float"
+ },
+ "more-itertools-replay-adeda34/440ded7b86e4": {
+  "real": false,
+  "note": "out of contract: n is a float"
+ },
+ "more-itertools-replay-adeda34/55a7e703587a": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-adeda34/b02d7b105357": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-def2d82/2e9f3820a4d2": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-def2d82/2408865d30f9": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-def2d82/2dfdd834dd56": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-def2d82/86567b31c0c0": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-def2d82/3262923e4d63": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-def2d82/7c0fed863445": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-def2d82/eef434115ce4": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-def2d82/b3cced946a18": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-def2d82/ec99effc1df8": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-def2d82/81b3134d96b7": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-def2d82/11ca982041cb": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "more-itertools-replay-def2d82/754023abde25": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "packaging-replay-2c87a33/4c5c2cbf4818": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "packaging-replay-2c87a33/c56134339397": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "packaging-replay-2c87a33/382557395634": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "packaging-replay-2c87a33/dbbff79ea22a": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "packaging-replay-2c87a33/b69ce9147041": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "packaging-replay-2c87a33/aa24468295ec": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "packaging-replay-2c87a33/9efcecd61ce4": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "packaging-replay-2c87a33/64ab4b12cc1a": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "packaging-replay-2c87a33/f6d7f1eda90b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "packaging-replay-2c87a33/cde1839c763a": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "packaging-seeded-feature-canonicalize_version/f7560998e12d": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "packaging-seeded-feature-canonicalize_version/a31d97222ff0": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "packaging-seeded-feature-canonicalize_version/730d71facf38": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "packaging-seeded-feature-canonicalize_version/faf098e3d6c3": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "packaging-seeded-feature-canonicalize_version/fa93b05ac72f": {
+  "real": true,
+  "note": "planted mistake: in-contract behavior change the intent does not ask for"
+ },
+ "python-slugify-replay-2f23599/3b5fe399ca88": {
+  "real": true,
+  "note": "reverted fix: duplicate handling changes (side effect of the fix), real change the intent forbids"
+ },
+ "python-slugify-replay-2f23599/65d4fa178cd3": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "python-slugify-replay-2f23599/1540fc33f22d": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "python-slugify-replay-2f23599/19e9298aa4ba": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "python-slugify-replay-2f23599/efb417e88827": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "python-slugify-replay-2f23599/b8f0a2a43f5b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "python-slugify-replay-2f23599/490550498790": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "python-slugify-replay-2f23599/70d6de1ff39c": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "python-slugify-replay-2f23599/d8ec67cd488b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "python-slugify-replay-2f23599/ec14a4296e99": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "python-slugify-replay-2f23599/48254c78840b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "python-slugify-replay-2f23599/bfe07a3f3dbd": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "sqlparse-seeded-refactor-remove_quotes/2ddb0c134985": {
+  "real": false,
+  "note": "out of contract: bytes, list, tuple or dict; the function is documented for strings"
+ },
+ "sqlparse-seeded-refactor-remove_quotes/3a4242b97b89": {
+  "real": false,
+  "note": "out of contract: bytes, list, tuple or dict; the function is documented for strings"
+ },
+ "sqlparse-seeded-refactor-remove_quotes/2322eec3de63": {
+  "real": false,
+  "note": "out of contract: bytes, list, tuple or dict; the function is documented for strings"
+ },
+ "sqlparse-seeded-refactor-remove_quotes/101115fc01c3": {
+  "real": false,
+  "note": "out of contract: bytes, list, tuple or dict; the function is documented for strings"
+ },
+ "sqlparse-seeded-refactor-remove_quotes/4151948d3ac1": {
+  "real": false,
+  "note": "out of contract: bytes, list, tuple or dict; the function is documented for strings"
+ },
+ "sqlparse-seeded-refactor-remove_quotes/eccad34411d8": {
+  "real": false,
+  "note": "out of contract: bytes, list, tuple or dict; the function is documented for strings"
+ },
+ "sqlparse-seeded-refactor-remove_quotes/dcf1df4e50d6": {
+  "real": false,
+  "note": "out of contract: bytes, list, tuple or dict; the function is documented for strings"
+ },
+ "sqlparse-seeded-refactor-remove_quotes/0242a7c13381": {
+  "real": false,
+  "note": "out of contract: bytes, list, tuple or dict; the function is documented for strings"
+ },
+ "sqlparse-seeded-refactor-remove_quotes/7b30379a6cba": {
+  "real": false,
+  "note": "out of contract: bytes, list, tuple or dict; the function is documented for strings"
+ },
+ "sqlparse-seeded-refactor-remove_quotes/28b5a3144cd3": {
+  "real": false,
+  "note": "out of contract: bytes, list, tuple or dict; the function is documented for strings"
+ },
+ "sqlparse-seeded-refactor-remove_quotes/f3871803d7f9": {
+  "real": false,
+  "note": "out of contract: bytes, list, tuple or dict; the function is documented for strings"
+ },
+ "sqlparse-seeded-refactor-remove_quotes/ccd36902c721": {
+  "real": false,
+  "note": "out of contract: bytes, list, tuple or dict; the function is documented for strings"
+ },
+ "validators-replay-474496d/6fb627b522f5": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-474496d/df84401d5a61": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-474496d/ec388350dbba": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-474496d/9e52da02e4f2": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-474496d/ba50ef63b996": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-474496d/17fe6853b7df": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-474496d/6bab0874b452": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-474496d/bd2de6d4308c": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-474496d/3680103c06fd": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-474496d/bebf5eff26b3": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-474496d/790acb238cd0": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-474496d/71f8e71aedd7": {
+  "real": false,
+  "note": "out of contract: a list instead of a str"
+ },
+ "validators-replay-a55c62d/1077025b567c": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-a55c62d/8f5fb34039fe": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-a55c62d/89709f1d9738": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-a55c62d/279377398d48": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-a55c62d/c86c431003d5": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-a55c62d/c5089620628c": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-a55c62d/78fe5afa8c4b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-a55c62d/059ae656dc79": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-a55c62d/bfa51b54267b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-a55c62d/036071e62cf9": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-aa5d83b/e37a91757f60": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-aa5d83b/6f3905e5ca9c": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-aa5d83b/7881a93cbd10": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-aa5d83b/4444023b64d2": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-aa5d83b/0a485b17ad82": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-aa5d83b/68d610a5bf75": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-aa5d83b/a740f2dc28f7": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-aa5d83b/cc78b961789e": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-aa5d83b/f5acb4c164c8": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-aa5d83b/b5fb784b08ee": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-aa5d83b/41015c74bf0b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-aa5d83b/56432e0849cd": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "validators-replay-bea386c/5a8b7e275322": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ }
+}

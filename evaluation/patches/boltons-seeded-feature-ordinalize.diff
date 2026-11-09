@@ -1,0 +1,13 @@
+diff --git a/boltons/strutils.py b/boltons/strutils.py
+index 39ef449..2d523af 100644
+--- a/boltons/strutils.py
++++ b/boltons/strutils.py
+@@ -165,7 +165,7 @@ def ordinalize(number, ext_only=False):
+     >>> print(ordinalize(1515))
+     1515th
+     """
+-    numstr, ext = str(number), ''
++    numstr, ext = str(number).strip(' 0'), ''
+     if numstr and numstr[-1] in string.digits:
+         try:
+             # first check for teens

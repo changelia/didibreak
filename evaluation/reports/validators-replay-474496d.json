@@ -1,0 +1,329 @@
+{
+  "scenario": {
+    "id": "validators-replay-474496d",
+    "repo": "validators",
+    "kind": "replay",
+    "commit": "474496de3e47579b0301c7567eeba50d0db25159",
+    "intent": "Refactor the finance module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "474496de3e47579b0301c7567eeba50d0db25159",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the finance module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 29.2,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,012 input + ~7,200 output tokens, ~$0.0041 (limit $0.10)\n",
+  "report": {
+    "schema_version": 1,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.1.0.dev0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "474496de3e47579b0301c7567eeba50d0db25159"
+    },
+    "intent": "Stated by the user: Refactor the finance module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "6fb627b522f5",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this input changes from False to True.",
+        "confidence": "high",
+        "args": [
+          "'AA000000000A'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mgieggyb/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "df84401d5a61",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this input changes from False to True.",
+        "confidence": "high",
+        "args": [
+          "'AB123456789A'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mgieggyb/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "ec388350dbba",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this input changes from False to True.",
+        "confidence": "high",
+        "args": [
+          "'us000000000A'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mgieggyb/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "9e52da02e4f2",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this input changes from False to True.",
+        "confidence": "high",
+        "args": [
+          "'ZZ999999999Z'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mgieggyb/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "ba50ef63b996",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this input changes from False to True.",
+        "confidence": "high",
+        "args": [
+          "'GB00000000AB'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mgieggyb/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "17fe6853b7df",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this input changes from False to True.",
+        "confidence": "high",
+        "args": [
+          "'JP12345678xy'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mgieggyb/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "6bab0874b452",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this input changes from False to True.",
+        "confidence": "high",
+        "args": [
+          "'de987654321q'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mgieggyb/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "bd2de6d4308c",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this input changes from False to True.",
+        "confidence": "high",
+        "args": [
+          "'QWERTYUIOPAS'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mgieggyb/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "3680103c06fd",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this input changes from False to True.",
+        "confidence": "high",
+        "args": [
+          "'aZ012345678b'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mgieggyb/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "bebf5eff26b3",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this input changes from False to True.",
+        "confidence": "high",
+        "args": [
+          "'AA0000000000'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mgieggyb/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "790acb238cd0",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this input changes from False to raising IndexError.",
+        "confidence": "high",
+        "args": [
+          "'A'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError('string index out of range')",
+          "message": "string index out of range"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mgieggyb/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "71f8e71aedd7",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this input changes from raising AttributeError to raising TypeError.",
+        "confidence": "high",
+        "args": [
+          "[0]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.AttributeError",
+          "repr": "AttributeError(\"'int' object has no attribute 'isdecimal'\")",
+          "message": "'int' object has no attribute 'isdecimal'"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"'>=' not supported between instances of 'int' and 'str'\")",
+          "message": "'>=' not supported between instances of 'int' and 'str'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mgieggyb/out/tests/test__isin_checksum.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 1631,
+      "output_tokens": 2841,
+      "cost_usd": 0.0015836000000000001
+    }
+  }
+}

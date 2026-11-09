@@ -10,6 +10,7 @@ One repository, one folder per package, a shared contract:
 | `js/` | npm package, added after Python 0.1.0. |
 | `spec/` | Shared contract: JSON report schema, prompt templates, shared test cases. |
 | `docs/` | User documentation for all packages (plain Markdown). |
+| `evaluation/` | Real-repository evaluation for the release gate: plan, seeded patches, saved reports, hand labels, results (`python/scripts/evaluate.py`). |
 
 Each package builds only from its own folder. Files in `spec/` are the single
 source; packages copy them at build time and never read across folders at
