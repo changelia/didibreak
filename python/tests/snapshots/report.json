@@ -30,7 +30,7 @@
         "type_name": "builtins.str",
         "repr": "'+12025550100'"
       },
-      "test_file": null
+      "test_file": ".didibreak/tests/test_normalize_phone.py"
     },
     {
       "id": "30040f8bc543",
@@ -52,7 +52,7 @@
         "type_name": "builtins.str",
         "repr": "'+995995555123456'"
       },
-      "test_file": null
+      "test_file": ".didibreak/tests/test_normalize_phone.py"
     },
     {
       "id": "0a1b2c3d4e5f",

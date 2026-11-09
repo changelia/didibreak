@@ -95,4 +95,18 @@ checked in the order of the table; the first match is the reason.
 - Environment variables that look like credentials are removed before your
   code runs; see [safety.md](safety.md#environment-variables-that-are-removed).
 
+## Reproducing tests
+
+- New functions, and cases where the base version timed out or ended the
+  process, get no test.
+- Values that are not Python literals (objects, dataclasses, `nan`,
+  truncated long values) are checked by their type only, so such a test can
+  pass on the change even though didibreak reported a difference.
+- The tests seed `random` like the harness, but they do not set
+  `PYTHONHASHSEED`, `TZ=UTC` or remove credential variables, so code that
+  depends on those can behave differently under plain pytest.
+- A test file's name comes from the function name; if your test suite has a
+  file with the same name and you run both together, pytest may refuse to
+  import one of them. Rename or move the generated file.
+
 The rest of this page is written together with the analysis features.

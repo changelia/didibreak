@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import TextIO
 
 from didibreak import __version__
+from didibreak.compare import Finding
 from didibreak.config import (
     CONFIG_KEYS,
     FAIL_ON,
@@ -56,6 +57,7 @@ from didibreak.pipeline import (
 )
 from didibreak.report import Report, ReportUsage, SkippedItem
 from didibreak.report.json import render_json
+from didibreak.report.pytest_writer import WrittenTests, write_tests
 from didibreak.report.text import header_lines, results_text
 
 EXIT_OK = 0
@@ -517,6 +519,22 @@ def _build_report(
     )
 
 
+def _write_tests(
+    config: Config, root: Path, base_sha: str, findings: Sequence[Finding]
+) -> WrittenTests:
+    # The report is still useful without the tests: warn and go on.
+    try:
+        return write_tests(
+            root, Path(config.output_dir), findings, __version__, base_sha
+        )
+    except OSError as error:
+        print(
+            f"didibreak: warning: could not write the reproducing tests: {error}",
+            file=sys.stderr,
+        )
+        return WrittenTests(tuple(findings), (), ())
+
+
 def _print_report(report: Report, config: Config, llm: bool) -> None:
     if config.format == "json":
         sys.stdout.write(render_json(report))
@@ -603,7 +621,13 @@ def _run_check(arguments: argparse.Namespace) -> int:
     except (ConfigError, LLMAuthError, LLMModelError, GitError, OSError) as error:
         print(f"didibreak: error: {error}", file=sys.stderr)
         return EXIT_ERROR
-    report = _build_report(config, base_sha, intent, detection, analysis, llm_cases)
+    tests = _write_tests(config, root, base_sha, analysis.findings)
+    analysis = replace(analysis, findings=tests.findings)
+    report = replace(
+        _build_report(config, base_sha, intent, detection, analysis, llm_cases),
+        test_files=tests.files,
+        no_tests=tuple(SkippedItem(call, reason) for call, reason in tests.not_written),
+    )
     _print_report(report, config, llm=llm_cases is not None)
     return exit_code_for(
         [finding.label for finding in analysis.findings if finding.label],

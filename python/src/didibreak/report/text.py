@@ -3,7 +3,8 @@
 Order: header (tool version, base) and changed functions, the cost estimate
 (both printed before any LLM request), then the summary line, findings
 grouped UNEXPECTED, UNCLEAR, EXPECTED, NEW-FUNCTION, skipped functions with
-reasons, removed functions, refinement notes and the usage line last.
+reasons, removed functions, reproducing tests, refinement notes and the
+usage line last.
 Colors only when the caller asks for them.
 """
 
@@ -122,6 +123,9 @@ def results_text(report: Report, color: bool = False, llm: bool = True) -> str:
     lines += [f"  skipped: {item.function} ({item.reason})" for item in report.skipped]
     if report.removed:
         lines.append(f"Removed: {', '.join(report.removed)}")
+    if report.test_files:
+        lines.append(f"Reproducing tests: {', '.join(report.test_files)}")
+    lines += [f"  no test: {item.function} ({item.reason})" for item in report.no_tests]
     if llm:
         if report.invalid_cases_dropped:
             lines.append(

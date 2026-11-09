@@ -84,6 +84,10 @@ the Python package and `js-v*` for the JS/TS package.
   writes one report (`schema_version: 1`, `spec/report.schema.json`) with a
   stable key order, and the estimate goes to stderr. See
   `docs/output-format.md`.
+- Reproducing pytest files: `check` writes one test file per function to
+  `.didibreak/tests/`, one test per finding asserting the base behavior, so
+  it passes on the base and fails on the change; `test_file` in the JSON
+  report and a `Reproducing tests:` line in the text report point to it.
 
 ## JS/TS package
 

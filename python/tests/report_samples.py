@@ -9,6 +9,7 @@ from didibreak.report import Report, ReportUsage, SkippedItem
 
 SNAPSHOTS = Path(__file__).parent / "snapshots"
 PHONE = "app/utils/phone.py::normalize_phone"
+TEST_FILE = ".didibreak/tests/test_normalize_phone.py"
 
 
 def text_outcome(value: str) -> Outcome:
@@ -28,6 +29,7 @@ def sample_report() -> Report:
             "high",
             "expected",
             "intent covers international numbers",
+            TEST_FILE,
         ),
         Finding(
             "30040f8bc543",
@@ -38,6 +40,7 @@ def sample_report() -> Report:
             "high",
             "unexpected",
             "intent covers international numbers, not local numbers without plus",
+            TEST_FILE,
         ),
         Finding(
             "0a1b2c3d4e5f",
@@ -70,6 +73,13 @@ def sample_report() -> Report:
         usage=ReportUsage(3, 3400, 810, 400, 0.0018),
         refined=1,
         refinement_cases=4,
+        test_files=(TEST_FILE,),
+        no_tests=(
+            SkippedItem(
+                "app/text.py::initials('', strict=True)",
+                "new function: no base behavior to assert",
+            ),
+        ),
     )
 
 
