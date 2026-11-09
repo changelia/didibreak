@@ -61,6 +61,8 @@ class Report:
         refined: Functions that got refinement cases.
         refinement_cases: Cases run in refinement rounds.
         refinement_skipped: Checked functions whose refinement was skipped.
+        test_files: Reproducing test files written in this run.
+        no_tests: Findings without a reproducing test, as ``call`` and reason.
     """
 
     version: str
@@ -78,6 +80,8 @@ class Report:
     refined: int = 0
     refinement_cases: int = 0
     refinement_skipped: tuple[SkippedItem, ...] = ()
+    test_files: tuple[str, ...] = ()
+    no_tests: tuple[SkippedItem, ...] = ()
 
     def by_label(self) -> list[tuple[str, list[Finding]]]:
         """Findings grouped in report order: unexpected, unclear, expected, new."""

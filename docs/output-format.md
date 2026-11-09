@@ -56,6 +56,8 @@ Example (the part after the header and the estimate):
                before (new function) → after raises builtins.ValueError
   skipped: app/db.py::save_user (obvious I/O: session.commit)
 Removed: app/old.py::legacy
+Reproducing tests: .didibreak/tests/test_normalize_phone.py
+  no test: app/text.py::initials('', strict=True) (new function: no base behavior to assert)
 2 invalid cases dropped (not Python literals)
 Refinement: 1 function(s) got 4 more cases
 LLM: 3 calls · 3400 input tokens · 810 output tokens (400 reasoning) · cost $0.0018
@@ -100,7 +102,7 @@ is strict: a new key needs a new `schema_version`.
         "type_name": "builtins.str",
         "repr": "'+12025550100'"
       },
-      "test_file": null
+      "test_file": ".didibreak/tests/test_normalize_phone.py"
     },
     {
       "id": "30040f8bc543",
@@ -122,7 +124,7 @@ is strict: a new key needs a new `schema_version`.
         "type_name": "builtins.str",
         "repr": "'+995995555123456'"
       },
-      "test_file": null
+      "test_file": ".didibreak/tests/test_normalize_phone.py"
     },
     {
       "id": "0a1b2c3d4e5f",
