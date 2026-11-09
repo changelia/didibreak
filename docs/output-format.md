@@ -59,6 +59,7 @@ Example (the part after the header and the estimate):
   skipped: app/db.py::save_user (obvious I/O: session.commit)
 Removed: app/old.py::legacy
 Reproducing tests: .didibreak/tests/test_normalize_phone.py
+  no test: app/utils/phone.py::normalize_phone('+1 202 555 0100') (expected change)
   no test: app/text.py::initials('', strict=True) (new function: no base behavior to assert)
 2 invalid cases dropped (not Python literals)
 Refinement: 1 function(s) got 4 more cases
@@ -104,7 +105,7 @@ is strict: a new key needs a new `schema_version`.
         "type_name": "builtins.str",
         "repr": "'+12025550100'"
       },
-      "test_file": ".didibreak/tests/test_normalize_phone.py"
+      "test_file": null
     },
     {
       "id": "30040f8bc543",
@@ -202,7 +203,7 @@ is strict: a new key needs a new `schema_version`.
 | `findings[].after.type_name` | Qualified type of the return value or exception. |
 | `findings[].after.repr` | `repr` of the value or exception, at most 2,000 characters. |
 | `findings[].after.message` | Exception message, at most 500 characters; only for exceptions. |
-| `findings[].test_file` | Reproducing pytest file, relative to the repository root (absolute when `output_dir` is outside it), or `null`: new functions, a base version that timed out or ended the process, or a folder that could not be written. |
+| `findings[].test_file` | Reproducing pytest file, relative to the repository root (absolute when `output_dir` is outside it), or `null`: findings labelled `expected`, new functions, a base version that timed out or ended the process, or a folder that could not be written. |
 | `summary` | Counts for the whole run. |
 | `summary.functions_checked` | Functions whose cases ran on both versions. |
 | `summary.cases_run` | Cases run, refinement rounds included. |
@@ -226,11 +227,12 @@ is strict: a new key needs a new `schema_version`.
 
 ## Reproducing tests
 
-Every finding whose base version returned a value or raised an exception
-gets a pytest test in `<output_dir>/tests/` (default `.didibreak/tests/`),
-one file per function. Each test calls the function with the finding's
-inputs and asserts what the **base** version did, so it passes on the base
-and fails on your change. A failing test is the behavior change.
+Every finding whose base version returned a value or raised an exception,
+except findings labelled `expected`, gets a pytest test in
+`<output_dir>/tests/` (default `.didibreak/tests/`), one file per
+function. Each test calls the function with the finding's inputs and
+asserts what the **base** version did, so it passes on the base and fails
+on your change. A failing test is the behavior change.
 
 ```text
 $ didibreak check --cases-file ../cases.json
@@ -278,6 +280,7 @@ How the base outcome is asserted:
 | An exception | `pytest.raises(...)` and the exact exception type. |
 | Timeout or a process that ended | No test; listed as `no test:` in the text report. |
 | New function | No test: there is no base behavior to assert. |
+| Any outcome of a finding labelled `expected` | No test: the change matched the intent. |
 
 - A test file is replaced each time its function has findings; test files
   of other functions are left alone.
@@ -286,8 +289,9 @@ How the base outcome is asserted:
   does, so plain `pytest` can run the files from the repository root.
   If you move a test into your own test suite, your suite's setup must
   make the module importable.
-- Tests for findings labelled `expected` say so in a comment: delete them
-  if the change is wanted.
+- Findings labelled `expected` get no test (`no test: ... (expected
+  change)`): a test of the old behavior would fail on the change you asked
+  for, and an AI agent could undo the work to make it pass.
 - The folder ignores itself, so the tests never show up in `git status`,
   and plain `pytest` does not collect them unless you name the folder.
 

@@ -146,10 +146,15 @@ def test_function_named_like_a_local_is_imported_under_an_alias() -> None:
     assert "result = subject_result('995 555 12 34 56')" in text
 
 
-def test_expected_findings_say_the_test_can_be_deleted() -> None:
-    text = render(finding(text_value("x"), label="expected"))
+def test_expected_findings_get_no_test(tmp_path: Path) -> None:
+    expected = finding(text_value("x"), label="expected")
 
-    assert "# The change matched the intent: delete this test if wanted." in text
+    written = write_tests(tmp_path, tmp_path / "out", [expected], "0.1.0", "a1b")
+
+    assert no_test_reason(expected) == "expected change"
+    assert written.files == ()
+    assert written.findings[0].test_file is None
+    assert written.not_written == ((f"{PHONE}('995 555 12 34 56')", "expected change"),)
 
 
 @pytest.mark.parametrize(

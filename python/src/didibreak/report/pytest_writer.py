@@ -54,6 +54,11 @@ class Subject:
 
 def no_test_reason(finding: Finding) -> str | None:
     """Why a finding gets no test, or None when it gets one."""
+    if finding.label == "expected":
+        # A test of the old behavior would fail on the intended change, and
+        # an AI agent might revert the requested work to make it pass
+        # (owner decision 2026-11-09).
+        return "expected change"
     before = finding.before
     if before is None:
         return "new function: no base behavior to assert"
@@ -155,8 +160,6 @@ def _comment_lines(finding: Finding) -> list[str]:
     if finding.reason:
         label += f" ({' '.join(finding.reason.split())})"
     lines.append(label)
-    if finding.label == "expected":
-        lines.append("# The change matched the intent: delete this test if wanted.")
     return lines
 
 
