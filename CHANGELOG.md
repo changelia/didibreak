@@ -98,6 +98,10 @@ the Python package and `js-v*` for the JS/TS package.
 - The `init-agents` snippet also says what to do with `new_function`
   findings, that exit code 2 is a setup problem to report, and to stop
   after 3 check rounds.
+- Findings whose inputs contradict the function's simple type annotations
+  (for example `bytes` for a `str` parameter) are dropped and counted in
+  `summary.type_mismatch_dropped`; the JSON report is now
+  `schema_version: 2`.
 
 ## JS/TS package
 

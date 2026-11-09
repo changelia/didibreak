@@ -119,3 +119,34 @@ def test_estimate_goes_to_stderr_in_json_mode(
     assert report["usage"]["input_tokens"] == 500
     assert "Estimated: up to" in captured.err
     assert "sk-fake" not in captured.out + captured.err
+
+
+@needs_schema
+def test_findings_outside_the_annotations_are_counted_in_both_formats(
+    git_repository: Any,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    git_repository.write("m.py", "def first(text: str) -> str:\n    return text[:1]\n")
+    git_repository.commit()
+    git_repository.write(
+        "m.py", "def first(text: str) -> str:\n    return str(text)[:1]\n"
+    )
+    cases = [
+        {"function": "m.py::first", "args": ["b'ab'"], "kwargs": {}},
+        {"function": "m.py::first", "args": ["'ab'"], "kwargs": {}},
+    ]
+    path = tmp_path / "cases.json"
+    path.write_text(json.dumps({"cases": cases}), encoding="utf-8")
+    monkeypatch.chdir(git_repository.path)
+
+    main(["check", "--cases-file", str(path), "--format", "json"])
+    report = json.loads(capsys.readouterr().out)
+    main(["check", "--cases-file", str(path)])
+    text = capsys.readouterr().out
+
+    validate(report)
+    assert report["findings"] == []
+    assert report["summary"]["type_mismatch_dropped"] == 1
+    assert "1 findings dropped (inputs outside the type annotations)" in text

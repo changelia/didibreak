@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "tool": {
     "name": "didibreak",
     "version": "0.1.0"
@@ -87,6 +87,7 @@
     },
     "flaky_dropped": 1,
     "invalid_cases_dropped": 2,
+    "type_mismatch_dropped": 3,
     "skipped": [
       {
         "function": "app/db.py::save_user",

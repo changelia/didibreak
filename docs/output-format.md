@@ -37,7 +37,9 @@ Order (Detailed Design section 7):
    reason for its label.
 5. Skipped functions with their reasons, then removed functions.
 6. `Reproducing tests:` with the test files written in this run, and a
-   `no test:` line for each finding that has none (see below).
+   `no test:` line for each finding that has none (see below), then how many
+   findings were dropped because an input contradicts the function's type
+   annotations (only when there are any).
 7. LLM notes: invalid cases dropped, refinement rounds, and the usage line
    (calls, tokens, cost) last. Runs with `--cases-file` send no requests and
    show none of these lines.
@@ -61,6 +63,7 @@ Removed: app/old.py::legacy
 Reproducing tests: .didibreak/tests/test_normalize_phone.py
   no test: app/utils/phone.py::normalize_phone('+1 202 555 0100') (expected change)
   no test: app/text.py::initials('', strict=True) (new function: no base behavior to assert)
+3 findings dropped (inputs outside the type annotations)
 2 invalid cases dropped (not Python literals)
 Refinement: 1 function(s) got 4 more cases
 LLM: 3 calls · 3400 input tokens · 810 output tokens (400 reasoning) · cost $0.0018
@@ -69,12 +72,12 @@ LLM: 3 calls · 3400 input tokens · 810 output tokens (400 reasoning) · cost $
 ## JSON report
 
 The schema is [`spec/report.schema.json`](../spec/report.schema.json)
-(`schema_version: 1`). Keys always come in the order below, and every object
+(`schema_version: 2`). Keys always come in the order below, and every object
 is strict: a new key needs a new `schema_version`.
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "tool": {
     "name": "didibreak",
     "version": "0.1.0"
@@ -162,6 +165,7 @@ is strict: a new key needs a new `schema_version`.
     },
     "flaky_dropped": 1,
     "invalid_cases_dropped": 2,
+    "type_mismatch_dropped": 3,
     "skipped": [
       {
         "function": "app/db.py::save_user",
@@ -185,7 +189,7 @@ is strict: a new key needs a new `schema_version`.
 
 | Key | Meaning |
 | --- | --- |
-| `schema_version` | Always `1` for this format. |
+| `schema_version` | Always `2` for this format (2 added `summary.type_mismatch_dropped`). |
 | `tool` | `tool.name` is `didibreak`; `tool.version` is the installed version. |
 | `base` | `base.ref` is `--base` as given; `base.sha` is the full commit it resolved to. |
 | `intent` | The intent text used for labelling (`--intent` and the commit messages since the base), or `null`. |
@@ -214,6 +218,7 @@ is strict: a new key needs a new `schema_version`.
 | `summary.findings.new_function` | Findings in new functions. |
 | `summary.flaky_dropped` | Cases dropped because a version gave different results on two runs. |
 | `summary.invalid_cases_dropped` | LLM cases rejected because an argument was not a Python literal. |
+| `summary.type_mismatch_dropped` | Findings dropped because an input contradicts the function's type annotations (for example `bytes` for a `str` parameter). Only simple annotations are checked: builtin types, `None`, `Optional`/`Union`, and `list`, `dict`, `tuple`, `set` of these. |
 | `summary.skipped` | Functions not checked. Files that could not be read appear with their path; functions cut by `max_functions` have the reason `limit`. |
 | `summary.skipped[].function` | `path::qualname`, or a file path. |
 | `summary.skipped[].reason` | Why it was skipped, for example `obvious I/O: session.commit` or `cost limit`. |

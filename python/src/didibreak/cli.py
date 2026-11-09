@@ -512,6 +512,7 @@ def _build_report(
         cases_run=analysis.cases_run,
         flaky_dropped=analysis.flaky_dropped,
         invalid_cases_dropped=generation.invalid_cases_dropped if generation else 0,
+        type_mismatch_dropped=analysis.type_mismatch_dropped,
         skipped=tuple(skipped),
         removed=detection.removed,
         usage=usage,

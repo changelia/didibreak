@@ -126,6 +126,11 @@ def results_text(report: Report, color: bool = False, llm: bool = True) -> str:
     if report.test_files:
         lines.append(f"Reproducing tests: {', '.join(report.test_files)}")
     lines += [f"  no test: {item.function} ({item.reason})" for item in report.no_tests]
+    if report.type_mismatch_dropped:
+        lines.append(
+            f"{report.type_mismatch_dropped} findings dropped "
+            "(inputs outside the type annotations)"
+        )
     if llm:
         if report.invalid_cases_dropped:
             lines.append(
