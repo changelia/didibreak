@@ -94,7 +94,7 @@ def test_actual_tokens_and_cost_are_reported(
     expected = (1000 * 0.10 + 600 * 0.50) / 1_000_000
     err = "".join(capsys.readouterr())
     assert (
-        "LLM: 1 calls · 1000 input tokens · 600 output tokens (400 reasoning) · "
+        "LLM: 1 call · 1000 input tokens · 600 output tokens (400 reasoning) · "
         f"cost ${expected:.4f}"
     ) in err
 
@@ -160,6 +160,7 @@ def test_second_run_uses_the_cache_without_any_request(
     second = "".join(capsys.readouterr())
     assert "request" not in events  # the estimate may still list a refinement
     assert "LLM: 0 calls" in second
+    assert "Estimated: up to 1 LLM call (0 + up to 1 refinement)" in second
     assert f"{FUNCTION}('995 555 12 34 56')" in first
     assert f"{FUNCTION}('995 555 12 34 56')" in second
     output = repo.repository.path / ".didibreak"

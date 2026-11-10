@@ -54,14 +54,48 @@ uv build
 uv run python scripts/check_dist.py dist
 ```
 
+To install the built wheel and sdist into fresh virtual environments and run
+`didibreak --version`, `init-agents` and one `check` against a fake local
+OpenAI-compatible server (no key, no cost; needs network for `httpx`):
+
+```bash
+python scripts/package_smoke.py dist
+```
+
 ## Continuous integration
 
 GitHub Actions workflows in `.github/workflows/`:
 
 | Workflow | Runs on changes in | What it does |
 | --- | --- | --- |
-| `python.yml` | `python/`, `spec/`, `LICENSE` | The four checks, build and package content check. Pull requests: Linux, Python 3.11–3.13. Pushes to `main`, a weekly schedule (Mondays) and manual runs: macOS, Python 3.13 (pushes and manual runs also run Linux). The steps live in `.github/actions/python-checks/`. |
+| `python.yml` | every pull request; pushes to `main` that change `python/`, `spec/`, `LICENSE` | The four checks, build and package content check, on Linux with Python 3.11–3.13. macOS: Python 3.11–3.13 on pull requests and pushes once the repository is public; while it is private, Python 3.13 on pushes to `main`, the weekly schedule (Mondays) and manual runs only. The steps live in `.github/actions/python-checks/`. |
 | `spec.yml` | `spec/`, prompt-copy code | Report schema is valid JSON, a valid JSON Schema (draft 2020-12, checked with `check-jsonschema`) and has the expected structure; packaged prompts match `spec/prompts/`. |
+
+### Required checks for `main`
+
+Once the repository is public (owner decision 2026-11-04), these six checks
+from `python.yml` are required before a pull request can merge into `main`:
+`Linux / Python 3.11`, `Linux / Python 3.12`, `Linux / Python 3.13`,
+`macOS / Python 3.11`, `macOS / Python 3.12`, `macOS / Python 3.13`. The owner
+sets them once (repository settings → Branches, or):
+
+```bash
+gh api -X PUT repos/changelia/didibreak/branches/main/protection --input - <<'JSON'
+{
+  "required_status_checks": {
+    "strict": true,
+    "checks": [
+      {"context": "Linux / Python 3.11"}, {"context": "Linux / Python 3.12"},
+      {"context": "Linux / Python 3.13"}, {"context": "macOS / Python 3.11"},
+      {"context": "macOS / Python 3.12"}, {"context": "macOS / Python 3.13"}
+    ]
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": null,
+  "restrictions": null
+}
+JSON
+```
 
 `js.yml` is added together with the JS package. Pull requests use the template
 in `.github/pull_request_template.md`, which carries the Definition of Done.
@@ -189,3 +223,37 @@ Documented here once the provider modules exist.
 
 Each package is tagged separately: `py-v<version>` for Python, `js-v<version>`
 for JS. Releases are made only by the maintainer.
+
+### Python release procedure
+
+`.github/workflows/release-python.yml` builds once, checks the package
+contents, smoke-tests the wheel and the sdist on Linux and macOS
+(`scripts/package_smoke.py`, Python 3.11) and uploads the same files with
+PyPI trusted publishing. Uploads run only from commits on `main` and wait
+for the owner's approval in the `testpypi` and `pypi` environments.
+
+1. Merge a pull request that sets `__version__` in
+   `python/src/didibreak/__init__.py` and moves the changelog entries into
+   a section for that version.
+2. TestPyPI: Actions → release-python → Run workflow on `main`, approve
+   the `testpypi` deployment. Then, in an empty folder:
+
+   ```bash
+   python3 -m venv .venv && . .venv/bin/activate
+   pip install --index-url https://test.pypi.org/simple/ \
+       --extra-index-url https://pypi.org/simple/ didibreak==<version>
+   didibreak --version
+   ```
+
+   A version can be uploaded to TestPyPI only once; if something is wrong
+   after the upload, fix it and release the next version.
+3. PyPI: tag the same commit and push the tag; approve the `pypi`
+   deployment. The build fails if the tag does not match `__version__`.
+
+   ```bash
+   git tag -a py-v<version> -m "didibreak <version>" <commit on main>
+   git push origin py-v<version>
+   ```
+
+4. Create the GitHub release from the tag with the changelog section as
+   notes: `gh release create py-v<version> --title "didibreak <version>" --notes-file <notes>`.

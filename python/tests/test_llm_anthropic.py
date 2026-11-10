@@ -145,7 +145,7 @@ def test_bad_key_names_the_variable_without_showing_the_key() -> None:
     }
     client, _ = make_client([httpx.Response(401, json=body)])
 
-    with pytest.raises(LLMAuthError, match="check ANTHROPIC_API_KEY") as info:
+    with pytest.raises(LLMAuthError, match="check that ANTHROPIC_API_KEY") as info:
         client.complete_json(MESSAGES, SCHEMA, "labels")
 
     assert KEY not in str(info.value)

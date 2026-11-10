@@ -1,3 +1,4 @@
+import dataclasses
 from collections.abc import Callable
 
 import httpx
@@ -155,8 +156,8 @@ def test_unavailable_after_all_retries() -> None:
 @pytest.mark.parametrize(
     ("status", "error", "text"),
     [
-        (401, LLMAuthError, "rejected the API key (HTTP 401: bad key); check MY_KEY"),
-        (403, LLMAuthError, "check MY_KEY"),
+        (401, LLMAuthError, "rejected the API key (HTTP 401); check that MY_KEY"),
+        (403, LLMAuthError, "rejected the API key (HTTP 403); check that MY_KEY"),
         (404, LLMModelError, "model 'm' was not found at https://llm.test/v1"),
         (400, LLMRequestError, "rejected the request (HTTP 400: bad key)"),
     ],
@@ -192,7 +193,6 @@ def test_rejected_request_keeps_a_short_single_line_provider_message() -> None:
 def test_the_key_never_appears_in_errors() -> None:
     echo = {"error": {"message": f"Incorrect API key provided: {KEY}"}}
     cases: list[list[httpx.Response | Exception]] = [
-        [httpx.Response(401, json=echo)],
         [httpx.Response(400, json=echo)],
         [httpx.Response(500, json=echo)] * 3,
         [httpx.ConnectError(f"failed with {KEY}")] * 3,
@@ -203,6 +203,30 @@ def test_the_key_never_appears_in_errors() -> None:
         assert KEY not in str(info.value)
         assert KEY not in repr(info.value)
         assert "[redacted]" in str(info.value)
+
+
+@pytest.mark.parametrize("status", [401, 403])
+def test_auth_errors_never_echo_the_provider_message(status: int) -> None:
+    # OpenAI repeats a masked key: its first 8 and last 4 characters.
+    masked = f"Incorrect API key provided: {KEY[:8]}{'*' * 12}{KEY[-4:]}."
+    http, _ = client([httpx.Response(status, json={"error": {"message": masked}})])
+
+    with pytest.raises(LLMAuthError) as info:
+        post_with_retries(http, "https://llm.test/v1/x", {}, {}, SETTINGS)
+
+    message = str(info.value)
+    assert "Incorrect API key" not in message
+    assert KEY[:8] not in message
+    assert KEY[-4:] not in message
+    assert "MY_KEY" in message
+
+
+def test_auth_error_without_a_variable_names_the_setting() -> None:
+    settings = dataclasses.replace(SETTINGS, api_key_variable=None)
+    http, _ = client([httpx.Response(401, text="nope")])
+
+    with pytest.raises(LLMAuthError, match="the variable named by api_key_env"):
+        post_with_retries(http, "https://llm.test/v1/x", {}, {}, settings)
 
 
 def test_settings_repr_hides_the_key() -> None:

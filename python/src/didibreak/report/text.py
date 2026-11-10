@@ -19,6 +19,11 @@ _COLORS = {"unexpected": "31", "unclear": "33", "expected": "32", "new_function"
 _INDENT = 13
 
 
+def counted(count: int, noun: str) -> str:
+    """``count`` with ``noun`` in the right number: "1 LLM call", "2 LLM calls"."""
+    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
+
+
 def _paint(text: str, label: str, color: bool) -> str:
     return f"\033[{_COLORS[label]}m{text}\033[0m" if color else text
 
@@ -97,7 +102,7 @@ def _usage_line(report: Report) -> str:
     else:
         cost = ""
     return (
-        f"LLM: {usage.calls} calls · {usage.input_tokens} input tokens · "
+        f"LLM: {counted(usage.calls, 'call')} · {usage.input_tokens} input tokens · "
         f"{usage.output_tokens} output tokens{reasoning}{cost}"
     )
 

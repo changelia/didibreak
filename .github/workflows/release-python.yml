@@ -1,0 +1,111 @@
+name: release-python
+
+# Publishes the Python package with PyPI trusted publishing: no API token is
+# stored anywhere. Order (task 23):
+#   1. Run this workflow by hand on main ("Run workflow") -> TestPyPI.
+#   2. Install from TestPyPI and verify (CONTRIBUTING, "Releasing").
+#   3. Push the tag py-v<version> on main -> PyPI.
+# Each upload job uses a GitHub environment (testpypi, pypi) whose required
+# reviewer is the owner, so nothing is published without explicit approval.
+
+on:
+  push:
+    tags: ["py-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          python-version: "3.13"
+          working-directory: python
+      - name: Release only from main
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+      - name: Tag matches the package version
+        if: github.event_name == 'push'
+        run: |
+          version=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' src/didibreak/__init__.py)
+          echo "package version: $version, tag: $GITHUB_REF_NAME"
+          test "py-v$version" = "$GITHUB_REF_NAME"
+      - name: Build
+        run: uv build
+      - name: Package contents
+        run: uv run --no-project python scripts/check_dist.py dist
+      - uses: actions/upload-artifact@v7
+        with:
+          name: python-dist
+          path: python/dist/
+          if-no-files-found: error
+
+  smoke:
+    # Linux and macOS are the v0.1 platforms (owner decision Q8).
+    name: Smoke test / ${{ matrix.os }}
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          python-version: "3.11"
+          working-directory: python
+      - uses: actions/download-artifact@v8
+        with:
+          name: python-dist
+          path: python/dist/
+      - name: Install wheel and sdist in fresh venvs and run them
+        run: uv run --no-project python scripts/package_smoke.py dist
+
+  testpypi:
+    name: Publish to TestPyPI
+    needs: smoke
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/didibreak
+    permissions:
+      id-token: write # trusted publishing
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: python-dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@v1.14.3
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  pypi:
+    name: Publish to PyPI
+    needs: smoke
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/py-v')
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/didibreak
+    permissions:
+      id-token: write # trusted publishing
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: python-dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@v1.14.3

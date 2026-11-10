@@ -2,6 +2,12 @@
 
 Supported LLM providers and local models, what data is sent, and how cost is controlled.
 
+> **Anthropic support is experimental, not live-verified.** The Anthropic
+> client follows the official API documentation and is covered by tests
+> with mocked replies built from it, but it has not made a real request
+> yet. OpenAI is live-verified. OpenRouter and Ollama are checked against
+> their documentation only.
+
 `didibreak check` asks the LLM for input cases for each changed function it
 can test: one request per function (at most `max_functions`, default 10),
 plus one more if a reply is unusable, plus up to `refine_rounds` (default 1)
@@ -46,7 +52,7 @@ LLM: 0 calls · 0 input tokens · 0 output tokens · cost $0.0000
   (`refinement skipped: ... (cost limit)`).
 - After the run, the actual tokens and cost are shown, for example (from a
   test run with a fake provider):
-  `LLM: 1 calls · 1000 input tokens · 600 output tokens (400 reasoning) · cost $0.0004`.
+  `LLM: 1 call · 1000 input tokens · 600 output tokens (400 reasoning) · cost $0.0004`.
 
 ### Prices
 
@@ -114,7 +120,8 @@ configured `provider` always wins. Examples for `[tool.didibreak]` in
 # OpenAI: key in OPENAI_API_KEY, default model gpt-6-luna
 provider = "openai"
 
-# Anthropic: key in ANTHROPIC_API_KEY, default model claude-haiku-5-5
+# Anthropic (experimental, not live-verified): key in ANTHROPIC_API_KEY,
+# default model claude-haiku-5-5
 provider = "anthropic"
 
 # OpenRouter: any model listed with structured outputs
@@ -145,7 +152,7 @@ model (owner decision Q4). Both were checked in the official docs on
 | Provider | Default model | Price per 1M tokens (input / output) | Source |
 | --- | --- | --- | --- |
 | `openai` | `gpt-6-luna` | $0.10 / $0.50 | [gpt-6-luna model page](https://developers.openai.com/api/docs/models/gpt-6-luna) |
-| `anthropic` | `claude-haiku-5-5` | $0.10 / $0.50 for prompts up to 100,000 tokens; $0.50 / $2.50 above | [Models overview](https://platform.claude.com/docs/en/about-claude/models/overview), [Pricing](https://platform.claude.com/docs/en/about-claude/pricing) |
+| `anthropic` (experimental, not live-verified) | `claude-haiku-5-5` | $0.10 / $0.50 for prompts up to 100,000 tokens; $0.50 / $2.50 above | [Models overview](https://platform.claude.com/docs/en/about-claude/models/overview), [Pricing](https://platform.claude.com/docs/en/about-claude/pricing) |
 
 Prices change; the provider's page is the reference. Other OpenAI-compatible
 services (OpenRouter, Ollama, LM Studio) are used through `base_url` and have
@@ -197,7 +204,7 @@ Things to know:
 
 | What happens | What the client does |
 | --- | --- |
-| HTTP 401 or 403 | Stops: the key was rejected; the message names the key variable. |
+| HTTP 401 or 403 | Stops: the key was rejected. The message names the key variable and never repeats the provider's reply, which can contain part of the key. |
 | HTTP 404 | Stops: the model does not exist at that `base_url`. |
 | HTTP 429, 408, 409, 5xx, timeout or network error | Retries up to 2 times, waiting 1 s then 2 s, or the time in `Retry-After` (at most 30 s). |
 | Any other HTTP 4xx | Does not retry; `check` skips that function (`llm request rejected: <message>`) and continues. |
