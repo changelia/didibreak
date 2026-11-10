@@ -31,6 +31,10 @@ BASE_SOURCE = (
 CHANGED_SOURCE = BASE_SOURCE.replace("max(0, min(100, value))", "min(100, value)")
 CASES = [["-5"], ["50"], ["150"]]
 FUNCTION = "calc.py::clamp_percent"
+# Each command takes about a second. A stalled connection to the fake
+# provider would otherwise block the check for minutes (the LLM client waits
+# 120 s per attempt, three attempts): fail fast with a clear problem instead.
+COMMAND_TIMEOUT_SECONDS = 60.0
 
 
 class _FakeProvider(BaseHTTPRequestHandler):
@@ -93,10 +97,17 @@ def make_repository(path: Path) -> Path:
     return path
 
 
-def _run(command: Sequence[str], cwd: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        list(command), cwd=cwd, capture_output=True, text=True, timeout=300
-    )
+def _run(
+    command: Sequence[str], cwd: Path, timeout: float = COMMAND_TIMEOUT_SECONDS
+) -> subprocess.CompletedProcess[str]:
+    """Run ``command``; a run over ``timeout`` seconds is killed and returns -9."""
+    try:
+        return subprocess.run(
+            list(command), cwd=cwd, capture_output=True, text=True, timeout=timeout
+        )
+    except subprocess.TimeoutExpired:
+        message = f"did not finish within {timeout:g} s"
+        return subprocess.CompletedProcess(list(command), -9, "", message)
 
 
 def check_report(result: subprocess.CompletedProcess[str]) -> list[str]:
@@ -116,18 +127,25 @@ def check_report(result: subprocess.CompletedProcess[str]) -> list[str]:
     return problems
 
 
-def run_checks(didibreak: Sequence[str], version: str, folder: Path) -> list[str]:
+def run_checks(
+    didibreak: Sequence[str],
+    version: str,
+    folder: Path,
+    timeout: float = COMMAND_TIMEOUT_SECONDS,
+) -> list[str]:
     """Run the three commands with ``didibreak``; list the problems found."""
     problems = []
-    shown = _run([*didibreak, "--version"], folder).stdout.strip()
+    shown = _run([*didibreak, "--version"], folder, timeout).stdout.strip()
     if shown != f"didibreak {version}":
         problems.append(f"--version printed {shown!r}, expected {version}")
-    if "## Behavior check" not in _run([*didibreak, "init-agents"], folder).stdout:
+    snippet = _run([*didibreak, "init-agents"], folder, timeout).stdout
+    if "## Behavior check" not in snippet:
         problems.append("init-agents did not print the snippet")
     repository = make_repository(folder / "repo")
     with fake_provider() as base_url:
         options = ["--format", "json", "--provider", "openai", "--base-url", base_url]
-        result = _run([*didibreak, "check", *options, "--model", "fake"], repository)
+        command = [*didibreak, "check", *options, "--model", "fake"]
+        result = _run(command, repository, timeout)
     problems += check_report(result)
     return problems
 

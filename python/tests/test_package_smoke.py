@@ -1,8 +1,12 @@
 """scripts/package_smoke.py: the checks run against the installed package (task 23)."""
 
 import importlib.util
+import socket
 import subprocess
 import sys
+import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from types import ModuleType
 
@@ -65,3 +69,30 @@ def test_the_version_comes_from_the_wheel_name(tmp_path: Path) -> None:
     (tmp_path / "didibreak-0.1.0.tar.gz").write_text("")
 
     assert smoke.packages(tmp_path)[2] == "0.1.0"
+
+
+@contextmanager
+def silent_provider() -> Iterator[str]:
+    """A local server that accepts connections and never answers."""
+    with socket.socket() as server:
+        server.bind(("127.0.0.1", 0))
+        server.listen(8)
+        yield f"http://127.0.0.1:{server.getsockname()[1]}/v1"
+
+
+def test_a_stalled_provider_fails_fast_instead_of_hanging(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Regression (task 26): a stalled connection used to block the check
+    # for up to 300 s per command, which looked like a hung test suite.
+    monkeypatch.setattr(smoke, "fake_provider", silent_provider)
+    started = time.monotonic()
+
+    problems = smoke.run_checks(DIDIBREAK, __version__, tmp_path, timeout=3)
+
+    assert time.monotonic() - started < 30
+    assert problems == ["check exited -9, expected 1: did not finish within 3 s"]
+
+
+def test_every_command_has_a_bounded_run_time() -> None:
+    assert 0 < smoke.COMMAND_TIMEOUT_SECONDS <= 60
