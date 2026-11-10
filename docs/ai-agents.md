@@ -22,7 +22,8 @@ After changing Python functions, run:
     didibreak check --intent "<the user's request in one sentence>" --format json
 If any finding has label "unexpected", fix the code so that behavior is preserved,
 then run the check again. Report "unclear" findings to the user instead of guessing.
-"new_function" findings do not fail the check; fix one only if it is clearly a real bug.
+"new_function" findings do not fail the check; mention them to the user
+and do not change code for them unless the user asks.
 Exit code 2 means a setup problem: report it to the user.
 Stop after 3 check rounds and report what is left.
 ```
@@ -70,7 +71,7 @@ What to do with each label:
 | `unexpected` | The intent does not cover this change. | Fix the code so the old behavior is preserved, run the reproducing test, then run the check again. |
 | `unclear` | No intent, a vague intent, or labelling failed. | Do not guess. Report the finding to the user with `before` and `after` and ask whether the change is intended. If it is, run the check again with a more precise `--intent`. If it is not, fix it like an `unexpected` finding. |
 | `expected` | The intent describes this change. | Nothing. Never undo it. |
-| `new_function` | A new function raised an exception, crashed or timed out on an input. Never fails the check. | Fix it only if it is clearly a real bug (a crash or timeout on an input the function should accept). In the evaluation none of 53 was a real bug, so most need nothing. |
+| `new_function` | A new function raised an exception, crashed or timed out on an input. Never fails the check. | Mention it to the user (call and outcome). Do not change code for it unless the user asks. In the evaluation none of 53 was a real bug. |
 
 ## Reproducing tests
 
