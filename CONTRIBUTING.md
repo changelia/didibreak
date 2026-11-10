@@ -54,6 +54,14 @@ uv build
 uv run python scripts/check_dist.py dist
 ```
 
+To install the built wheel and sdist into fresh virtual environments and run
+`didibreak --version`, `init-agents` and one `check` against a fake local
+OpenAI-compatible server (no key, no cost; needs network for `httpx`):
+
+```bash
+python scripts/package_smoke.py dist
+```
+
 ## Continuous integration
 
 GitHub Actions workflows in `.github/workflows/`:
