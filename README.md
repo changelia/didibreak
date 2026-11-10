@@ -16,6 +16,8 @@ old version as the reference, so it needs no hand-written expected values.
 In development, not on PyPI yet. The precision gate for the first release is
 met: in an evaluation on seven real libraries, 87% of `unexpected` findings
 were real behavior changes ([evaluation/README.md](evaluation/README.md)).
+The 7 libraries were chosen for literal-friendly functions, the labels are
+model labels, and application code may score lower.
 
 ## Install
 

@@ -132,7 +132,9 @@ seven pure-Python libraries, `gpt-6-luna`, 2026-11-09):
 - **Precision:** 87% of `unexpected` findings (168 of 193) were real
   behavior changes. Every false alarm was an input of a type the function
   does not accept, in a function without type annotations (stub `.pyi`
-  files are not read).
+  files are not read). The 7 libraries were chosen for literal-friendly
+  functions, the labels are model labels, and application code may score
+  lower.
 - **Recall:** of 22 reintroduced real bug fixes, 14 were reported. The
   misses needed non-literal arguments (iterators, parsed tokens), changed a
   generator, an instance method or a module-level regular expression, or
