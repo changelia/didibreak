@@ -94,9 +94,10 @@ the Python package and `js-v*` for the JS/TS package.
   Code, Codex and Cursor (not verified with any agent yet), the check loop,
   what to do per label, and running reproducing tests only for
   `unexpected` and `unclear` findings.
-- The `init-agents` snippet also says what to do with `new_function`
-  findings, that exit code 2 is a setup problem to report, and to stop
-  after 3 check rounds.
+- The `init-agents` snippet also says that `new_function` findings do not
+  fail the check (mention them to the user, change no code for them unless
+  the user asks), that exit code 2 is a setup problem to report, and to
+  stop after 3 check rounds.
 - Findings whose inputs contradict the function's simple type annotations
   (for example `bytes` for a `str` parameter) are dropped and counted in
   `summary.type_mismatch_dropped` (part of `schema_version: 1`).
@@ -105,6 +106,9 @@ the Python package and `js-v*` for the JS/TS package.
   reused).
 - Each function's module is imported in both versions before any LLM
   request, so a function that cannot be imported costs no tokens.
+- Docs: a Getting started walk-through with real output, the pipeline in
+  `how-it-works.md`, the measured evaluation results in `limitations.md`,
+  and what to do with out-of-date reproducing tests in `ai-agents.md`.
 
 ## JS/TS package
 
