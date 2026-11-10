@@ -1,5 +1,9 @@
 # didibreak
 
+[![PyPI](https://img.shields.io/pypi/v/didibreak)](https://pypi.org/project/didibreak/)
+[![CI](https://github.com/changelia/didibreak/actions/workflows/python.yml/badge.svg?branch=main)](https://github.com/changelia/didibreak/actions/workflows/python.yml)
+[![License: MIT](https://img.shields.io/github/license/changelia/didibreak)](LICENSE)
+
 didibreak finds unintended behavior changes in code changes. It runs the old and
 new versions of every changed function on the same generated inputs and reports
 where the results differ, labelled against what the change was supposed to do.
@@ -37,10 +41,13 @@ export OPENAI_API_KEY="sk-..."     # or ANTHROPIC_API_KEY (experimental, not liv
 didibreak check --intent "add thousands separators to prices"
 ```
 
-didibreak compares your uncommitted changes with `HEAD`. A real run on a
-change that added thousands separators to a price formatter and also lost
-the minus sign (trimmed; recorded with the release candidate `0.1.0.dev0`;
-walk-through in [Getting started](docs/getting-started-python.md)):
+didibreak compares your uncommitted changes with `HEAD`. It **runs your
+changed functions**, old and new versions, on your machine; read
+[safety.md](docs/safety.md) for what is isolated and what is not.
+
+A real run on a change that added thousands separators to a price formatter
+and also lost the minus sign (trimmed; recorded with the release candidate
+`0.1.0.dev0`; walk-through in [Getting started](docs/getting-started-python.md)):
 
 ```text
 didibreak 0.1.0.dev0 · working tree vs HEAD (cdb6d5f8113d)
@@ -56,6 +63,26 @@ Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-l
 Reproducing tests: .didibreak/tests/test_format_price.py
 LLM: 2 calls · 1482 input tokens · 1161 output tokens (423 reasoning) · cost $0.0007
 ```
+
+## What it checks
+
+**Works well on** functions whose inputs can be written as Python literals:
+strings, numbers, booleans, `None`, and lists, tuples, dicts and sets of
+these. Parsers, formatters, validators, converters and small utility
+libraries are the sweet spot.
+
+**Skipped in 0.1.0**, each listed in the report with its reason:
+
+- `async` functions;
+- instance methods (they need an object; `@staticmethod` and
+  `@classmethod` are checked);
+- generators;
+- functions with obvious I/O: files, network, subprocesses, databases;
+- typical FastAPI and Django handlers: async endpoints are skipped, and
+  views that take request objects or query the database get no useful
+  literal inputs.
+
+Details: [limitations.md](docs/limitations.md).
 
 For AI coding agents: `didibreak check --format json` and
 `didibreak init-agents` ([Use with AI agents](docs/ai-agents.md)).
