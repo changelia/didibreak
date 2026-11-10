@@ -126,5 +126,14 @@ Rules for the agent:
   into the project's test suite unless the user asks.
 - A passing reproducing test only shows that one input behaves as before;
   run the check again to see the whole picture.
+- The check is the reference, not an old test. A finding that mixes a
+  wanted and an unwanted change (a price that gained the requested
+  thousands separator and lost its minus sign) keeps a failing test after
+  the right fix, because the test asserts the whole old value. When the
+  check no longer reports the finding as `unexpected`, its test is out of
+  date.
+- A test file is replaced only when a later run writes tests for the same
+  function, so files from earlier runs stay. Deleting `.didibreak/tests/`
+  clears them; it is generated and git-ignored.
 
 The full report format is in [output-format.md](output-format.md).
