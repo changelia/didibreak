@@ -250,13 +250,23 @@ def api_error_text(response: httpx.Response) -> str:
     return text[:ERROR_TEXT_LIMIT]
 
 
+def _auth_message(status: int, variable: str | None) -> str:
+    """The message for a rejected key, without any provider text."""
+    where = variable or "the variable named by api_key_env"
+    return (
+        f"the LLM provider rejected the API key (HTTP {status}); check that "
+        f"{where} holds only a valid key for this provider and model"
+    )
+
+
 def _status_error(response: httpx.Response, settings: ClientSettings) -> LLMError:
     status = response.status_code
-    detail = f"HTTP {status}: {api_error_text(response)}"
     if status in (401, 403):
-        variable = settings.api_key_variable or "the API key variable"
-        message = f"the LLM provider rejected the API key ({detail}); check {variable}"
-        return LLMAuthError(redact(message, settings.api_key))
+        # Never echo the provider's message: it can repeat part of the key
+        # (OpenAI shows its first and last characters). Owner decision
+        # 2026-11-10.
+        return LLMAuthError(_auth_message(status, settings.api_key_variable))
+    detail = f"HTTP {status}: {api_error_text(response)}"
     if status == 404:
         message = (
             f"model {settings.model!r} was not found at {settings.base_url} "

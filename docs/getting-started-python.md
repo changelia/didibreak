@@ -45,7 +45,7 @@ uses Anthropic. If the provider rejects the key, `check` stops with exit
 code 2 at the first request, after the estimate:
 
 ```text
-didibreak: error: the LLM provider rejected the API key (HTTP 401: Incorrect API key provided: ...); check OPENAI_API_KEY
+didibreak: error: the LLM provider rejected the API key (HTTP 401); check that OPENAI_API_KEY holds only a valid key for this provider and model
 ```
 
 ## 3. A first check

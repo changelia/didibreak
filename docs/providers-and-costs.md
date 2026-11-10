@@ -197,7 +197,7 @@ Things to know:
 
 | What happens | What the client does |
 | --- | --- |
-| HTTP 401 or 403 | Stops: the key was rejected; the message names the key variable. |
+| HTTP 401 or 403 | Stops: the key was rejected. The message names the key variable and never repeats the provider's reply, which can contain part of the key. |
 | HTTP 404 | Stops: the model does not exist at that `base_url`. |
 | HTTP 429, 408, 409, 5xx, timeout or network error | Retries up to 2 times, waiting 1 s then 2 s, or the time in `Retry-After` (at most 30 s). |
 | Any other HTTP 4xx | Does not retry; `check` skips that function (`llm request rejected: <message>`) and continues. |
