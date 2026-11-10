@@ -47,8 +47,7 @@ the Python package and `js-v*` for the JS/TS package.
   behavior changes when cases come from the hidden developer option
   `--cases-file` (cases from the LLM follow). The current version runs from a
   temporary copy of the working tree. Ctrl-C exits with code 130.
-- `new_function` findings make the run exit 1 with the default
-  `--fail-on unclear` (not with `--fail-on unexpected`).
+- `new_function` findings are reported but never change the exit code.
 - LLM clients for OpenAI-compatible APIs and Anthropic (not used by `check`
   yet), with retries, a JSON-mode fallback and default models `gpt-6-luna`
   and `claude-haiku-5-5`. `httpx` is the one runtime dependency.
@@ -95,18 +94,21 @@ the Python package and `js-v*` for the JS/TS package.
   Code, Codex and Cursor (not verified with any agent yet), the check loop,
   what to do per label, and running reproducing tests only for
   `unexpected` and `unclear` findings.
-- The `init-agents` snippet also says what to do with `new_function`
-  findings, that exit code 2 is a setup problem to report, and to stop
-  after 3 check rounds.
+- The `init-agents` snippet also says that `new_function` findings do not
+  fail the check (mention them to the user, change no code for them unless
+  the user asks), that exit code 2 is a setup problem to report, and to
+  stop after 3 check rounds.
 - Findings whose inputs contradict the function's simple type annotations
   (for example `bytes` for a `str` parameter) are dropped and counted in
-  `summary.type_mismatch_dropped`; the JSON report is now
-  `schema_version: 2`.
+  `summary.type_mismatch_dropped` (part of `schema_version: 1`).
 - Case generation and refinement ask for values that match the parameters'
   type annotations (prompt version 2; cached cases from version 1 are not
   reused).
 - Each function's module is imported in both versions before any LLM
   request, so a function that cannot be imported costs no tokens.
+- Docs: a Getting started walk-through with real output, the pipeline in
+  `how-it-works.md`, the measured evaluation results in `limitations.md`,
+  and what to do with out-of-date reproducing tests in `ai-agents.md`.
 
 ## JS/TS package
 

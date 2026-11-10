@@ -156,13 +156,13 @@ no default model: set `model` to one the service offers.
 The clients ask for JSON that matches a schema and check every reply
 against it. Status: **live** means confirmed with a real call on 2026-11-06;
 **docs** means checked only in the official documentation on 2026-11-06 and
-still unverified against the live API (no API key was available). TLS
+still unverified against the live API (no API key for these providers was available). TLS
 connections to `api.openai.com`, `api.anthropic.com` and `openrouter.ai` were
 checked on 2026-11-06 (unauthenticated requests answered HTTP 401).
 
 | Provider | Request | Reply | Token usage | Status |
 | --- | --- | --- | --- | --- |
-| OpenAI | Chat Completions `response_format: {"type": "json_schema", "json_schema": {"name", "strict": true, "schema"}}` ([guide](https://developers.openai.com/api/docs/guides/structured-outputs), [reference](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)) | `choices[0].message.content`; a refusal is in `message.refusal` | `usage.prompt_tokens`, `usage.completion_tokens`; `completion_tokens` includes `completion_tokens_details.reasoning_tokens` | live (`gpt-6-luna`, task 12 spike): both schemas returned valid JSON; didibreak's own client not yet called live |
+| OpenAI | Chat Completions `response_format: {"type": "json_schema", "json_schema": {"name", "strict": true, "schema"}}` ([guide](https://developers.openai.com/api/docs/guides/structured-outputs), [reference](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create)) | `choices[0].message.content`; a refusal is in `message.refusal` | `usage.prompt_tokens`, `usage.completion_tokens`; `completion_tokens` includes `completion_tokens_details.reasoning_tokens` | live (`gpt-6-luna`): both schemas returned valid JSON in the task 12 spike; didibreak's own client made every request of the 2026-11-09 evaluation and the 2026-11-10 Getting started run |
 | Anthropic | Messages API, header `anthropic-version: 2026-10-21`, `output_config: {"format": {"type": "json_schema", "schema"}}` ([structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)) | first `text` content block; check `stop_reason` for `refusal` and `max_tokens` first | `usage.input_tokens`, `usage.output_tokens` | docs |
 | OpenRouter | Same as OpenAI at `https://openrouter.ai/api/v1`, plus `provider: {"require_parameters": true}` so only endpoints with structured-output support are used ([structured outputs](https://openrouter.ai/docs/features/structured-outputs)) | as OpenAI | as OpenAI, always included, plus `usage.cost` ([usage accounting](https://openrouter.ai/docs/use-cases/usage-accounting)) | docs |
 | Ollama | OpenAI-compatible API at `http://localhost:11434/v1` with `response_format`; the docs state support but show no `json_schema` example ([OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility), [structured outputs](https://docs.ollama.com/capabilities/structured-outputs)) | as OpenAI | not documented for the compatible API | docs, partly |

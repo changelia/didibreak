@@ -2,12 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/changelia/didibreak/spec/report.schema.json",
   "title": "didibreak JSON report",
-  "description": "Output of `didibreak check --format json`, schema_version 2 (Detailed Design section 6).",
+  "description": "Output of `didibreak check --format json`, schema_version 1 (Detailed Design section 6).",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "tool", "base", "intent", "findings", "summary", "usage"],
   "properties": {
-    "schema_version": {"const": 2},
+    "schema_version": {"const": 1},
     "tool": {
       "type": "object",
       "additionalProperties": false,

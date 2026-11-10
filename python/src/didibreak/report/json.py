@@ -1,7 +1,8 @@
 """The JSON report (Detailed Design section 6, spec/report.schema.json).
 
 Keys are written in the order of the Detailed Design example, so the output
-is stable from run to run. Any new field needs a new schema_version (Q17).
+is stable from run to run. From the first release on, any new field needs a
+new schema_version (Q17; owner decision 2026-11-09, task 21a review).
 """
 
 import json
@@ -11,7 +12,7 @@ from didibreak.compare import Finding
 from didibreak.harness import Outcome
 from didibreak.report import Report
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 1
 # Summary order of Detailed Design section 6 (the same labels as LABEL_ORDER).
 SUMMARY_LABELS = ("expected", "unexpected", "unclear", "new_function")
 

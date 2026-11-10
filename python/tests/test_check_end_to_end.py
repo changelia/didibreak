@@ -72,10 +72,11 @@ def test_findings_match_the_expected_file(case: str, tmp_path: Path) -> None:
 
 
 def exit_code_without_intent(expected: dict[str, Any]) -> int:
-    # Under the default --fail-on unclear every finding fails the run: changed
-    # functions are unclear without intent labelling, and new_function
-    # findings fail too (owner decision 2026-11-06).
-    return EXIT_FINDINGS if expected["findings"] else EXIT_OK
+    # Under the default --fail-on unclear, changed functions' findings are
+    # unclear without intent labelling and fail the run; new_function
+    # findings never do (owner decision 2026-11-09).
+    failing = [f for f in expected["findings"] if f["label"] != "new_function"]
+    return EXIT_FINDINGS if failing else EXIT_OK
 
 
 @pytest.mark.parametrize("case", CASES)
@@ -99,16 +100,19 @@ def test_check_exit_code_and_listing(
     assert fixture.repository.status() == status  # working tree untouched
 
 
-def test_new_function_findings_fail_only_the_default_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_new_function_findings_never_fail_the_run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     fixture = build_fixture_repository("new_function", tmp_path / "repo")
     path = cases_file(fixture.expected, tmp_path)
     monkeypatch.chdir(fixture.repository.path)
 
-    assert main(["check", "--cases-file", str(path)]) == EXIT_FINDINGS
-    code = main(["check", "--cases-file", str(path), "--fail-on", "unexpected"])
-    assert code == EXIT_OK
+    for fail_on in ("unclear", "unexpected"):
+        code = main(["check", "--cases-file", str(path), "--fail-on", fail_on])
+        assert code == EXIT_OK
+    assert "NEW-FUNCTION" in capsys.readouterr().out  # still reported
 
 
 def test_fail_on_unexpected_ignores_unclear_findings(

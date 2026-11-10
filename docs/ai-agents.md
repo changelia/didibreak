@@ -22,7 +22,8 @@ After changing Python functions, run:
     didibreak check --intent "<the user's request in one sentence>" --format json
 If any finding has label "unexpected", fix the code so that behavior is preserved,
 then run the check again. Report "unclear" findings to the user instead of guessing.
-"new_function" findings: fix a real crash or timeout bug, else report it to the user.
+"new_function" findings do not fail the check; mention them to the user
+and do not change code for them unless the user asks.
 Exit code 2 means a setup problem: report it to the user.
 Stop after 3 check rounds and report what is left.
 ```
@@ -53,7 +54,8 @@ $0.50) still limits each run.
    The intent is what the user asked for, in one sentence. Commit messages
    since `--base` are added automatically.
 3. Read the exit code:
-   - `0`: no unexpected, unclear or new-function findings. Done.
+   - `0`: no unexpected or unclear findings. Done. `new_function`
+     findings never change the exit code; they are still in the report.
    - `1`: there are findings; handle them by label (below).
    - `2`: didibreak could not run (missing key, invalid config, not a git
      repository). The error is on stderr and stdout is empty. Report it to
@@ -69,7 +71,7 @@ What to do with each label:
 | `unexpected` | The intent does not cover this change. | Fix the code so the old behavior is preserved, run the reproducing test, then run the check again. |
 | `unclear` | No intent, a vague intent, or labelling failed. | Do not guess. Report the finding to the user with `before` and `after` and ask whether the change is intended. If it is, run the check again with a more precise `--intent`. If it is not, fix it like an `unexpected` finding. |
 | `expected` | The intent describes this change. | Nothing. Never undo it. |
-| `new_function` | A new function raised an exception, crashed or timed out on an input. | Fix it if it is a real bug (a crash or timeout on an input the function should accept). Otherwise report it to the user. |
+| `new_function` | A new function raised an exception, crashed or timed out on an input. Never fails the check. | Mention it to the user (call and outcome). Do not change code for it unless the user asks. In the evaluation none of 53 was a real bug. |
 
 ## Reproducing tests
 
@@ -124,5 +126,14 @@ Rules for the agent:
   into the project's test suite unless the user asks.
 - A passing reproducing test only shows that one input behaves as before;
   run the check again to see the whole picture.
+- The check is the reference, not an old test. A finding that mixes a
+  wanted and an unwanted change (a price that gained the requested
+  thousands separator and lost its minus sign) keeps a failing test after
+  the right fix, because the test asserts the whole old value. When the
+  check no longer reports the finding as `unexpected`, its test is out of
+  date.
+- A test file is replaced only when a later run writes tests for the same
+  function, so files from earlier runs stay. Deleting `.didibreak/tests/`
+  clears them; it is generated and git-ignored.
 
 The full report format is in [output-format.md](output-format.md).

@@ -23,7 +23,7 @@ the cache); the header and the report are always printed.
 
 ## Text report
 
-Order (Detailed Design section 7):
+Order:
 
 1. Header: version, base ref and its commit (12 characters), excluded files,
    files that could not be read, and how many changed functions will be
@@ -36,8 +36,9 @@ Order (Detailed Design section 7):
    (a return value as its `repr`, an exception as `raises <type>`), and the
    reason for its label.
 5. Skipped functions with their reasons, then removed functions.
-6. `Reproducing tests:` with the test files written in this run, and a
-   `no test:` line for each finding that has none (see below), then how many
+6. `Reproducing tests:` with the test files written in this run (the line
+   is left out when no file is written), and a `no test:` line for each
+   finding that has none (see below), then how many
    findings were dropped because an input contradicts the function's type
    annotations (only when there are any).
 7. LLM notes: invalid cases dropped, refinement rounds, and the usage line
@@ -72,12 +73,12 @@ LLM: 3 calls · 3400 input tokens · 810 output tokens (400 reasoning) · cost $
 ## JSON report
 
 The schema is [`spec/report.schema.json`](../spec/report.schema.json)
-(`schema_version: 2`). Keys always come in the order below, and every object
-is strict: a new key needs a new `schema_version`.
+(`schema_version: 1`). Keys always come in the order below, and every object
+is strict. From the first release on, a new key needs a new `schema_version`.
 
 ```json
 {
-  "schema_version": 2,
+  "schema_version": 1,
   "tool": {
     "name": "didibreak",
     "version": "0.1.0"
@@ -189,7 +190,7 @@ is strict: a new key needs a new `schema_version`.
 
 | Key | Meaning |
 | --- | --- |
-| `schema_version` | Always `2` for this format (2 added `summary.type_mismatch_dropped`). |
+| `schema_version` | Always `1` for this format. |
 | `tool` | `tool.name` is `didibreak`; `tool.version` is the installed version. |
 | `base` | `base.ref` is `--base` as given; `base.sha` is the full commit it resolved to. |
 | `intent` | The intent text used for labelling (`--intent` and the commit messages since the base), or `null`. |
@@ -316,6 +317,6 @@ How the base outcome is asserted:
 | Code | Meaning |
 | --- | --- |
 | `0` | No failing findings. |
-| `1` | Failing findings: `unexpected`, `unclear` or `new_function` with the default `--fail-on unclear`; only `unexpected` with `--fail-on unexpected`. |
+| `1` | Failing findings: `unexpected` or `unclear` with the default `--fail-on unclear`; only `unexpected` with `--fail-on unexpected`. `new_function` findings never fail the run. |
 | `2` | Tool or configuration error: not a git repository, git missing, invalid flag or config value, missing API key. |
 | `130` | Interrupted with Ctrl-C; temporary worktrees, copies and processes are removed first. |

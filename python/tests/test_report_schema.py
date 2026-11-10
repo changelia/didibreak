@@ -31,7 +31,7 @@ def test_schema_is_draft_2020_12_for_version_1() -> None:
     schema = _load_schema()
 
     assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
-    assert schema["properties"]["schema_version"] == {"const": 2}
+    assert schema["properties"]["schema_version"] == {"const": 1}
 
 
 def test_schema_requires_every_top_level_report_section() -> None:

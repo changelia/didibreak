@@ -27,6 +27,7 @@ changes (`rerun-21a/`). The task 21a results are at the end.
 | `reports/<id>.json` | One saved run: scenario, command, exit code, seconds, stderr, the JSON report |
 | `labels.json` | Hand label of every `unexpected` finding: `real` and a note |
 | `../python/scripts/evaluate.py` | The runner and the summary |
+| `owner-spot-check.md` | 10 re-run findings (seed 22) with sources and labels, for the owner's review |
 
 ## Method
 
@@ -151,7 +152,9 @@ in `labels.json`.
 None of the 36 is a real bug. So the exact-type rule is not the source of
 noise in this sample and relaxing it to subclasses would remove none of
 these findings; the noise comes from inputs outside the function's
-contract. With the default `--fail-on unclear` each of these runs exits 1.
+contract. With the default `--fail-on unclear` each of these runs exited 1
+at the time; since task 22 `new_function` findings never change the exit
+code (owner decision 2026-11-09).
 
 ### Skipped functions
 
@@ -267,6 +270,10 @@ a too-short string for the private ISIN checksum, `exactly_n` at
 `sys.maxsize`, `IndexError` → `ValueError` on already-invalid sizes, and
 `ordinal(',123')`. Both labellers are models applying the same written
 rubric; a human review of the borderline cases is still advisable.
+
+`owner-spot-check.md` (task 22) lists 10 more findings drawn with seed 22,
+with full function sources, inputs, both outcomes and a third label for
+the owner's own check: 10 of 10 agree with the saved labels.
 
 ### Spend
 
