@@ -45,23 +45,24 @@ didibreak compares your uncommitted changes with `HEAD`. It **runs your
 changed functions**, old and new versions, on your machine; read
 [safety.md](docs/safety.md) for what is isolated and what is not.
 
-A real run on a change that added thousands separators to a price formatter
-and also lost the minus sign (trimmed; recorded with the release candidate
-`0.1.0.dev0`; walk-through in [Getting started](docs/getting-started-python.md)):
+A real run with didibreak 0.1.0 on a change that added thousands separators
+to a price formatter and also lost the minus sign (trimmed: 7 `UNEXPECTED`
+and 5 `EXPECTED` findings in full; walk-through in
+[Getting started](docs/getting-started-python.md)):
 
 ```text
-didibreak 0.1.0.dev0 · working tree vs HEAD (cdb6d5f8113d)
+didibreak 0.1.0 · working tree vs HEAD (94fdbfd8ff0b)
 1 changed function(s) to check (0 new)
 Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~4,614 input + ~7,200 output tokens, ~$0.0041 (limit $0.50)
 12 cases · 12 behavior changes · 0 flaky dropped
   UNEXPECTED   prices.py::format_price(-250)
                before '-$2.50' → after '$2.50'
-               Adding thousands separators does not describe removing the negative sign.
+               Adding thousands separators does not imply removing the negative sign.
   EXPECTED     prices.py::format_price(100000)
                before '$1000.00' → after '$1,000.00'
-               The change adds a thousands separator to the price, as stated in the intent.
+               Adding a thousands separator to the price is the stated intent.
 Reproducing tests: .didibreak/tests/test_format_price.py
-LLM: 2 calls · 1482 input tokens · 1161 output tokens (423 reasoning) · cost $0.0007
+LLM: 2 calls · 1469 input tokens · 1153 output tokens (460 reasoning) · cost $0.0007
 ```
 
 ## What it checks
