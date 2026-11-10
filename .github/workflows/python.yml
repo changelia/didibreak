@@ -1,10 +1,12 @@
 name: python
 
-# Owner decision 2026-11-04 (private repository, macOS runner capacity):
-# pull requests run on Linux only, Python 3.11-3.13; macOS runs one Python
-# version on pushes to main and once a week, and does not block pull
-# requests. Task 23 restores the full macOS matrix on pull requests when the
-# repository becomes public.
+# Owner decision 2026-11-04 (CI): while the repository is private, pull
+# requests run on Linux only (Python 3.11-3.13) and macOS runs Python 3.13 on
+# pushes to main, weekly and on demand (macOS runner capacity). Once the
+# repository is public, pull requests run the full macOS matrix too and both
+# jobs are required checks for main (task 23). The switch is automatic:
+# github.event.repository.private is false in the event payload. Scheduled
+# runs carry no repository object and keep the private setting.
 
 on:
   push:
@@ -15,13 +17,10 @@ on:
       - "LICENSE"
       - ".github/workflows/python.yml"
       - ".github/actions/python-checks/**"
+  # No path filter on pull requests: required checks must report on every
+  # pull request, or a pull request that touches no Python file could never
+  # be merged.
   pull_request:
-    paths:
-      - "python/**"
-      - "spec/**"
-      - "LICENSE"
-      - ".github/workflows/python.yml"
-      - ".github/actions/python-checks/**"
   schedule:
     - cron: "0 6 * * 1" # Mondays 06:00 UTC
   workflow_dispatch:
@@ -46,11 +45,15 @@ jobs:
 
   macos:
     # Linux and macOS are the v0.1 platforms (owner decision Q8).
-    name: macOS / Python 3.13
-    if: github.event_name != 'pull_request'
+    name: macOS / Python ${{ matrix.python-version }}
+    if: github.event_name != 'pull_request' || github.event.repository.private == false
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(github.event.repository.private == false && '["3.11", "3.12", "3.13"]' || '["3.13"]') }}
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/python-checks
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python-version }}

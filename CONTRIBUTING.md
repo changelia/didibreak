@@ -68,8 +68,34 @@ GitHub Actions workflows in `.github/workflows/`:
 
 | Workflow | Runs on changes in | What it does |
 | --- | --- | --- |
-| `python.yml` | `python/`, `spec/`, `LICENSE` | The four checks, build and package content check. Pull requests: Linux, Python 3.11–3.13. Pushes to `main`, a weekly schedule (Mondays) and manual runs: macOS, Python 3.13 (pushes and manual runs also run Linux). The steps live in `.github/actions/python-checks/`. |
+| `python.yml` | every pull request; pushes to `main` that change `python/`, `spec/`, `LICENSE` | The four checks, build and package content check, on Linux with Python 3.11–3.13. macOS: Python 3.11–3.13 on pull requests and pushes once the repository is public; while it is private, Python 3.13 on pushes to `main`, the weekly schedule (Mondays) and manual runs only. The steps live in `.github/actions/python-checks/`. |
 | `spec.yml` | `spec/`, prompt-copy code | Report schema is valid JSON, a valid JSON Schema (draft 2020-12, checked with `check-jsonschema`) and has the expected structure; packaged prompts match `spec/prompts/`. |
+
+### Required checks for `main`
+
+Once the repository is public (owner decision 2026-11-04), these six checks
+from `python.yml` are required before a pull request can merge into `main`:
+`Linux / Python 3.11`, `Linux / Python 3.12`, `Linux / Python 3.13`,
+`macOS / Python 3.11`, `macOS / Python 3.12`, `macOS / Python 3.13`. The owner
+sets them once (repository settings → Branches, or):
+
+```bash
+gh api -X PUT repos/changelia/didibreak/branches/main/protection --input - <<'JSON'
+{
+  "required_status_checks": {
+    "strict": true,
+    "checks": [
+      {"context": "Linux / Python 3.11"}, {"context": "Linux / Python 3.12"},
+      {"context": "Linux / Python 3.13"}, {"context": "macOS / Python 3.11"},
+      {"context": "macOS / Python 3.12"}, {"context": "macOS / Python 3.13"}
+    ]
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": null,
+  "restrictions": null
+}
+JSON
+```
 
 `js.yml` is added together with the JS package. Pull requests use the template
 in `.github/pull_request_template.md`, which carries the Definition of Done.
