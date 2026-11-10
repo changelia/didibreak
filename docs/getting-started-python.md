@@ -41,7 +41,8 @@ $ export OPENAI_API_KEY="sk-..."
 ```
 
 The variable holds the key only. With `ANTHROPIC_API_KEY` instead, didibreak
-uses Anthropic. If the provider rejects the key, `check` stops with exit
+uses Anthropic (experimental, not live-verified; see
+[providers-and-costs.md](providers-and-costs.md)). If the provider rejects the key, `check` stops with exit
 code 2 at the first request, after the estimate:
 
 ```text

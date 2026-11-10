@@ -36,7 +36,7 @@ JavaScript / TypeScript: not available yet; coming after Python 0.1.0 as
 ## Quick start and example output
 
 ```bash
-export OPENAI_API_KEY="sk-..."     # or ANTHROPIC_API_KEY
+export OPENAI_API_KEY="sk-..."     # or ANTHROPIC_API_KEY (experimental, not live-verified)
 didibreak check --intent "add thousands separators to prices"
 ```
 
