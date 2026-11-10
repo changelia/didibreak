@@ -34,8 +34,8 @@ first. It works best on functions whose inputs are Python literals; async
 functions, instance methods, generators and functions with obvious I/O are
 skipped ([limitations](https://github.com/changelia/didibreak/blob/main/docs/limitations.md)).
 
-Requires Python 3.11 or newer, Linux or macOS, and git. Version 0.1.0 is the
-first release (alpha). No telemetry: the only network requests go to the LLM
+Requires Python 3.11 or newer, Linux or macOS, and git. The 0.1 releases are
+alpha. No telemetry: the only network requests go to the LLM
 provider you configure, with your own API key.
 
 Full documentation: https://github.com/changelia/didibreak/tree/main/docs

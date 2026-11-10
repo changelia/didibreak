@@ -11,9 +11,36 @@ the Python package and `js-v*` for the JS/TS package.
 
 Nothing yet.
 
-### 0.1.0
+### 0.1.1
 
-First release. Release date: the day the tag `py-v0.1.0` is pushed.
+Released when the tag `py-v0.1.1` is pushed. No change to what `didibreak`
+does; documentation and project upkeep after the first release.
+
+#### Changed
+
+- README: what didibreak works well on and what 0.1 skips (async
+  functions, instance methods, generators, obvious I/O, typical FastAPI and
+  Django handlers), a line that it runs your changed functions (see
+  `docs/safety.md`), PyPI, CI and license badges.
+- The PyPI page shows a real example run.
+- README and Getting started examples re-recorded with didibreak 0.1.0
+  from PyPI.
+- `AGENTS.md` and `CLAUDE.md` give every contributor's AI agent the
+  project rules (CONTRIBUTING.md, docs/, checks, commit rules) without any
+  private links.
+
+#### Fixed
+
+- The package smoke test (`scripts/package_smoke.py`) no longer blocks for
+  minutes when its local fake provider stalls: each command has a 60 s
+  limit. The test suite dumps every thread's stack when a test runs over
+  5 minutes.
+- Every CI and release job has a time limit; only the Linux checks are
+  required for `main`.
+
+### 0.1.0 - 2026-11-10
+
+First release.
 
 #### Added
 

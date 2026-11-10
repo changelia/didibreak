@@ -22,7 +22,7 @@ $ python3 -m venv .venv
 $ . .venv/bin/activate
 $ pip install didibreak
 $ didibreak --version
-didibreak 0.1.0
+didibreak 0.1.1
 ```
 
 didibreak runs your code with the Python it is installed in. For your own
