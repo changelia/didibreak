@@ -223,3 +223,37 @@ Documented here once the provider modules exist.
 
 Each package is tagged separately: `py-v<version>` for Python, `js-v<version>`
 for JS. Releases are made only by the maintainer.
+
+### Python release procedure
+
+`.github/workflows/release-python.yml` builds once, checks the package
+contents, smoke-tests the wheel and the sdist on Linux and macOS
+(`scripts/package_smoke.py`, Python 3.11) and uploads the same files with
+PyPI trusted publishing. Uploads run only from commits on `main` and wait
+for the owner's approval in the `testpypi` and `pypi` environments.
+
+1. Merge a pull request that sets `__version__` in
+   `python/src/didibreak/__init__.py` and moves the changelog entries into
+   a section for that version.
+2. TestPyPI: Actions → release-python → Run workflow on `main`, approve
+   the `testpypi` deployment. Then, in an empty folder:
+
+   ```bash
+   python3 -m venv .venv && . .venv/bin/activate
+   pip install --index-url https://test.pypi.org/simple/ \
+       --extra-index-url https://pypi.org/simple/ didibreak==<version>
+   didibreak --version
+   ```
+
+   A version can be uploaded to TestPyPI only once; if something is wrong
+   after the upload, fix it and release the next version.
+3. PyPI: tag the same commit and push the tag; approve the `pypi`
+   deployment. The build fails if the tag does not match `__version__`.
+
+   ```bash
+   git tag -a py-v<version> -m "didibreak <version>" <commit on main>
+   git push origin py-v<version>
+   ```
+
+4. Create the GitHub release from the tag with the changelog section as
+   notes: `gh release create py-v<version> --title "didibreak <version>" --notes-file <notes>`.
