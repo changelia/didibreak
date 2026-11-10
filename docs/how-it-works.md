@@ -2,8 +2,64 @@
 
 The pipeline, why the old version is the reference, and what is and is not detected.
 
-The rest of this page (pipeline, the old version as reference) is written
-together with the features it describes.
+## Pipeline
+
+One `didibreak check` run:
+
+1. **Find changed functions.** `git diff` between `--base` (default `HEAD`)
+   and the working tree, including uncommitted and untracked files. Both
+   versions of each changed file are parsed, and a function counts as
+   changed when its code changes (formatting, comments and docstrings are
+   ignored). New functions are found too; removed ones are listed.
+2. **Skip what cannot be run.** Async functions, instance methods,
+   generators and functions with obvious I/O are skipped with a reason
+   ([limitations.md](limitations.md#functions-that-are-skipped)). Each
+   remaining module is imported once in both versions, so a module that
+   cannot be imported costs no tokens.
+3. **Estimate the cost** and stop at `max_cost`
+   ([providers-and-costs.md](providers-and-costs.md#cost-control)).
+4. **Generate inputs.** The LLM proposes input cases as Python literals
+   ([Case generation](#case-generation)). Cases are cached per function.
+5. **Run both versions.** Every case runs on the base version and on the
+   current version, twice each, in separate processes from temporary copies
+   of the tree ([safety.md](safety.md#how-a-function-is-run)).
+6. **Compare outcomes** with the [comparison rules](#comparison-rules).
+   If no case differs, one refinement round asks for new cases.
+7. **Label findings** against the intent: `expected`, `unexpected` or
+   `unclear` ([Intent labels](#intent-labels)).
+8. **Report** as text or JSON, write reproducing pytest files for
+   `unexpected` and `unclear` findings, and exit with `0`, `1` or `2`
+   ([output-format.md](output-format.md)).
+
+## Why the old version is the reference
+
+A test needs an expected value, and someone has to write it. didibreak
+uses the code before the change instead: whatever the old version returned
+or raised for an input is what the new version is expected to do, unless
+the intent says the change was wanted. So the check needs no hand-written
+assertions, and it also covers behavior nobody thought to test.
+
+The price: didibreak finds *changes*, not bugs. A bug that was already in
+the old version is reproduced faithfully and not reported, and every
+intended change shows up as a finding, labelled `expected` when the intent
+describes it.
+
+## What is and is not detected
+
+Detected: a different return value, a different exception type, raising
+instead of returning (or the reverse), and a new timeout or crash, for the
+inputs the LLM proposed.
+
+Not detected:
+
+- changes on paths none of the proposed inputs reaches;
+- changes in functions that are skipped, and in side effects (files
+  written, global state changed, output printed);
+- changes in exception messages (only the type is compared);
+- differences in values that cannot be compared by value, other than their
+  type.
+
+The full list is in [limitations.md](limitations.md).
 
 ## Case generation
 
