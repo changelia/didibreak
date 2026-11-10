@@ -210,13 +210,18 @@ Documented here once the provider modules exist.
 
 ## Commits and pull requests
 
+AI coding agents: the same rules, in short, are in [AGENTS.md](AGENTS.md)
+(Claude Code reads it through [CLAUDE.md](CLAUDE.md)).
+
+
 - One logical change per commit, about 200 changed lines at most (lock files
   excluded), tests in the same commit, every commit passes all checks.
 - Messages follow Conventional Commits: `type(scope): subject`, imperative,
   lowercase, at most 72 characters. Types: `feat`, `fix`, `refactor`, `test`,
   `docs`, `ci`, `build`, `chore`, `perf`. Scopes: `python`, `spec`, `docs`,
   `ci`, later `js`.
-- Footer `Refs: task NN` in every commit.
+- Footer `Refs: #<issue>` when the change belongs to an issue (the
+  maintainer's own commits use `Refs: task NN`).
 - No AI co-author trailers or AI attribution lines in commits or pull requests.
 - A pull request that changes behavior, a flag, a config key or the output
   updates the docs and `CHANGELOG.md` in the same pull request.

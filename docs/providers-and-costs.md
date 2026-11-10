@@ -146,7 +146,7 @@ testable functions).
 ## Default models
 
 `provider = "openai"` and `provider = "anthropic"` each get a cheap default
-model (owner decision Q4). Both were checked in the official docs on
+model. Both were checked in the official docs on
 2026-11-06.
 
 | Provider | Default model | Price per 1M tokens (input / output) | Source |

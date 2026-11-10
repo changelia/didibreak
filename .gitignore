@@ -22,6 +22,9 @@ python/LICENSE
 # didibreak output when run on this repository
 .didibreak/
 
+# Maintainer-only instructions for Claude Code (see CLAUDE.md)
+CLAUDE.local.md
+
 # OS and editor files
 .DS_Store
 .idea/
