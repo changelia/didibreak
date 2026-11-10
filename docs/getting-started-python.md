@@ -14,20 +14,19 @@ with Python 3.12 on 2026-11-10; the output is real.
 
 ## 1. Install
 
-didibreak is not on PyPI yet. Until the first release, install it from the
-repository into a virtual environment. Run these commands in an empty
+Install it into a virtual environment. Run these commands in an empty
 folder; the example project in step 3 is created there too:
 
 ```console
-$ git clone https://github.com/changelia/didibreak.git
 $ python3 -m venv .venv
 $ . .venv/bin/activate
-$ pip install ./didibreak/python
+$ pip install didibreak
 $ didibreak --version
-didibreak 0.1.0.dev0
+didibreak 0.1.0
 ```
 
-After the first release this becomes `pip install didibreak`.
+The example output below was recorded with the 0.1.0 release candidate
+(`0.1.0.dev0`), so its first line shows that version.
 
 didibreak runs your code with the Python it is installed in. For your own
 project, install it into the project's virtual environment, or point it at

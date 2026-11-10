@@ -13,22 +13,19 @@ old version as the reference, so it needs no hand-written expected values.
 
 ## Status
 
-In development, not on PyPI yet. The precision gate for the first release is
-met: in an evaluation on seven real libraries, 87% of `unexpected` findings
+0.1.0, the first release (alpha): Python only, Linux and macOS. The release
+precision gate is met: in an evaluation on seven real libraries, 87% of `unexpected` findings
 were real behavior changes ([evaluation/README.md](evaluation/README.md)).
 The 7 libraries were chosen for literal-friendly functions, the labels are
 model labels, and application code may score lower.
 
 ## Install
 
-Python 3.11+, Linux or macOS. Until the first release, from the repository:
+Python 3.11+, Linux or macOS:
 
 ```bash
-git clone https://github.com/changelia/didibreak.git
-pip install ./didibreak/python
+pip install didibreak
 ```
-
-After the release: `pip install didibreak`.
 
 JavaScript / TypeScript: not available yet; coming after Python 0.1.0 as
 `npm install didibreak`.
@@ -42,8 +39,8 @@ didibreak check --intent "add thousands separators to prices"
 
 didibreak compares your uncommitted changes with `HEAD`. A real run on a
 change that added thousands separators to a price formatter and also lost
-the minus sign (trimmed; walk-through in
-[Getting started](docs/getting-started-python.md)):
+the minus sign (trimmed; recorded with the release candidate `0.1.0.dev0`;
+walk-through in [Getting started](docs/getting-started-python.md)):
 
 ```text
 didibreak 0.1.0.dev0 · working tree vs HEAD (cdb6d5f8113d)
@@ -62,6 +59,12 @@ LLM: 2 calls · 1482 input tokens · 1161 output tokens (423 reasoning) · cost 
 
 For AI coding agents: `didibreak check --format json` and
 `didibreak init-agents` ([Use with AI agents](docs/ai-agents.md)).
+
+## Privacy
+
+No telemetry. The only network requests go to the LLM provider you
+configure, with your own API key; see
+[what is sent](docs/providers-and-costs.md#what-is-sent-to-the-provider).
 
 ## Documentation
 

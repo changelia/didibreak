@@ -9,106 +9,60 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
+Nothing yet.
+
+### 0.1.0
+
+First release. Release date: the day the tag `py-v0.1.0` is pushed.
+
 #### Added
 
-- Package skeleton: `didibreak --version` and `python -m didibreak --version`.
-- The MIT license text is included in the wheel and sdist.
-- `didibreak check` with all flags and `[tool.didibreak]` config keys, validation
-  errors with exit code 2, and exit codes 0/1/2 (the analysis is not implemented
-  yet, so `check` reports no findings).
-- `didibreak init-agents` prints the agent snippet.
-- `didibreak check` resolves `--base` and finds changed Python files, including
-  untracked ones, skipping the default exclusions and `exclude` patterns.
-- Relative `output_dir` and `python` paths are resolved against the
-  `pyproject.toml` folder (config file) or the current directory (flags).
-- `didibreak check` detects changed and new functions (formatting, comments
-  and docstrings are ignored), reports files it cannot parse, applies
-  `max_functions`, and shows excluded files; `-v` lists them.
-- A `python` value without `/` is looked up on `PATH`.
-- Async functions, instance methods, generators and functions with obvious
-  I/O are skipped with a reason; `-v` lists them.
-- The obvious I/O rule resolves imports and aliases, follows calls to
-  functions in the same module, covers more file, network and database
-  calls, and applies to both the base and the current version.
-- The import root is the folder of the nearest `pyproject.toml` (or its
-  `src/`).
-- Execution harness (not used by `check` yet): runs cases against one
-  version of a function in separate processes, twice each, with per-case
-  timeouts, fixed seeds and credentials removed from the environment.
-- Subclasses of builtin types (`namedtuple`, `OrderedDict`, `IntEnum`, ...)
-  are compared by value through their base; `Enum` members by class and
-  name.
-- Comparison rules (not used by `check` yet): flaky cases dropped, float
+- `didibreak check`: finds the Python functions changed between `--base`
+  (default `HEAD`) and the working tree, asks an LLM for literal input
+  cases, runs the old and the new version of each function on them in
+  separate processes, and reports where the outcomes differ.
+- Supported functions: module-level functions, `@staticmethod` and
+  `@classmethod` methods. Async functions, instance methods, generators and
+  functions with obvious I/O are skipped with a reason; so are modules that
+  cannot be imported, before any LLM request.
+- Comparison rules: two runs per version (flaky cases dropped), float
   tolerance, exception types, raise vs return, timeouts, type-only
-  comparison with low confidence, new functions; deterministic finding ids.
-- New functions: exception types raised by an explicit `raise` in the
-  function or its same-module callees are not reported.
-- `didibreak check` runs the changed functions on both versions and lists
-  behavior changes when cases come from the hidden developer option
-  `--cases-file` (cases from the LLM follow). The current version runs from a
-  temporary copy of the working tree. Ctrl-C exits with code 130.
-- `new_function` findings are reported but never change the exit code.
-- LLM clients for OpenAI-compatible APIs and Anthropic (not used by `check`
-  yet), with retries, a JSON-mode fallback and default models `gpt-6-luna`
-  and `claude-haiku-5-5`. `httpx` is the one runtime dependency.
-- `check` exits with code 2 when the LLM provider, model or API key is
-  missing and an LLM would be needed. Without a `provider` setting, the
-  provider is taken from the one API key variable that is set.
-- Config-only key `temperature`; without it no temperature is sent.
-- `check` asks the LLM for input cases (versioned prompt
-  `case_generation.md`), keeps only Python-literal, distinct cases, counts
-  invalid ones, skips a function after two unusable replies, and runs the
-  comparison with them. No cost estimate or limit yet.
-- A request the provider rejects for a reason other than the key or the
-  model (HTTP 4xx except 401, 403, 404) skips only that function.
-- Cost control: estimate before the first request with a confirmation
-  question on a terminal (`--yes` to skip), the `max_cost` limit (`cost
-  limit` skip reason), actual tokens and cost after the run, built-in prices
-  for the default models and a `prices` setting for others.
-- Generated cases are cached in `.didibreak/cache/cases/`; `--no-cache`
-  ignores the cache.
-- A model without a known price exits with code 2 and a hint to add a
-  `prices` entry; models on `localhost` / `127.0.0.1` cost 0 ("local").
-- Intent labels: with `--intent` (and the messages of the commits since
-  `--base`) one LLM request labels every finding `expected`,
-  `unexpected` or `unclear` with a reason; without an intent findings are
-  `unclear`. The exit code follows the labels.
-- Refinement: a function whose cases found no difference gets up to
-  `refine_rounds` (default 1) more rounds of LLM cases, built from the cases
-  already tried and their results; counted in the estimate and the cost
-  limit, and cached per round.
-- Text and JSON reports on stdout: the text report groups findings
-  `UNEXPECTED`, `UNCLEAR`, `EXPECTED`, `NEW-FUNCTION`, lists skipped
-  functions with reasons and ends with the LLM usage line; `--format json`
-  writes one report (`schema_version: 1`, `spec/report.schema.json`) with a
-  stable key order, and the estimate goes to stderr. See
-  `docs/output-format.md`.
-- Reproducing pytest files: `check` writes one test file per function to
-  `.didibreak/tests/`, one test per finding asserting the base behavior, so
-  it passes on the base and fails on the change. Findings labelled
-  `expected` get no test, so an agent is never pushed to undo an intended
-  change. `test_file` in the JSON report and a `Reproducing tests:` line in
-  the text report point to the file; the generated `conftest.py` sets
-  `TZ=UTC` and seeds `random` like the harness.
-- `docs/ai-agents.md`: where to put the `init-agents` snippet for Claude
-  Code, Codex and Cursor (not verified with any agent yet), the check loop,
-  what to do per label, and running reproducing tests only for
-  `unexpected` and `unclear` findings.
-- The `init-agents` snippet also says that `new_function` findings do not
-  fail the check (mention them to the user, change no code for them unless
-  the user asks), that exit code 2 is a setup problem to report, and to
-  stop after 3 check rounds.
-- Findings whose inputs contradict the function's simple type annotations
-  (for example `bytes` for a `str` parameter) are dropped and counted in
-  `summary.type_mismatch_dropped` (part of `schema_version: 1`).
-- Case generation and refinement ask for values that match the parameters'
-  type annotations (prompt version 2; cached cases from version 1 are not
-  reused).
-- Each function's module is imported in both versions before any LLM
-  request, so a function that cannot be imported costs no tokens.
-- Docs: a Getting started walk-through with real output, the pipeline in
-  `how-it-works.md`, the measured evaluation results in `limitations.md`,
-  and what to do with out-of-date reproducing tests in `ai-agents.md`.
+  comparison with low confidence for values that cannot be compared, new
+  functions (`new_function`, never changes the exit code).
+- Intent labels: `--intent` and the commit messages since `--base` label
+  each finding `expected`, `unexpected` or `unclear`; intent never hides a
+  finding. Findings whose inputs contradict simple type annotations are
+  dropped and counted.
+- One refinement round (`refine_rounds`) for functions whose cases showed
+  no difference.
+- Text report and JSON report (`--format json`, `schema_version: 1`,
+  `spec/report.schema.json`); exit codes 0 / 1 / 2 / 130 and `--fail-on`.
+- Reproducing pytest files in `.didibreak/tests/` for `unexpected` and
+  `unclear` findings; the output folder ignores itself.
+- Providers: OpenAI and any OpenAI-compatible API (OpenRouter, Ollama, LM
+  Studio) and Anthropic (experimental, not live-verified). Default models
+  `gpt-6-luna` and `claude-haiku-5-5`. The user's own API key; no telemetry.
+  `httpx` is the only runtime dependency.
+- Cost control: an estimate and a confirmation before the first request,
+  the `max_cost` limit (default $0.50), actual tokens and cost after the
+  run, built-in prices and a `prices` setting, and a case cache.
+- Safety: the working tree is never executed (temporary worktree and copy),
+  credential-like environment variables are removed, LLM output is only
+  ever parsed with `ast.literal_eval`, never executed.
+- `didibreak init-agents` prints an `AGENTS.md` / `CLAUDE.md` snippet for
+  AI coding agents; it never edits files.
+- Configuration in `[tool.didibreak]` of `pyproject.toml`; every key has a
+  CLI flag except `exclude`, `api_key_env`, `prices` and `temperature`.
+- Documentation in `docs/`: getting started, how it works, configuration,
+  output format, AI agents, providers and costs, safety, limitations.
+- Measured on seven pure-Python libraries chosen for literal-friendly
+  functions (model labels; application code may score lower): 87% of
+  `unexpected` findings were real behavior changes (`evaluation/README.md`).
+
+#### Known limitations
+
+- Linux and macOS only. Inputs are Python literals, so functions that need
+  objects get no useful cases. See `docs/limitations.md`.
 
 ## JS/TS package
 
