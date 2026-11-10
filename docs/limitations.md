@@ -124,4 +124,28 @@ checked in the order of the table; the first match is the reason.
   file with the same name and you run both together, pytest may refuse to
   import one of them. Rename or move the generated file.
 
-The rest of this page is written together with the analysis features.
+## Measured on real repositories
+
+From the release-gate evaluation (`evaluation/README.md`, 38 scenarios in
+seven pure-Python libraries, `gpt-6-luna`, 2026-11-09):
+
+- **Precision:** 87% of `unexpected` findings (168 of 193) were real
+  behavior changes. Every false alarm was an input of a type the function
+  does not accept, in a function without type annotations (stub `.pyi`
+  files are not read).
+- **Recall:** of 22 reintroduced real bug fixes, 14 were reported. The
+  misses needed non-literal arguments (iterators, parsed tokens), changed a
+  generator, an instance method or a module-level regular expression, or
+  got no valid cases in that run.
+- **`new_function`:** 53 findings over two runs, none a real bug (wrong
+  input types or slow huge inputs). This is why they never change the exit
+  code.
+- **Cost and time:** about $0.05 for all 38 runs; a run that checked a
+  function took about 29 s (median), at most about 150 s.
+- **Scope:** the libraries were chosen because their functions take
+  strings, numbers and simple collections. Application code (request
+  objects, ORM models, sessions, dates) will show more skipped functions
+  and may show lower precision; this was not measured.
+- Labels in the evaluation come from model labellers applying a written
+  rubric, cross-checked by a second, independent labeller (60 of 60
+  agree), not from human review.

@@ -152,7 +152,9 @@ in `labels.json`.
 None of the 36 is a real bug. So the exact-type rule is not the source of
 noise in this sample and relaxing it to subclasses would remove none of
 these findings; the noise comes from inputs outside the function's
-contract. With the default `--fail-on unclear` each of these runs exits 1.
+contract. With the default `--fail-on unclear` each of these runs exited 1
+at the time; since task 22 `new_function` findings never change the exit
+code (owner decision 2026-11-09).
 
 ### Skipped functions
 
