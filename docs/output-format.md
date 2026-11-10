@@ -23,7 +23,7 @@ the cache); the header and the report are always printed.
 
 ## Text report
 
-Order (Detailed Design section 7):
+Order:
 
 1. Header: version, base ref and its commit (12 characters), excluded files,
    files that could not be read, and how many changed functions will be
@@ -36,8 +36,9 @@ Order (Detailed Design section 7):
    (a return value as its `repr`, an exception as `raises <type>`), and the
    reason for its label.
 5. Skipped functions with their reasons, then removed functions.
-6. `Reproducing tests:` with the test files written in this run, and a
-   `no test:` line for each finding that has none (see below), then how many
+6. `Reproducing tests:` with the test files written in this run (the line
+   is left out when no file is written), and a `no test:` line for each
+   finding that has none (see below), then how many
    findings were dropped because an input contradicts the function's type
    annotations (only when there are any).
 7. LLM notes: invalid cases dropped, refinement rounds, and the usage line

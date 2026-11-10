@@ -15,7 +15,8 @@ with Python 3.12 on 2026-11-10; the output is real.
 ## 1. Install
 
 didibreak is not on PyPI yet. Until the first release, install it from the
-repository into a virtual environment:
+repository into a virtual environment. Run these commands in an empty
+folder; the example project in step 3 is created there too:
 
 ```console
 $ git clone https://github.com/changelia/didibreak.git
@@ -76,8 +77,9 @@ EOF
 $ didibreak check --intent "add thousands separators to prices"
 ```
 
-didibreak finds the changed function, prints an estimate and, on a
-terminal, asks `Continue? [Y/n]` (press Enter). Then it asks the LLM for
+didibreak finds the changed function, prints an estimate (an upper bound:
+this run cost $0.0007 of the estimated $0.0041) and, on a terminal, asks
+`Continue? [Y/n]` (press Enter). Then it asks the LLM for
 inputs, runs both versions on them and prints the differences (trimmed;
 the full run had 6 `UNEXPECTED` and 6 `EXPECTED` findings):
 
@@ -115,19 +117,27 @@ How to read it:
   differently: `before` is the old result, `after` the new one.
 - `EXPECTED` means the intent describes the change (the separators).
   `UNEXPECTED` means it does not (the lost minus sign): that is the bug.
-  Without `--intent` and without a commit message that explains the change,
-  findings are `UNCLEAR`. All labels are in
+  Besides `--intent`, didibreak reads the messages of the commits between
+  `--base` and `HEAD`; with the default base `HEAD` there are none, so
+  without `--intent` every finding is `UNCLEAR`. All labels are in
   [output-format.md](output-format.md#text-report).
-- The cases differ from run to run, because the LLM proposes them.
+- `12 cases` are the inputs that were run; `0 flaky dropped` means no input
+  gave different results in two runs of the same version; `(0 new)` means
+  none of the changed functions is new.
+- The cases differ from run to run, because the LLM proposes them, so the
+  number of findings differs too.
 
 ## 4. Fix it and check again
 
 `.didibreak/tests/test_format_price.py` holds one pytest test per
-`unexpected` finding. Each asserts the old result, so it fails until the old
-behavior is back (you need `pip install pytest`):
+`unexpected` or `unclear` finding. Each asserts the old result, so it fails
+until the old behavior is back. Install pytest into the same virtual
+environment and run it with that Python (the folder's `conftest.py` puts
+your project on the import path and fixes the time zone and random seed):
 
 ```console
-$ pytest -q .didibreak/tests
+$ pip install pytest
+$ python -m pytest -q .didibreak/tests
 ...
 6 failed in 0.02s
 ```
@@ -146,7 +156,11 @@ $ didibreak check --intent "add thousands separators to prices"
 ```
 
 This time every finding is `EXPECTED` (for example `format_price(-100000)`:
-`before '-$1000.00' → after '-$1,000.00'`) and the exit code is `0`.
+`before '-$1000.00' → after '-$1,000.00'`) and the exit code is `0`. The
+fixed function is a new version, so it gets new cases (again 2 calls,
+$0.0007). No test file is written, so there is no `Reproducing tests:`
+line, only a `no test: ... (expected change)` line per finding: expected
+changes never get a test, so nothing pushes you to undo them.
 
 The check is the reference, not the old test file:
 
@@ -162,6 +176,12 @@ The check is the reference, not the old test file:
 `.didibreak/` holds the tests and a cache of the generated cases, so an
 unchanged function costs nothing to re-check (only the labelling request
 is sent). The folder ignores itself, so it never shows up in `git status`.
+(The `__pycache__/` next to `prices.py` comes from pytest, not didibreak.)
+
+When the check is clean, commit your change as usual and delete
+`.didibreak/tests/`. A clean check means the proposed inputs behave as
+intended; it cannot prove that no other input changed (see
+[limitations.md](limitations.md#inputs-from-the-llm)).
 
 ## 5. Check your own project
 
@@ -170,8 +190,14 @@ From anywhere inside your git repository:
 ```console
 $ didibreak check --intent "what you asked for, in one sentence"
 $ didibreak check --base main          # everything changed since main
-$ didibreak check --format json        # for AI agents and CI
+$ didibreak check --base HEAD~1        # the last commit and uncommitted changes
+$ didibreak check --intent "..." --format json   # for AI agents and CI
 ```
+
+Always pass `--intent` (or use `--base` so that commit messages explain the
+change): without it every finding is `unclear`, and each run writes a
+failing test for every one of them, replacing the function's earlier test
+file.
 
 - Only module-level functions, `@staticmethod` and `@classmethod` methods
   whose inputs can be written as Python literals are run. Other functions
@@ -182,6 +208,11 @@ $ didibreak check --format json        # for AI agents and CI
 - At most 10 functions and $0.50 per run by default; see
   [configuration-python.md](configuration-python.md) for every flag and
   `pyproject.toml` key.
+- The default model is `gpt-6-luna` for OpenAI and `claude-haiku-5-5` for
+  Anthropic; choose another with `--model` or `model`
+  ([providers-and-costs.md](providers-and-costs.md#default-models)).
+- `.didibreak/` is local and generated; there is no need to commit or share
+  it.
 - To let an AI coding agent run the check after each change, see
   [ai-agents.md](ai-agents.md).
 - Exit codes: `0` nothing unexpected or unclear, `1` unexpected or unclear

@@ -28,11 +28,8 @@ pip install ./didibreak/python
 
 After the release: `pip install didibreak`.
 
-JavaScript / TypeScript: coming after Python 0.1.0.
-
-```bash
-npm install didibreak
-```
+JavaScript / TypeScript: not available yet; coming after Python 0.1.0 as
+`npm install didibreak`.
 
 ## Quick start and example output
 
