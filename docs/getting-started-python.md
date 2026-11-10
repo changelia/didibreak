@@ -22,11 +22,8 @@ $ python3 -m venv .venv
 $ . .venv/bin/activate
 $ pip install didibreak
 $ didibreak --version
-didibreak 0.1.0
+didibreak 0.1.1
 ```
-
-The example output below was recorded with the 0.1.0 release candidate
-(`0.1.0.dev0`), so its first line shows that version.
 
 didibreak runs your code with the Python it is installed in. For your own
 project, install it into the project's virtual environment, or point it at
@@ -81,32 +78,32 @@ didibreak finds the changed function, prints an estimate (an upper bound:
 this run cost $0.0007 of the estimated $0.0041) and, on a terminal, asks
 `Continue? [Y/n]` (press Enter). Then it asks the LLM for
 inputs, runs both versions on them and prints the differences (trimmed;
-the full run had 6 `UNEXPECTED` and 6 `EXPECTED` findings):
+the full run had 7 `UNEXPECTED` and 5 `EXPECTED` findings):
 
 ```text
-didibreak 0.1.0.dev0 · working tree vs HEAD (cdb6d5f8113d)
+didibreak 0.1.0 · working tree vs HEAD (94fdbfd8ff0b)
 1 changed function(s) to check (0 new)
 Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~4,614 input + ~7,200 output tokens, ~$0.0041 (limit $0.50)
 12 cases · 12 behavior changes · 0 flaky dropped
   UNEXPECTED   prices.py::format_price(-1)
                before '-$0.01' → after '$0.01'
-               Adding thousands separators does not describe removing the negative sign.
+               Adding thousands separators does not imply removing the negative sign.
   UNEXPECTED   prices.py::format_price(-250)
                before '-$2.50' → after '$2.50'
-               Adding thousands separators does not describe removing the negative sign.
+               Adding thousands separators does not imply removing the negative sign.
   UNEXPECTED   prices.py::format_price(-100000)
                before '-$1000.00' → after '$1,000.00'
-               Although the output adds a thousands separator, it also removes the negative sign, which is not part of the stated intent.
+               The separator is intended, but removing the negative sign is not.
   EXPECTED     prices.py::format_price(100000)
                before '$1000.00' → after '$1,000.00'
-               The change adds a thousands separator to the price, as stated in the intent.
-  EXPECTED     prices.py::format_price(123456789)
-               before '$1234567.89' → after '$1,234,567.89'
-               The change adds thousands separators to the price, as stated in the intent.
+               Adding a thousands separator to the price is the stated intent.
+  EXPECTED     prices.py::format_price(100000000)
+               before '$1000000.00' → after '$1,000,000.00'
+               Adding thousands separators to the price is the stated intent.
 Reproducing tests: .didibreak/tests/test_format_price.py
   no test: prices.py::format_price(100000) (expected change)
-  no test: prices.py::format_price(123456789) (expected change)
-LLM: 2 calls · 1482 input tokens · 1161 output tokens (423 reasoning) · cost $0.0007
+  no test: prices.py::format_price(100000000) (expected change)
+LLM: 2 calls · 1469 input tokens · 1153 output tokens (460 reasoning) · cost $0.0007
 ```
 
 The exit code is `1` because there are `unexpected` findings.
@@ -139,7 +136,7 @@ your project on the import path and fixes the time zone and random seed):
 $ pip install pytest
 $ python -m pytest -q .didibreak/tests
 ...
-6 failed in 0.02s
+7 failed in 0.03s
 ```
 
 Put the sign back and run the check again:
@@ -158,7 +155,7 @@ $ didibreak check --intent "add thousands separators to prices"
 This time every finding is `EXPECTED` (for example `format_price(-100000)`:
 `before '-$1000.00' → after '-$1,000.00'`) and the exit code is `0`. The
 fixed function is a new version, so it gets new cases (again 2 calls,
-$0.0007). No test file is written, so there is no `Reproducing tests:`
+$0.0006). No test file is written, so there is no `Reproducing tests:`
 line, only a `no test: ... (expected change)` line per finding: expected
 changes never get a test, so nothing pushes you to undo them.
 

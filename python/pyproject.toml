@@ -71,6 +71,9 @@ python_version = "3.11"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["-ra", "--strict-markers", "--strict-config"]
+# A test running over 5 minutes dumps every thread's stack, so a hang shows
+# where it is (task 26: one unexplained 15-minute local hang).
+faulthandler_timeout = 300
 xfail_strict = true
 
 [tool.hatch.version]

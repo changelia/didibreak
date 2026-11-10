@@ -68,16 +68,18 @@ GitHub Actions workflows in `.github/workflows/`:
 
 | Workflow | Runs on changes in | What it does |
 | --- | --- | --- |
-| `python.yml` | every pull request; pushes to `main` that change `python/`, `spec/`, `LICENSE` | The four checks, build and package content check, on Linux with Python 3.11–3.13. macOS: Python 3.11–3.13 on pull requests and pushes once the repository is public; while it is private, Python 3.13 on pushes to `main`, the weekly schedule (Mondays) and manual runs only. The steps live in `.github/actions/python-checks/`. |
+| `python.yml` | every pull request; pushes to `main` that change `python/`, `spec/`, `LICENSE` | The four checks, build and package content check, on Linux with Python 3.11–3.13. macOS (not a required check): Python 3.11–3.13 on pull requests and pushes once the repository is public; while it is private, Python 3.13 on pushes to `main`, the weekly schedule (Mondays) and manual runs only. The steps live in `.github/actions/python-checks/`. |
 | `spec.yml` | `spec/`, prompt-copy code | Report schema is valid JSON, a valid JSON Schema (draft 2020-12, checked with `check-jsonschema`) and has the expected structure; packaged prompts match `spec/prompts/`. |
 
 ### Required checks for `main`
 
-Once the repository is public (owner decision 2026-11-04), these six checks
-from `python.yml` are required before a pull request can merge into `main`:
-`Linux / Python 3.11`, `Linux / Python 3.12`, `Linux / Python 3.13`,
-`macOS / Python 3.11`, `macOS / Python 3.12`, `macOS / Python 3.13`. The owner
-sets them once (repository settings → Branches, or):
+Once the repository is public, the three Linux checks from `python.yml` are
+required before a pull request can merge into `main`: `Linux / Python 3.11`,
+`Linux / Python 3.12`, `Linux / Python 3.13`. The macOS jobs run on every pull
+request too but are not required, so a macOS runner-capacity cancellation
+never blocks a merge (owner decision 2026-11-10); look at a failed macOS run
+before merging. The owner sets the rule once (repository settings → Branches,
+or):
 
 ```bash
 gh api -X PUT repos/changelia/didibreak/branches/main/protection --input - <<'JSON'
@@ -85,9 +87,9 @@ gh api -X PUT repos/changelia/didibreak/branches/main/protection --input - <<'JS
   "required_status_checks": {
     "strict": true,
     "checks": [
-      {"context": "Linux / Python 3.11"}, {"context": "Linux / Python 3.12"},
-      {"context": "Linux / Python 3.13"}, {"context": "macOS / Python 3.11"},
-      {"context": "macOS / Python 3.12"}, {"context": "macOS / Python 3.13"}
+      {"context": "Linux / Python 3.11"},
+      {"context": "Linux / Python 3.12"},
+      {"context": "Linux / Python 3.13"}
     ]
   },
   "enforce_admins": false,
@@ -208,13 +210,18 @@ Documented here once the provider modules exist.
 
 ## Commits and pull requests
 
+AI coding agents: the same rules, in short, are in [AGENTS.md](AGENTS.md)
+(Claude Code reads it through [CLAUDE.md](CLAUDE.md)).
+
+
 - One logical change per commit, about 200 changed lines at most (lock files
   excluded), tests in the same commit, every commit passes all checks.
 - Messages follow Conventional Commits: `type(scope): subject`, imperative,
   lowercase, at most 72 characters. Types: `feat`, `fix`, `refactor`, `test`,
   `docs`, `ci`, `build`, `chore`, `perf`. Scopes: `python`, `spec`, `docs`,
   `ci`, later `js`.
-- Footer `Refs: task NN` in every commit.
+- Footer `Refs: #<issue>` when the change belongs to an issue (the
+  maintainer's own commits use `Refs: task NN`).
 - No AI co-author trailers or AI attribution lines in commits or pull requests.
 - A pull request that changes behavior, a flag, a config key or the output
   updates the docs and `CHANGELOG.md` in the same pull request.

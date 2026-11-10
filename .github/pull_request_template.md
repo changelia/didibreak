@@ -1,6 +1,6 @@
-## Task
+## Why
 
-Task NN — <title> (link to the Notion task)
+The problem or issue this solves (`Refs: #<issue>` if there is one).
 
 ## Changes
 
@@ -23,7 +23,6 @@ uv run mypy src
 - [ ] Code meets the code quality standards.
 - [ ] Tests added; `pytest`, `ruff check`, `ruff format --check`, `mypy` (strict) pass — exact commands and results above.
 - [ ] Docs, `CHANGELOG.md` (Unreleased) and `CONTRIBUTING.md` updated if affected.
-- [ ] Notion task evidence filled.
 
 ## Limitations and open questions
 
