@@ -1,8 +1,12 @@
 """Text report: snapshot, label order, colors and the usage line (task 18)."""
 
+import dataclasses
+
+import pytest
 from report_samples import check_snapshot, sample_report
 
-from didibreak.report.text import results_text
+from didibreak.report import ReportUsage
+from didibreak.report.text import counted, results_text
 
 
 def test_text_snapshot() -> None:
@@ -39,3 +43,19 @@ def test_text_usage_line_comes_last() -> None:
 
     assert lines[0].startswith("14 cases")
     assert lines[-1].startswith("LLM: 3 calls")
+
+
+@pytest.mark.parametrize(
+    ("count", "text"),
+    [(0, "0 LLM calls"), (1, "1 LLM call"), (2, "2 LLM calls")],
+)
+def test_counted_uses_the_singular_only_for_one(count: int, text: str) -> None:
+    assert counted(count, "LLM call") == text
+
+
+def test_usage_line_says_call_for_a_single_call() -> None:
+    report = dataclasses.replace(
+        sample_report(), usage=ReportUsage(1, 1000, 600, 400, 0.0004)
+    )
+
+    assert results_text(report).splitlines()[-1].startswith("LLM: 1 call · 1000")

@@ -59,7 +59,7 @@ from didibreak.pipeline import (
 from didibreak.report import Report, ReportUsage, SkippedItem
 from didibreak.report.json import render_json
 from didibreak.report.pytest_writer import WrittenTests, write_tests
-from didibreak.report.text import header_lines, results_text
+from didibreak.report.text import counted, header_lines, results_text
 
 EXIT_OK = 0
 EXIT_FINDINGS = 1
@@ -286,9 +286,9 @@ def _print_estimate(
             parts.append(f"up to {plan.refinement} refinement")
         if plan.labelling:
             parts.append(f"{plan.labelling} labelling")
-        calls = f"up to {plan.calls} LLM calls ({' + '.join(parts)})"
+        calls = f"up to {counted(plan.calls, 'LLM call')} ({' + '.join(parts)})"
     else:
-        calls = f"{plan.calls} LLM calls"
+        calls = counted(plan.calls, "LLM call")
     print(f"Estimated: {calls} with {model}, {tokens}{cost}", file=stream)
     if not session.local and (estimate.cost_usd or 0) > max_cost:
         print(

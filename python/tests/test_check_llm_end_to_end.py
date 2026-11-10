@@ -12,6 +12,7 @@ from fixture_repos import build_fixture_repository, fixture_names
 from didibreak import cli, llm
 from didibreak.cli import EXIT_ERROR, EXIT_FINDINGS, EXIT_OK, main
 from didibreak.config import Config
+from didibreak.report.text import counted
 
 MALICIOUS = "__import__('os').system('echo pwned')"
 
@@ -91,7 +92,7 @@ def test_llm_cases_reproduce_the_documented_findings(
     for finding in fixture.expected["findings"]:
         assert f"{finding['function']}({', '.join(finding['args'])})" in err
     if asked:
-        assert f"LLM: {len(asked)} calls" in err
+        assert f"LLM: {counted(len(asked), 'call')} ·" in err
         assert f"{120 * len(asked)} output tokens ({80 * len(asked)} reasoning)" in err
 
 

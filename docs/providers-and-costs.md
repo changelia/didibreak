@@ -46,7 +46,7 @@ LLM: 0 calls · 0 input tokens · 0 output tokens · cost $0.0000
   (`refinement skipped: ... (cost limit)`).
 - After the run, the actual tokens and cost are shown, for example (from a
   test run with a fake provider):
-  `LLM: 1 calls · 1000 input tokens · 600 output tokens (400 reasoning) · cost $0.0004`.
+  `LLM: 1 call · 1000 input tokens · 600 output tokens (400 reasoning) · cost $0.0004`.
 
 ### Prices
 
