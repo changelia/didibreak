@@ -157,7 +157,7 @@ in the file is listed as skipped (`no cases`). Example on the
 
 ```text
 $ didibreak check --cases-file ../cases.json
-didibreak 0.1.0.dev0 · working tree vs HEAD (9d74d2b028c7)
+didibreak 0.1.1 · working tree vs HEAD (804faa715da2)
 1 changed function(s) to check (0 new)
 3 cases · 2 behavior changes · 0 flaky dropped
   UNCLEAR      app/utils/phone.py::normalize_phone('+1 202 555 0100')

@@ -30,3 +30,27 @@ def test_getting_started_records_the_same_released_version() -> None:
 
     assert "0.1.0.dev0" not in page
     assert "didibreak 0.1.0 · working tree vs HEAD (94fdbfd8ff0b)" in page
+
+
+RECORDED_PAGES = [
+    "README.md",
+    "CONTRIBUTING.md",
+    "python/README.md",
+    *sorted(str(page.relative_to(ROOT)) for page in (ROOT / "docs").glob("*.md")),
+]
+
+
+def development_versions(text: str) -> list[str]:
+    """Version strings of unreleased didibreak builds (task 27)."""
+    return re.findall(r"didibreak \d+\.\d+\.\d+\.dev\d+", text)
+
+
+@pytest.mark.parametrize("page", RECORDED_PAGES)
+def test_recorded_output_comes_from_a_released_version(page: str) -> None:
+    assert development_versions((ROOT / page).read_text()) == []
+
+
+def test_a_development_header_is_caught() -> None:
+    text = "didibreak 0.1.0.dev0 · working tree vs HEAD (9d74d2b028c7)"
+
+    assert development_versions(text) == ["didibreak 0.1.0.dev0"]
