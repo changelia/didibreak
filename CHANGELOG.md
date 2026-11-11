@@ -28,7 +28,11 @@ JSON report keeps `schema_version: 1`: `usage.cost_usd` could already be
   `--provider`. They use the OpenAI-compatible client and fill in
   `base_url` and `api_key_env` (`OPENROUTER_API_KEY`; no key for the two
   local servers); `model` is required. A `base_url` or `api_key_env` you
-  set replaces the preset's value.
+  set at the same level as the preset, or higher, replaces the preset's
+  value.
+- A preset given as `--provider` discards `base_url` and `api_key_env` from
+  `pyproject.toml`, so `--provider ollama` never uses an OpenRouter URL or
+  key configured there.
 - The README "Change the model" section uses the presets; the prices
   block is now optional and only adds the cost and the `max_cost` limit.
 

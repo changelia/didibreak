@@ -170,8 +170,10 @@ They have no default model, so `model` is required.
 | `ollama` | `http://localhost:11434/v1` | none (Ollama ignores it) |
 | `lmstudio` | `http://localhost:1234/v1` | none (LM Studio needs none unless you turn authentication on) |
 
-A `base_url` or `api_key_env` you set yourself, as a flag or in
-`pyproject.toml`, replaces the preset's value: for example
+A `base_url` or `api_key_env` you set at the same level as the preset, or
+higher, replaces the preset's value; a preset given as `--provider`
+discards the ones in `pyproject.toml`
+([details](configuration-python.md)). Set one yourself, for example
 `api_key_env = "LM_STUDIO_TOKEN"` when LM Studio authentication is on, or
 another port in `base_url`. The URLs come from the services' documentation
 (checked 2026-11-11). Other OpenAI-compatible services still work with

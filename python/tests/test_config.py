@@ -179,3 +179,46 @@ def test_missing_api_key_names_the_variable() -> None:
         ConfigError, match="set the environment variable OPENAI_API_KEY"
     ):
         read_api_key(Config(provider="openai"), {"OPENAI_API_KEY": ""})
+
+
+FILE_WITH_URL = {
+    "model": "m",
+    "base_url": "https://openrouter.ai/api/v1",
+    "api_key_env": "OPENROUTER_API_KEY",
+}
+
+
+def test_cli_preset_drops_base_url_and_key_variable_from_the_file() -> None:
+    config = build_config(FILE_WITH_URL, {"provider": "ollama"})
+
+    assert (config.provider, config.model) == ("ollama", "m")
+    assert (config.base_url, config.api_key_env) == (None, None)
+
+
+def test_cli_values_still_override_a_cli_preset() -> None:
+    cli = {"provider": "ollama", "base_url": "http://127.0.0.1:1/v1"}
+
+    config = build_config(FILE_WITH_URL, cli)
+
+    assert (config.base_url, config.api_key_env) == ("http://127.0.0.1:1/v1", None)
+
+
+@pytest.mark.parametrize(
+    ("file_provider", "cli"),
+    [
+        ("ollama", {"provider": "ollama"}),  # the file names the same preset
+        ("ollama", {}),  # preset and URL at the same level
+        (None, {"provider": "openai"}),  # not a preset
+    ],
+)
+def test_file_url_is_kept_unless_a_higher_level_chooses_another_preset(
+    file_provider: str | None, cli: dict[str, object]
+) -> None:
+    file_values = dict(FILE_WITH_URL)
+    if file_provider:
+        file_values["provider"] = file_provider
+
+    config = build_config(file_values, cli)
+
+    assert config.base_url == "https://openrouter.ai/api/v1"
+    assert config.api_key_env == "OPENROUTER_API_KEY"
