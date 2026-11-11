@@ -9,6 +9,14 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
+Nothing yet.
+
+### 0.1.4
+
+Released when the tag `py-v0.1.4` is pushed. Safety and correctness fixes
+from the code audit (`evaluation/audit-35a.md`). The JSON report keeps
+`schema_version: 1`.
+
 #### Fixed
 
 - Safety: functions that run shell commands or processes (`os.system`,

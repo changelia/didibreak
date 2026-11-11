@@ -26,7 +26,7 @@ old version as the reference, so it needs no hand-written expected values.
 
 ## Status
 
-0.1.3 (alpha; first release 0.1.0 on 2026-11-10): Python only, Linux and macOS. The release
+0.1.4 (alpha; first release 0.1.0 on 2026-11-10): Python only, Linux and macOS. The release
 precision gate is met: in an evaluation on seven real libraries, 87% of `unexpected` findings
 were real behavior changes ([evaluation/README.md](evaluation/README.md)).
 The 7 libraries were chosen for literal-friendly functions, the labels are
