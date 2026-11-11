@@ -120,18 +120,17 @@ def test_first_rule_wins_async_before_instance_method() -> None:
 
 
 def test_io_list_is_one_constant_with_the_task_categories() -> None:
-    assert set(OBVIOUS_IO["calls"]) == {
-        "open",
-        "os.remove",
-        "os.unlink",
-        "os.rmdir",
-        "shutil.rmtree",
-        "shutil.move",
-        "shutil.copy*",
-        "urllib.request.*",
-        "sqlite3.connect",
+    assert set(OBVIOUS_IO) == {
+        "calls",
+        "modules",
+        "path_methods",
+        "database_receivers",
+        "database_methods",
     }
-    assert set(OBVIOUS_IO["modules"]) == {"subprocess", "requests", "httpx", "socket"}
+    assert {"os.system", "os.popen", "os.exec*", "os.spawn*"} <= set(
+        OBVIOUS_IO["calls"]
+    )
+    assert {"subprocess", "pty", "socket", "http.client"} <= set(OBVIOUS_IO["modules"])
     assert "session" in OBVIOUS_IO["database_receivers"]
     assert "commit" in OBVIOUS_IO["database_methods"]
 
@@ -316,3 +315,95 @@ def test_calls_into_other_modules_are_not_followed() -> None:
     """
 
     assert _reason(source, qualname="store") is None
+
+
+# Audit 35a, finding 1: these were run with LLM inputs before 0.1.4.
+@pytest.mark.parametrize(
+    ("imports", "statement", "reason"),
+    [
+        # Running commands and processes.
+        ("import os", "os.system('echo ' + path)", "obvious I/O: os.system"),
+        ("import os", "os.popen(path).read()", "obvious I/O: os.popen"),
+        ("import os", "os.execvp(path, [path])", "obvious I/O: os.execvp"),
+        ("import os", "os.spawnlp(0, path, path)", "obvious I/O: os.spawnlp"),
+        ("import os", "os.posix_spawn(path, [], {})", "obvious I/O: os.posix_spawn"),
+        ("import os", "os.kill(1, 9)", "obvious I/O: os.kill"),
+        ("from os import system", "system(path)", "obvious I/O: os.system"),
+        ("import pty", "pty.spawn(path)", "obvious I/O: pty.spawn"),
+        (
+            "import asyncio",
+            "asyncio.create_subprocess_shell(path)",
+            "obvious I/O: asyncio.create_subprocess_shell",
+        ),
+        # Changing files and folders.
+        ("import os", "os.rename(path, path)", "obvious I/O: os.rename"),
+        ("import os", "os.replace(path, path)", "obvious I/O: os.replace"),
+        ("import os", "os.makedirs(path)", "obvious I/O: os.makedirs"),
+        ("import os", "os.mkdir(path)", "obvious I/O: os.mkdir"),
+        ("import os", "os.chmod(path, 0)", "obvious I/O: os.chmod"),
+        ("import os", "os.truncate(path, 0)", "obvious I/O: os.truncate"),
+        ("import shutil", "shutil.chown(path)", "obvious I/O: shutil.chown"),
+        ("import io", "io.open(path)", "obvious I/O: io.open"),
+        (
+            "from pathlib import Path",
+            "Path(path).rename('x')",
+            "obvious I/O: pathlib.Path.rename",
+        ),
+        ("", "path.chmod(0)", "obvious I/O: path.chmod"),
+        ("", "path.symlink_to('x')", "obvious I/O: path.symlink_to"),
+        # Network and database clients.
+        (
+            "import http.client",
+            "http.client.HTTPSConnection(path)",
+            "obvious I/O: http.client.HTTPSConnection",
+        ),
+        (
+            "from http import client",
+            "client.HTTPConnection(path)",
+            "obvious I/O: http.client.HTTPConnection",
+        ),
+        ("import smtplib", "smtplib.SMTP(path)", "obvious I/O: smtplib.SMTP"),
+        ("import ftplib", "ftplib.FTP(path)", "obvious I/O: ftplib.FTP"),
+        (
+            "import urllib3",
+            "urllib3.request('GET', path)",
+            "obvious I/O: urllib3.request",
+        ),
+        ("import psycopg", "psycopg.connect(path)", "obvious I/O: psycopg.connect"),
+        ("import pymysql", "pymysql.connect(path)", "obvious I/O: pymysql.connect"),
+        (
+            "import mysql.connector",
+            "mysql.connector.connect(path)",
+            "obvious I/O: mysql.connector.connect",
+        ),
+        ("import redis", "redis.Redis(path)", "obvious I/O: redis.Redis"),
+        ("import boto3", "boto3.client('s3')", "obvious I/O: boto3.client"),
+        (
+            "from sqlalchemy import create_engine",
+            "create_engine(path)",
+            "obvious I/O: sqlalchemy.create_engine",
+        ),
+    ],
+)
+def test_commands_file_changes_and_clients_are_io(
+    imports: str, statement: str, reason: str
+) -> None:
+    source = f"{imports}\n\n\ndef work(path):\n    return {statement}\n"
+
+    assert _reason(source, qualname="work") == reason
+
+
+@pytest.mark.parametrize(
+    ("imports", "statement"),
+    [
+        ("from http import HTTPStatus", "HTTPStatus.OK"),
+        ("import http", "http.HTTPStatus(200)"),
+        ("", "path.replace('a', 'b')"),  # str.replace, not Path.replace
+        ("import os", "os.path.join(path, 'x')"),
+        ("import os", "os.getcwd()"),
+    ],
+)
+def test_names_next_to_io_modules_are_not_io(imports: str, statement: str) -> None:
+    source = f"{imports}\n\n\ndef work(path):\n    return {statement}\n"
+
+    assert _reason(source, qualname="work") is None

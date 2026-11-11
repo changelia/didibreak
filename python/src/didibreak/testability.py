@@ -13,23 +13,77 @@ from dataclasses import dataclass
 from fnmatch import fnmatchcase
 
 # Everything treated as obvious I/O, in one place (documented in limitations.md).
+# A heuristic over names in the source, not a sandbox: I/O hidden in another
+# module, or reached through getattr or eval, is not seen (docs/safety.md).
 OBVIOUS_IO = {
     # Calls to these fully qualified names; `*` is a glob (fnmatch) wildcard.
     "calls": (
         "open",
+        "io.open",
+        # Running commands and processes.
+        "os.system",
+        "os.popen",
+        "os.exec*",
+        "os.spawn*",
+        "os.posix_spawn*",
+        "os.fork*",
+        "os.kill*",
+        "asyncio.create_subprocess_*",
+        # Changing files and folders.
         "os.remove",
         "os.unlink",
         "os.rmdir",
+        "os.removedirs",
+        "os.rename",
+        "os.renames",
+        "os.replace",
+        "os.mkdir",
+        "os.makedirs",
+        "os.chmod",
+        "os.chown",
+        "os.truncate",
+        "os.symlink",
+        "os.link",
         "shutil.rmtree",
         "shutil.move",
         "shutil.copy*",
+        "shutil.chown",
+        "shutil.make_archive",
+        "shutil.unpack_archive",
+        # Network and databases.
         "urllib.request.*",
         "sqlite3.connect",
+        "sqlalchemy.create_engine",
     ),
-    # Any use of these modules.
-    "modules": ("subprocess", "requests", "httpx", "socket"),
+    # Any use or import of these modules, or of a submodule of them
+    # (``http.client`` matches ``http.client.HTTPSConnection``, not
+    # ``http.HTTPStatus``).
+    "modules": (
+        "subprocess",
+        "pty",
+        "socket",
+        "requests",
+        "httpx",
+        "urllib3",
+        "aiohttp",
+        "http.client",
+        "smtplib",
+        "ftplib",
+        "imaplib",
+        "poplib",
+        "paramiko",
+        "psycopg",
+        "psycopg2",
+        "pymysql",
+        "MySQLdb",
+        "mysql.connector",
+        "pymongo",
+        "redis",
+        "boto3",
+    ),
     # pathlib.Path methods, matched by method name on any object because the
-    # type of a variable is not known from the source.
+    # type of a variable is not known from the source. ``replace`` is left
+    # out: it would match every ``str.replace``.
     "path_methods": (
         "open",
         "read_bytes",
@@ -40,6 +94,10 @@ OBVIOUS_IO = {
         "rmdir",
         "mkdir",
         "touch",
+        "rename",
+        "chmod",
+        "symlink_to",
+        "hardlink_to",
     ),
     # Database sessions: a call `<receiver>.<method>(...)` such as session.commit().
     "database_receivers": ("session", "db", "cursor", "conn", "connection"),
@@ -157,6 +215,14 @@ def _canonical(name: str, aliases: Mapping[str, str]) -> str:
     return f"{aliases[first]}.{rest}" if rest else aliases[first]
 
 
+def _io_module(name: str) -> str | None:
+    """The OBVIOUS_IO module that a dotted name belongs to, if any."""
+    for module in OBVIOUS_IO["modules"]:
+        if name == module or name.startswith(f"{module}."):
+            return module
+    return None
+
+
 def _is_database_call(name: str) -> bool:
     parts = name.split(".")
     return (
@@ -173,7 +239,7 @@ def _io_in_call(call: ast.Call, aliases: Mapping[str, str]) -> str | None:
     canonical = _canonical(name, aliases)
     if any(fnmatchcase(canonical, pattern) for pattern in OBVIOUS_IO["calls"]):
         return canonical
-    if canonical.split(".")[0] in OBVIOUS_IO["modules"]:
+    if _io_module(canonical):
         return canonical
     if _is_database_call(name):
         return name
@@ -190,6 +256,16 @@ def _path_method_call(call: ast.Call, aliases: Mapping[str, str]) -> str | None:
     if receiver is None:  # e.g. Path("x").write_text(...)
         return f"pathlib.Path.{call.func.attr}"
     return f"{_canonical(receiver, aliases)}.{call.func.attr}"
+
+
+def _imports_io_module(imported: str, node: ast.Import | ast.ImportFrom) -> bool:
+    # ``from http import client`` imports http.client; ``import http`` alone
+    # is not I/O until a client submodule is used (seen by the other checks).
+    if _io_module(imported):
+        return True
+    if isinstance(node, ast.ImportFrom):
+        return any(_io_module(f"{imported}.{alias.name}") for alias in node.names)
+    return False
 
 
 def find_obvious_io(function: _FunctionNode, context: ModuleContext) -> str | None:
@@ -212,15 +288,16 @@ def find_obvious_io(function: _FunctionNode, context: ModuleContext) -> str | No
             module = node.module if isinstance(node, ast.ImportFrom) else None
             names = [module] if module else [alias.name for alias in node.names]
             for imported in names:
-                if imported and imported.split(".")[0] in OBVIOUS_IO["modules"]:
+                if imported and _imports_io_module(imported, node):
                     return f"import {imported}"
     for node in nodes:
         if isinstance(node, ast.Call) and (found := _io_in_call(node, aliases)):
             return found
     for node in nodes:
-        if isinstance(node, ast.Name):
-            canonical = _canonical(node.id, aliases)
-            if canonical.split(".")[0] in OBVIOUS_IO["modules"]:
+        if isinstance(node, ast.Name | ast.Attribute):
+            name = _dotted_name(node)
+            canonical = None if name is None else _canonical(name, aliases)
+            if canonical is not None and _io_module(canonical):
                 return canonical
     return None
 
