@@ -16,6 +16,11 @@ the Python package and `js-v*` for the JS/TS package.
   each request like `max_cost`; functions after the limit are skipped with
   the reason `token limit`, and intent labelling that would exceed it leaves
   the findings `unclear`.
+- Provider presets `openrouter`, `ollama` and `lmstudio` for `provider` /
+  `--provider`. They use the OpenAI-compatible client and fill in
+  `base_url` and `api_key_env` (`OPENROUTER_API_KEY`; no key for the two
+  local servers); `model` is required. A `base_url` or `api_key_env` you
+  set replaces the preset's value.
 
 #### Changed
 

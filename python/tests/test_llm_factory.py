@@ -72,7 +72,9 @@ def test_both_or_neither_key_needs_an_explicit_provider(
         client_settings(Config(), environment)
 
     assert reason in str(info.value)
-    assert 'set provider = "openai" or "anthropic"' in str(info.value)
+    assert "set provider (openai, anthropic, openrouter, ollama or lmstudio)" in str(
+        info.value
+    )
 
 
 def test_explicit_provider_wins_over_the_environment() -> None:
@@ -139,3 +141,56 @@ def test_inferred_anthropic_gets_the_anthropic_client() -> None:
     with create_client(Config(), {"ANTHROPIC_API_KEY": "sk-ant"}) as client:
         assert isinstance(client, AnthropicClient)
         assert client.settings.model == "claude-haiku-5-5"
+
+
+PRESET_ENV = {"OPENROUTER_API_KEY": "sk-or"}
+
+
+@pytest.mark.parametrize(
+    ("provider", "base_url", "key", "variable"),
+    [
+        ("openrouter", "https://openrouter.ai/api/v1", "sk-or", "OPENROUTER_API_KEY"),
+        ("ollama", "http://localhost:11434/v1", None, None),
+        ("lmstudio", "http://localhost:1234/v1", None, None),
+    ],
+)
+def test_presets_fill_base_url_and_key_variable(
+    provider: str, base_url: str, key: str | None, variable: str | None
+) -> None:
+    settings = client_settings(Config(provider=provider, model="m"), PRESET_ENV)
+
+    assert (settings.base_url, settings.api_key) == (base_url, key)
+    assert settings.api_key_variable == variable
+    assert isinstance(
+        create_client(Config(provider=provider, model="m"), PRESET_ENV),
+        OpenAICompatibleClient,
+    )
+
+
+@pytest.mark.parametrize("provider", ["openrouter", "ollama", "lmstudio"])
+def test_presets_need_a_model(provider: str) -> None:
+    with pytest.raises(ConfigError, match=f"the {provider} preset has no default"):
+        client_settings(Config(provider=provider), PRESET_ENV)
+
+
+def test_explicit_base_url_and_key_variable_override_the_preset() -> None:
+    config = Config(
+        provider="ollama",
+        model="m",
+        base_url="http://127.0.0.1:9999/v1",
+        api_key_env="MY_KEY",
+    )
+
+    settings = client_settings(config, {"MY_KEY": "k"})
+
+    assert (settings.base_url, settings.api_key) == ("http://127.0.0.1:9999/v1", "k")
+
+
+def test_openrouter_preset_without_its_key_names_the_variable() -> None:
+    with pytest.raises(ConfigError, match="OPENROUTER_API_KEY"):
+        client_settings(Config(provider="openrouter", model="m"), {})
+
+
+def test_presets_are_never_inferred_from_the_environment() -> None:
+    with pytest.raises(ConfigError, match="neither OPENAI_API_KEY"):
+        resolve_provider(Config(), PRESET_ENV)

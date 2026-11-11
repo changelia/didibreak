@@ -56,7 +56,7 @@ def test_missing_provider_exits_2_with_how_to_fix(
     changed_function: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert main(["check"]) == EXIT_ERROR
-    assert 'set provider = "openai" or "anthropic"' in "".join(capsys.readouterr())
+    assert "set provider (openai, anthropic," in "".join(capsys.readouterr())
 
 
 def test_missing_key_exits_2_naming_the_variable(

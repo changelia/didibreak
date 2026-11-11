@@ -146,22 +146,40 @@ provider = "openai"
 # default model claude-haiku-5-5
 provider = "anthropic"
 
-# OpenRouter: any model listed with structured outputs
-provider = "openai"
-base_url = "https://openrouter.ai/api/v1"
+# OpenRouter: key in OPENROUTER_API_KEY; any model listed with structured
+# outputs
+provider = "openrouter"
 model = "openai/gpt-6-luna"
-api_key_env = "OPENROUTER_API_KEY"
 
 # Local Ollama server: no key
-provider = "openai"
-base_url = "http://localhost:11434/v1"
+provider = "ollama"
 model = "llama3.2"
-api_key_env = ""
+
+# Local LM Studio server: no key
+provider = "lmstudio"
+model = "qwen3-8b"   # the name LM Studio shows for the loaded model
 ```
 
+`openrouter`, `ollama` and `lmstudio` are presets: they use the
+OpenAI-compatible client and fill in `base_url` and `api_key_env` for you.
+They have no default model, so `model` is required.
+
+| Preset | `base_url` | API key |
+| --- | --- | --- |
+| `openrouter` | `https://openrouter.ai/api/v1` | `OPENROUTER_API_KEY` |
+| `ollama` | `http://localhost:11434/v1` | none (Ollama ignores it) |
+| `lmstudio` | `http://localhost:1234/v1` | none (LM Studio needs none unless you turn authentication on) |
+
+A `base_url` or `api_key_env` you set yourself, as a flag or in
+`pyproject.toml`, replaces the preset's value: for example
+`api_key_env = "LM_STUDIO_TOKEN"` when LM Studio authentication is on, or
+another port in `base_url`. The URLs come from the services' documentation
+(checked 2026-11-11). Other OpenAI-compatible services still work with
+`provider = "openai"` plus `base_url`, `model` and `api_key_env`.
+
 `didibreak check` stops with exit code 2 and says what to set when no
-provider can be chosen, when a `base_url` other than the provider's own has no
-`model`, or when the API key variable is empty. The key is never printed.
+provider can be chosen, when a preset or a `base_url` other than the
+provider's own has no `model`, or when the API key variable is empty. The key is never printed.
 No LLM settings are needed when there is nothing to check (no changed or no
 testable functions).
 

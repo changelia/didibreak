@@ -16,11 +16,18 @@ from urllib.parse import urlparse
 
 FORMATS = ("text", "json")
 FAIL_ON = ("unclear", "unexpected")
-PROVIDERS = ("openai", "anthropic")
+# openrouter, ollama and lmstudio are presets of the OpenAI-compatible
+# client: a base URL and a key variable (task 34; llm.DEFAULT_BASE_URLS).
+PROVIDERS = ("openai", "anthropic", "openrouter", "ollama", "lmstudio")
 
-_DEFAULT_API_KEY_VARIABLES = {
+# None: the local server needs no key (Ollama ignores one, LM Studio needs
+# none unless authentication is switched on).
+_DEFAULT_API_KEY_VARIABLES: dict[str, str | None] = {
     "openai": "OPENAI_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",
+    "openrouter": "OPENROUTER_API_KEY",
+    "ollama": None,
+    "lmstudio": None,
 }
 
 
@@ -347,8 +354,8 @@ def api_key_variable(config: Config) -> str | None:
 
     Returns:
         ``api_key_env`` if set and non-empty, otherwise the provider's standard
-        variable. None when no key is needed (``api_key_env = ""``) or no
-        provider is configured.
+        variable. None when no key is needed (``api_key_env = ""``, or the
+        ollama and lmstudio presets) or no provider is configured.
     """
     if config.api_key_env is not None:
         return config.api_key_env or None
