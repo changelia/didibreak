@@ -19,9 +19,16 @@ from didibreak.llm.openai_compat import OpenAICompatibleClient
 # Cheapest current models with structured output, checked in the official
 # docs on 2026-11-06 (task 12, Q4); see docs/providers-and-costs.md.
 DEFAULT_MODELS = {"openai": "gpt-6-luna", "anthropic": "claude-haiku-5-5"}
+# Presets (task 34) use the OpenAI-compatible client with these URLs, from
+# the services' docs (checked 2026-11-11): openrouter.ai/docs/quickstart,
+# docs.ollama.com/api/openai-compatibility, lmstudio.ai/docs (port 1234).
+PRESETS = ("openrouter", "ollama", "lmstudio")
 DEFAULT_BASE_URLS = {
     "openai": "https://api.openai.com/v1",
     "anthropic": ANTHROPIC_BASE_URL,
+    "openrouter": "https://openrouter.ai/api/v1",
+    "ollama": "http://localhost:11434/v1",
+    "lmstudio": "http://localhost:1234/v1",
 }
 
 
@@ -38,7 +45,8 @@ def resolve_provider(config: Config, environment: Mapping[str, str]) -> str:
         environment: Environment variables.
 
     Returns:
-        ``openai`` or ``anthropic``.
+        A name from config.PROVIDERS; only ``openai`` and ``anthropic`` are
+        inferred.
 
     Raises:
         ConfigError: No provider is configured and both or neither of
@@ -56,9 +64,10 @@ def resolve_provider(config: Config, environment: Mapping[str, str]) -> str:
     else:
         reason = "neither OPENAI_API_KEY nor ANTHROPIC_API_KEY is set"
     raise ConfigError(
-        f'cannot choose an LLM provider: {reason}; set provider = "openai" or '
-        '"anthropic" in [tool.didibreak] of pyproject.toml or pass --provider '
-        '(for a local server also set base_url, model and api_key_env = "")'
+        f"cannot choose an LLM provider: {reason}; set provider (openai, "
+        "anthropic, openrouter, ollama or lmstudio) in [tool.didibreak] of "
+        "pyproject.toml or pass --provider; openrouter, ollama and lmstudio "
+        "also need model"
     )
 
 
@@ -74,8 +83,8 @@ def client_settings(config: Config, environment: Mapping[str, str]) -> ClientSet
 
     Raises:
         ConfigError: No provider can be chosen (resolve_provider), no model
-            applies (a non-default ``base_url`` has no default model), or the
-            API key is missing.
+            applies (a preset or a non-default ``base_url`` has no default
+            model), or the API key is missing.
     """
     provider = resolve_provider(config, environment)
     config = replace(config, provider=provider)
@@ -83,6 +92,12 @@ def client_settings(config: Config, environment: Mapping[str, str]) -> ClientSet
     base_url = config.base_url or default_url
     model = config.model
     if model is None:
+        if provider in PRESETS:
+            raise ConfigError(
+                f"set model: the {provider} preset has no default model, "
+                "because model names differ per service; pass --model or set "
+                "model in [tool.didibreak]"
+            )
         if base_url.rstrip("/") != default_url.rstrip("/"):
             raise ConfigError(
                 f"set model: base_url {base_url} is not the {provider} "

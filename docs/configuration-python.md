@@ -45,10 +45,11 @@ in snake_case.
 | `--cases N` | `cases` | integer 1–50 | `12` | Input cases requested per function per round. |
 | `--refine-rounds N` | `refine_rounds` | integer 0–3 | `1` | Extra LLM rounds for a function whose cases found no difference; each round sends the cases already tried with their results. `0` turns refinement off. |
 | `--max-cost USD` | `max_cost` | number > 0 | `0.50` | Hard LLM cost limit per run, in US dollars. |
+| `--max-tokens N` | `max_tokens` | integer ≥ 1 | `200000` | Hard limit on input + output tokens per run, for every provider and model, priced or not. Checked before each request; functions after the limit are skipped (`token limit`). See [providers-and-costs.md](providers-and-costs.md#cost-control). |
 | `--timeout SECONDS` | `timeout` | number > 0 | `10` | Timeout per executed case. |
-| `--provider` | `provider` | `openai` or `anthropic` | from the API key | LLM provider (`openai` means any OpenAI-compatible API). If not set: `openai` when only `OPENAI_API_KEY` is set, `anthropic` when only `ANTHROPIC_API_KEY` is set; otherwise set it. See [providers-and-costs.md](providers-and-costs.md#setting-up-a-provider). |
+| `--provider` | `provider` | `openai`, `anthropic`, `openrouter`, `ollama` or `lmstudio` | from the API key | LLM provider (`openai` means any OpenAI-compatible API). `openrouter`, `ollama` and `lmstudio` are presets that fill in `base_url` and `api_key_env` and need `model`. If not set: `openai` when only `OPENAI_API_KEY` is set, `anthropic` when only `ANTHROPIC_API_KEY` is set; otherwise set it. See [providers-and-costs.md](providers-and-costs.md#setting-up-a-provider). |
 | `--model NAME` | `model` | string | none | Model name. The default per provider is listed in [providers-and-costs.md](providers-and-costs.md#default-models). |
-| `--base-url URL` | `base_url` | http(s) URL | provider default | OpenAI-compatible endpoint, e.g. OpenRouter, Ollama, LM Studio. |
+| `--base-url URL` | `base_url` | http(s) URL | provider default | OpenAI-compatible endpoint, e.g. OpenRouter, Ollama, LM Studio. Replaces a preset's URL. |
 | `--python PATH` | `python` | path | the interpreter running didibreak | Interpreter used to import and run your code (Python 3.11 or newer). |
 | `--output-dir PATH` | `output_dir` | path | `.didibreak` | Folder for reports, reproducing tests and the cache. |
 | `--no-cache` | `no_cache` | true / false | `false` | Ignore and do not write the case cache. |
@@ -64,7 +65,7 @@ is not a user feature and is described in `CONTRIBUTING.md`.
 | --- | --- | --- | --- |
 | `exclude` | list of glob patterns | `[]` | Extra files to skip, added to the default exclusions. |
 | `api_key_env` | string | provider default | Name of the environment variable that holds the API key. `""` disables the key check for local servers that need none. |
-| `prices` | table | built-in prices | Prices in US dollars per million tokens for models that are not in the built-in table, or to replace a built-in price: `[tool.didibreak.prices]` then `"my-model" = { input = 0.5, output = 1.5 }` (`cached_input` optional). A model without a price stops `check` with exit code 2, unless it runs on `localhost` / `127.0.0.1` (cost 0). |
+| `prices` | table | built-in prices | Prices in US dollars per million tokens for models that are not in the built-in table, or to replace a built-in price: `[tool.didibreak.prices]` then `"my-model" = { input = 0.5, output = 1.5 }` (`cached_input` optional). A model on `localhost` / `127.0.0.1` without a price costs 0; any other model without a price runs with a warning and an unknown cost, and only `max_tokens` limits it. |
 | `temperature` | number 0–2 | not set | Sampling temperature sent to the LLM. When not set, none is sent and the provider's default applies. Some models accept only their default: `gpt-6-luna` rejects anything but 1, and the Anthropic API rejects any value. |
 
 ## Excluded files
@@ -85,7 +86,9 @@ files were excluded, and `-v` lists them.
 ## API keys
 
 didibreak reads the key from `OPENAI_API_KEY` for `openai`,
-`ANTHROPIC_API_KEY` for `anthropic`, or the variable named by `api_key_env`.
+`ANTHROPIC_API_KEY` for `anthropic`, `OPENROUTER_API_KEY` for `openrouter`,
+or the variable named by `api_key_env`. The `ollama` and `lmstudio` presets
+need no key.
 Keys are never stored.
 
 ## Other commands

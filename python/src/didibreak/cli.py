@@ -47,6 +47,7 @@ from didibreak.harness import Case, HarnessSettings
 from didibreak.intent import NO_INTENT_REASON, intent_text, mark_unclear
 from didibreak.llm import create_client
 from didibreak.llm.common import LLMAuthError, LLMModelError
+from didibreak.llm.pricing import unknown_price_warning
 from didibreak.llm_session import LLMSession, Plan
 from didibreak.pipeline import (
     Analysis,
@@ -65,6 +66,14 @@ EXIT_OK = 0
 EXIT_FINDINGS = 1
 EXIT_ERROR = 2
 EXIT_INTERRUPTED = 130
+
+# Detailed Design section 13 (owner decision Q8): Linux and macOS only; the
+# harness needs Unix signals for its per-case timeouts.
+UNSUPPORTED_PLATFORM_MESSAGE = (
+    "didibreak: error: Windows is not supported; didibreak runs on Linux and "
+    "macOS (it needs Unix signals for per-case timeouts); use WSL or a Linux "
+    "container"
+)
 
 AGENT_SNIPPET = """\
 ## Behavior check
@@ -130,6 +139,13 @@ _CONFIG_FLAGS: tuple[tuple[str, str, Callable[[str], object], str, str], ...] = 
     ("--cases", "cases", int, "N", "cases per function, 1-50 (default: 12)"),
     ("--refine-rounds", "refine_rounds", int, "N", "extra rounds, 0-3 (default: 1)"),
     ("--max-cost", "max_cost", float, "USD", "cost limit per run (default: 0.50)"),
+    (
+        "--max-tokens",
+        "max_tokens",
+        int,
+        "N",
+        "input + output token limit per run (default: 200000)",
+    ),
     ("--timeout", "timeout", float, "SECONDS", "per-case timeout (default: 10)"),
     ("--provider", "provider", str, "|".join(PROVIDERS), "LLM provider"),
     ("--model", "model", str, "NAME", "model name"),
@@ -278,6 +294,8 @@ def _print_estimate(
     tokens = f"~{usage.input_tokens:,} input + ~{usage.output_tokens:,} output tokens"
     if session.local:
         cost = ", cost $0 (local)"
+    elif session.unpriced:
+        cost = f", cost unknown (limit {session.config.max_tokens:,} tokens)"
     else:
         cost = f", ~${estimate.cost_usd or 0:.4f} (limit {_money(max_cost)})"
     if plan.refinement or plan.labelling:
@@ -293,6 +311,13 @@ def _print_estimate(
     if not session.local and (estimate.cost_usd or 0) > max_cost:
         print(
             "The estimate is above max_cost: functions after the limit are skipped.",
+            file=stream,
+        )
+    if usage.input_tokens + usage.output_tokens > session.config.max_tokens:
+        print(
+            "The estimate is above max_tokens "
+            f"({session.config.max_tokens:,}): functions after the limit are "
+            "skipped.",
             file=stream,
         )
     cached = functions - plan.initial
@@ -341,8 +366,8 @@ def _start_llm(
     """Plan the LLM requests, show the estimate, ask; None when declined.
 
     Raises:
-        ConfigError: Missing provider, model or key, or an unpriced
-            non-local model (exit 2, before any request).
+        ConfigError: Missing provider, model or key (exit 2, before any
+            request).
     """
 
     def factory(config: Config, environment: Mapping[str, str]) -> object:
@@ -352,6 +377,10 @@ def _start_llm(
     plan = session.plan(functions, intent)
     if not plan.calls:
         return session  # every case is cached
+    if session.unpriced:
+        # Printed even with -q: a cost limit the user may rely on is off.
+        warning = unknown_price_warning(session.settings.model, config.max_tokens)
+        print(warning, file=sys.stderr, flush=True)
     if not arguments.quiet:
         # Part of the text report; in JSON mode stdout holds only the report.
         stream = sys.stdout if config.format == "text" else sys.stderr
@@ -680,6 +709,18 @@ def _run_check(arguments: argparse.Namespace) -> int:
     )
 
 
+def is_supported_platform(platform: str) -> bool:
+    """Whether didibreak runs on this platform (``sys.platform`` value).
+
+    Args:
+        platform: A ``sys.platform`` value such as ``linux`` or ``win32``.
+
+    Returns:
+        False on Windows, True elsewhere.
+    """
+    return platform != "win32"
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the didibreak command line.
 
@@ -688,8 +729,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     Returns:
         The process exit code: 0 no failing findings, 1 failing findings,
-        2 tool or configuration error, 130 interrupted (Ctrl-C).
+        2 tool or configuration error (also on Windows, before any work),
+        130 interrupted (Ctrl-C).
     """
+    if not is_supported_platform(sys.platform):
+        print(UNSUPPORTED_PLATFORM_MESSAGE, file=sys.stderr)
+        return EXIT_ERROR
     parser = build_parser()
     arguments = parser.parse_args(argv)
     if arguments.command == "check":

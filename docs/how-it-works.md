@@ -120,7 +120,8 @@ not labelled unexpected. One LLM request labels all findings of a run,
 with a one-sentence reason each. The LLM never removes a finding and never
 decides what changed; it only relates each measured difference to the
 intent. Findings stay `unclear`, with the reason shown, when there is no
-intent, when the labelling reply is unusable or the cost limit is reached,
+intent, when the labelling reply is unusable or the cost or token limit is
+reached,
 and in `--cases-file` runs, which use no LLM. The exit code follows the
 labels; see [output-format.md](output-format.md#exit-codes).
 

@@ -50,6 +50,17 @@ LLM: 0 calls · 0 input tokens · 0 output tokens · cost $0.0000
   would exceed the limit, that function and all remaining ones are skipped
   with the reason `cost limit`. The limit covers refinement requests too
   (`refinement skipped: ... (cost limit)`).
+- `max_tokens` (default 200,000) is a hard limit on input + output tokens
+  per run, checked the same way before each request, for every provider and
+  model, with or without a price. Functions after the limit are skipped with
+  the reason `token limit`; if the labelling request would exceed it, the
+  findings stay `unclear`. When the estimate is above the limit, the line
+  `The estimate is above max_tokens (...)` follows it. The default comes
+  from the evaluation: its largest run used 7,658 tokens for one function,
+  and ten functions of 20–80 lines are estimated at 85,000–121,000 tokens
+  with refinement and labelling. The check uses estimates, so one request
+  can use more than estimated; the limit can be passed by at most that
+  request.
 - After the run, the actual tokens and cost are shown, for example (from a
   test run with a fake provider):
   `LLM: 1 call · 1000 input tokens · 600 output tokens (400 reasoning) · cost $0.0004`.
@@ -66,9 +77,16 @@ docs on 2026-11-06:
 
 A model on this machine (`base_url` on `localhost` or `127.0.0.1`, such as
 Ollama or LM Studio) without a price costs nothing: the estimate and the
-usage line show `cost $0 (local)`. Any other model without a price stops
-`check` with exit code 2 before any request, because `max_cost` could not be
-enforced; didibreak never guesses a price. Add one with the `prices`
+usage line show `cost $0 (local)`. Any other model without a price runs,
+but didibreak never guesses a price, so `max_cost` cannot be enforced:
+
+- the estimate ends with `cost unknown (limit 200,000 tokens)`;
+- a warning on stderr (shown even with `-q`) says that max_cost is not
+  enforced, that `max_tokens` still applies, and how to add the price;
+- the usage line ends with `cost unknown`, and the JSON report has
+  `"cost_usd": null`.
+
+To get a cost and the `max_cost` limit, add the price with the `prices`
 setting:
 
 ```toml
@@ -128,22 +146,40 @@ provider = "openai"
 # default model claude-haiku-5-5
 provider = "anthropic"
 
-# OpenRouter: any model listed with structured outputs
-provider = "openai"
-base_url = "https://openrouter.ai/api/v1"
+# OpenRouter: key in OPENROUTER_API_KEY; any model listed with structured
+# outputs
+provider = "openrouter"
 model = "openai/gpt-6-luna"
-api_key_env = "OPENROUTER_API_KEY"
 
 # Local Ollama server: no key
-provider = "openai"
-base_url = "http://localhost:11434/v1"
+provider = "ollama"
 model = "llama3.2"
-api_key_env = ""
+
+# Local LM Studio server: no key
+provider = "lmstudio"
+model = "qwen3-8b"   # the name LM Studio shows for the loaded model
 ```
 
+`openrouter`, `ollama` and `lmstudio` are presets: they use the
+OpenAI-compatible client and fill in `base_url` and `api_key_env` for you.
+They have no default model, so `model` is required.
+
+| Preset | `base_url` | API key |
+| --- | --- | --- |
+| `openrouter` | `https://openrouter.ai/api/v1` | `OPENROUTER_API_KEY` |
+| `ollama` | `http://localhost:11434/v1` | none (Ollama ignores it) |
+| `lmstudio` | `http://localhost:1234/v1` | none (LM Studio needs none unless you turn authentication on) |
+
+A `base_url` or `api_key_env` you set yourself, as a flag or in
+`pyproject.toml`, replaces the preset's value: for example
+`api_key_env = "LM_STUDIO_TOKEN"` when LM Studio authentication is on, or
+another port in `base_url`. The URLs come from the services' documentation
+(checked 2026-11-11). Other OpenAI-compatible services still work with
+`provider = "openai"` plus `base_url`, `model` and `api_key_env`.
+
 `didibreak check` stops with exit code 2 and says what to set when no
-provider can be chosen, when a `base_url` other than the provider's own has no
-`model`, or when the API key variable is empty. The key is never printed.
+provider can be chosen, when a preset or a `base_url` other than the
+provider's own has no `model`, or when the API key variable is empty. The key is never printed.
 No LLM settings are needed when there is nothing to check (no changed or no
 testable functions).
 

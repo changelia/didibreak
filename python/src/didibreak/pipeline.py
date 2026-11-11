@@ -344,6 +344,7 @@ def check_imports(
 CHARS_PER_TOKEN = 3
 OUTPUT_TOKENS_PER_CASE = 180
 COST_LIMIT_REASON = "cost limit"
+TOKEN_LIMIT_REASON = "token limit"
 # A refinement prompt also lists the cases already tried: about this many
 # characters per case (call plus both outcomes).
 PREVIOUS_CHARS_PER_CASE = 160
@@ -452,6 +453,8 @@ class Budget:
         price: The model's price; None means no cost and no limit.
         max_cost: Limit in US dollars; None for no limit.
         count: Cases requested per call, for the output estimate.
+        max_tokens: Limit on input + output tokens of the run; None for no
+            limit. Applies with or without a price (task 34).
         usage: Tokens of all calls so far.
         cost: US dollars of all calls so far.
     """
@@ -459,6 +462,7 @@ class Budget:
     price: Price | None
     max_cost: float | None
     count: int
+    max_tokens: int | None = None
     usage: TokenUsage = field(default_factory=TokenUsage)
     cost: float = 0.0
 
@@ -468,17 +472,40 @@ class Budget:
         if self.price is not None:
             self.cost += cost_usd(usage, self.price)
 
-    def allows(self, messages: Sequence[Message]) -> bool:
-        """Whether one more request with these messages fits under max_cost."""
-        if self.price is None or self.max_cost is None:
-            return True  # without a price the limit cannot be enforced
+    def refusal(self, messages: Sequence[Message]) -> str | None:
+        """Why one more request with these messages must not be sent, or None.
+
+        The request's estimate plus the usage so far must fit under max_cost
+        (only with a price) and under max_tokens (always).
+
+        Returns:
+            COST_LIMIT_REASON, TOKEN_LIMIT_REASON, or None when it fits.
+        """
         observed = self.usage.calls and self.usage.output_tokens / (
             self.usage.calls * self.count
         )
         estimate = estimate_call(
             messages, self.count, observed or OUTPUT_TOKENS_PER_CASE
         )
-        return self.cost + cost_usd(estimate, self.price) <= self.max_cost
+        if self._over_max_cost(estimate):
+            return COST_LIMIT_REASON
+        tokens = _total(self.usage) + _total(estimate)
+        if self.max_tokens is not None and tokens > self.max_tokens:
+            return TOKEN_LIMIT_REASON
+        return None
+
+    def _over_max_cost(self, estimate: TokenUsage) -> bool:
+        if self.price is None or self.max_cost is None:
+            return False  # without a price the cost limit cannot be enforced
+        return self.cost + cost_usd(estimate, self.price) > self.max_cost
+
+    def allows(self, messages: Sequence[Message]) -> bool:
+        """Whether one more request with these messages fits under the limits."""
+        return self.refusal(messages) is None
+
+
+def _total(usage: TokenUsage) -> int:
+    return usage.input_tokens + usage.output_tokens
 
 
 _UNAVAILABLE = object()
@@ -532,9 +559,9 @@ def generate_cases(
     Returns:
         Accepted cases, skipped functions, and the usage and cost of this
         round. An invalid reply (after the client's one retry) skips that
-        function; an unavailable provider or the cost limit skips it and all
-        remaining functions; any other rejected request (HTTP 4xx except
-        401/403/404) skips that function.
+        function; an unavailable provider, the cost limit or the token limit
+        skips it and all remaining functions; any other rejected request
+        (HTTP 4xx except 401/403/404) skips that function.
 
     Raises:
         LLMAuthError: The key was rejected (HTTP 401/403).
@@ -551,7 +578,7 @@ def generate_cases(
             messages = build_messages(function, count, template)
         else:
             messages = build_refinement_messages(function, count, template, tried)
-        stop = None if spending.allows(messages) else COST_LIMIT_REASON
+        stop = spending.refusal(messages)
         result = _ask(client, messages, spending) if stop is None else None
         if result is _UNAVAILABLE:
             stop = UNAVAILABLE_REASON

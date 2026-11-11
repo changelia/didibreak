@@ -222,7 +222,7 @@ is strict. From the first release on, a new key needs a new `schema_version`.
 | `summary.type_mismatch_dropped` | Findings dropped because an input contradicts the function's type annotations (for example `bytes` for a `str` parameter). Only simple annotations are checked: builtin types, `None`, `Optional`/`Union`, and `list`, `dict`, `tuple`, `set` of these. |
 | `summary.skipped` | Functions not checked. Files that could not be read appear with their path; functions cut by `max_functions` have the reason `limit`. |
 | `summary.skipped[].function` | `path::qualname`, or a file path. |
-| `summary.skipped[].reason` | Why it was skipped, for example `obvious I/O: session.commit` or `cost limit`. |
+| `summary.skipped[].reason` | Why it was skipped, for example `obvious I/O: session.commit`, `cost limit` or `token limit`. |
 | `summary.removed` | Functions removed since the base. |
 | `summary.removed[].function` | `path::qualname` on the base. |
 | `usage` | LLM use of the run; all zero for `--cases-file` runs. |

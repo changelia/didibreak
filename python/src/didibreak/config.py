@@ -16,12 +16,28 @@ from urllib.parse import urlparse
 
 FORMATS = ("text", "json")
 FAIL_ON = ("unclear", "unexpected")
-PROVIDERS = ("openai", "anthropic")
+# openrouter, ollama and lmstudio are presets of the OpenAI-compatible
+# client: a base URL and a key variable (task 34; llm.DEFAULT_BASE_URLS).
+PROVIDERS = ("openai", "anthropic", "openrouter", "ollama", "lmstudio")
 
-_DEFAULT_API_KEY_VARIABLES = {
+# None: the local server needs no key (Ollama ignores one, LM Studio needs
+# none unless authentication is switched on).
+_DEFAULT_API_KEY_VARIABLES: dict[str, str | None] = {
     "openai": "OPENAI_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",
+    "openrouter": "OPENROUTER_API_KEY",
+    "ollama": None,
+    "lmstudio": None,
 }
+
+
+# Input + output tokens per run (task 34). The largest of the 76 evaluation
+# runs used 7,658 tokens for its one function (evaluation/rerun-21a), so a
+# full default run (max_functions = 10) uses about 77,000. The estimate the
+# limit is checked against is on the safe side: 85,000-121,000 for ten
+# 20-80 line functions with refinement and labelling. 200,000 does not cut
+# such a run but bounds a model whose price is unknown.
+DEFAULT_MAX_TOKENS = 200_000
 
 
 class ConfigError(Exception):
@@ -45,6 +61,7 @@ class Config:
     cases: int = 12
     refine_rounds: int = 1
     max_cost: float = 0.50
+    max_tokens: int = DEFAULT_MAX_TOKENS
     timeout: float = 10.0
     provider: str | None = None
     model: str | None = None
@@ -167,6 +184,7 @@ _VALIDATORS: dict[str, Callable[[str, object], object]] = {
     "cases": _integer(1, 50),
     "refine_rounds": _integer(0, 3),
     "max_cost": _positive_number,
+    "max_tokens": _integer(1, None),
     "timeout": _positive_number,
     "provider": _choice(PROVIDERS),
     "model": _non_empty_string,
@@ -336,8 +354,8 @@ def api_key_variable(config: Config) -> str | None:
 
     Returns:
         ``api_key_env`` if set and non-empty, otherwise the provider's standard
-        variable. None when no key is needed (``api_key_env = ""``) or no
-        provider is configured.
+        variable. None when no key is needed (``api_key_env = ""``, or the
+        ollama and lmstudio presets) or no provider is configured.
     """
     if config.api_key_env is not None:
         return config.api_key_env or None

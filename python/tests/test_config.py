@@ -24,6 +24,7 @@ def test_defaults_match_detailed_design() -> None:
     assert (config.base, config.format, config.fail_on) == ("HEAD", "text", "unclear")
     assert (config.max_functions, config.cases, config.refine_rounds) == (10, 12, 1)
     assert (config.max_cost, config.timeout) == (0.50, 10.0)
+    assert config.max_tokens == 200_000
     assert config.output_dir == ".didibreak"
     assert config.provider is None
     assert config.model is None
@@ -39,6 +40,8 @@ def test_defaults_match_detailed_design() -> None:
         ("max_functions", True, "max_functions must be an integer, got True"),
         ("timeout", 0, "timeout must be greater than 0; got 0"),
         ("max_cost", "cheap", "max_cost must be a number, got 'cheap'"),
+        ("max_tokens", 0, "max_tokens must be >= 1; got 0"),
+        ("max_tokens", 1.5, "max_tokens must be an integer, got 1.5"),
         ("format", "xml", "format must be one of text, json; got 'xml'"),
         ("fail_on", "all", "fail_on must be one of unclear, unexpected"),
         ("provider", "gemini", "provider must be one of openai, anthropic"),

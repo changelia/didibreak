@@ -11,6 +11,41 @@ the Python package and `js-v*` for the JS/TS package.
 
 Nothing yet.
 
+### 0.1.3
+
+Released when the tag `py-v0.1.3` is pushed. Simpler model switching. The
+JSON report keeps `schema_version: 1`: `usage.cost_usd` could already be
+`null`, and no field was added.
+
+#### Added
+
+- `--max-tokens` / `max_tokens` (default 200,000): a hard limit on input +
+  output tokens per run, for every provider and model. It is checked before
+  each request like `max_cost`; functions after the limit are skipped with
+  the reason `token limit`, and intent labelling that would exceed it leaves
+  the findings `unclear`.
+- Provider presets `openrouter`, `ollama` and `lmstudio` for `provider` /
+  `--provider`. They use the OpenAI-compatible client and fill in
+  `base_url` and `api_key_env` (`OPENROUTER_API_KEY`; no key for the two
+  local servers); `model` is required. A `base_url` or `api_key_env` you
+  set replaces the preset's value.
+- The README "Change the model" section uses the presets; the prices
+  block is now optional and only adds the cost and the `max_cost` limit.
+
+#### Changed
+
+- A remote model without a known price no longer stops `check` with exit
+  code 2: it runs with a warning that `max_cost` is not enforced and
+  `max_tokens` still applies. The estimate and the usage line say
+  `cost unknown`, and the JSON report has `"cost_usd": null` (already
+  allowed by schema version 1). Local models still cost 0.
+
+#### Fixed
+
+- On Windows, `didibreak` now stops at once with exit code 2 and a
+  one-line message that Windows is not supported (Linux and macOS are),
+  as the design promised. Before, there was no platform check.
+
 ### 0.1.2
 
 Released when the tag `py-v0.1.2` is pushed. No change to what `didibreak`

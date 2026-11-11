@@ -59,3 +59,13 @@ def test_usage_line_says_call_for_a_single_call() -> None:
     )
 
     assert results_text(report).splitlines()[-1].startswith("LLM: 1 call · 1000")
+
+
+def test_usage_line_says_cost_unknown_without_a_price() -> None:
+    report = dataclasses.replace(
+        sample_report(), usage=ReportUsage(2, 1000, 600, None, None)
+    )
+
+    last = results_text(report).splitlines()[-1]
+
+    assert last.endswith("600 output tokens · cost unknown")
