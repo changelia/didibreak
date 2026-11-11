@@ -27,6 +27,10 @@ the Python package and `js-v*` for the JS/TS package.
   unusable reply and before the JSON-mode fallback request. Before, a
   cut-off reply and its retry could pass the limit by two full replies
   (123,000 tokens for a 20,000 limit in the audit).
+- A return value whose dict keys or set elements raise in `__repr__` is
+  now recorded as a normal return (`<repr failed: ...>`, compared by type)
+  instead of a process crash (`didibreak.ProcessExited`), which also gave
+  new functions a false finding.
 
 #### Changed
 

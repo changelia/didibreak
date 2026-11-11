@@ -205,3 +205,21 @@ def test_timeout_outcome_matches_the_report_shape() -> None:
         "type_name": "",
         "repr": "<timed out after 10 s>",
     }
+
+
+class _ReprFails:
+    def __repr__(self) -> str:
+        raise RuntimeError("no repr")
+
+
+@pytest.mark.parametrize(
+    "value", [{_ReprFails(): 1}, {_ReprFails()}, frozenset({_ReprFails()})]
+)
+def test_a_raising_repr_inside_a_value_is_a_normal_return(value: object) -> None:
+    # Audit 35a, finding 5: the error escaped and crashed the child process.
+    outcome = return_outcome(value)
+
+    assert outcome["kind"] == "return"
+    assert outcome["type_name"] == type_name(value)
+    assert outcome["repr"] == "<repr failed: RuntimeError>"
+    assert "value" not in outcome

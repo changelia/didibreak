@@ -358,3 +358,22 @@ def test_import_check_reports_the_same_reasons_without_calling(tmp_path: Path) -
         check_import(target("ok", "missing"), settings)
         == "function not found after import"
     )
+
+
+def test_a_return_value_whose_repr_raises_is_not_a_crash(tmp_path: Path) -> None:
+    # Audit 35a, finding 5: recorded as didibreak.ProcessExited before 0.1.4.
+    source = (
+        "class Key:\n"
+        "    def __repr__(self):\n"
+        "        raise RuntimeError('no repr')\n\n\n"
+        "def f(x):\n"
+        "    return {Key(): x}\n"
+    )
+    tree = make_tree(tmp_path / "tree", {"mod.py": source})
+
+    result = run_cases(target(tree), [Case(("1",)), Case(("2",))], SETTINGS)
+
+    assert [(o.kind, o.type_name, o.repr) for o in result.outcomes] == [
+        ("return", "builtins.dict", "<repr failed: RuntimeError>"),
+    ] * 2
+    assert all(o.stable and o.value is None for o in result.outcomes)

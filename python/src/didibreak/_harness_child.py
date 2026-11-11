@@ -131,14 +131,20 @@ def normalize(value: object) -> dict[str, Any] | None:
         ``{"type": ..., "value": ...}`` for scalars (bytes as hex, floats as
         their repr), ``{"type": ..., "items": [...]}`` for containers (sets
         sorted by repr, dicts as key-value pairs sorted by the key's repr), or
-        None for anything else, including very large or deeply nested values.
-        Subclasses of these types are normalized through their builtin base
-        and carry their qualified type name under ``"class"``. Other enum
-        members become ``{"type": "enum", "class": ..., "name": ...}``.
+        None for anything else, including very large or deeply nested values
+        and values whose dict keys or set elements raise in ``__repr__``
+        (sorting calls it). Subclasses of these types are normalized through
+        their builtin base and carry their qualified type name under
+        ``"class"``. Other enum members become ``{"type": "enum", "class":
+        ..., "name": ...}``.
     """
     try:
         return _normalize(value, _Budget(), depth=0)
     except (_Unrepresentable, RecursionError):
+        return None
+    except Exception:
+        # User __repr__ code raised (audit 35a, finding 5); CaseTimeout is a
+        # BaseException and still ends the case.
         return None
 
 
