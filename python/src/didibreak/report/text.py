@@ -122,6 +122,11 @@ def results_text(report: Report, color: bool = False, llm: bool = True) -> str:
         f"{report.cases_run} cases · {len(report.findings)} behavior changes · "
         f"{report.flaky_dropped} flaky dropped"
     ]
+    if report.functions_checked == 0 and report.skipped:
+        lines.append(
+            "No function was checked: every changed function was skipped "
+            "(reasons below)."
+        )
     for _, group in report.by_label():
         for finding in group:
             lines += _finding_lines(finding, color)
