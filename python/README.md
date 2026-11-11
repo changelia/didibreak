@@ -10,6 +10,11 @@ export OPENAI_API_KEY="sk-..."    # or ANTHROPIC_API_KEY (experimental, not live
 didibreak check --intent "what the change should do"
 ```
 
+**What it is:** an extra check next to your tests. **What it is not:** a
+production safety net or a replacement for tests and review. It finds
+behavior changes on the inputs it generates; it cannot prove that no other
+input changed.
+
 A real run on a change that added thousands separators to a price formatter
 and also lost the minus sign (trimmed):
 
@@ -30,9 +35,10 @@ LLM: 2 calls · 1469 input tokens · 1153 output tokens (460 reasoning) · cost 
 
 didibreak runs your changed functions, old and new versions, on your
 machine; read [safety](https://github.com/changelia/didibreak/blob/main/docs/safety.md)
-first. It works best on functions whose inputs are Python literals; async
-functions, instance methods, generators and functions with obvious I/O are
-skipped ([limitations](https://github.com/changelia/didibreak/blob/main/docs/limitations.md)).
+first. For code you did not write (external pull requests, unattended
+agents), run didibreak inside a container or a CI job. It works best on
+functions whose inputs are Python literals; async functions, instance
+methods, generators and functions with obvious I/O are skipped ([limitations](https://github.com/changelia/didibreak/blob/main/docs/limitations.md)).
 
 Requires Python 3.11 or newer, Linux or macOS, and git. The 0.1 releases are
 alpha. No telemetry: the only network requests go to the LLM

@@ -15,6 +15,15 @@ check what someone thought of, and agents often write tests that confirm their
 own code. Behavior that nobody asserted can change silently. didibreak uses the
 old version as the reference, so it needs no hand-written expected values.
 
+## What didibreak is and is not
+
+- **It is** an extra check next to your tests: it runs the old and the new
+  version of each changed function on inputs it generates and shows where
+  they behave differently, labelled against what you asked for.
+- **It is not** a production safety net or a replacement for tests and
+  review. It finds behavior changes on the inputs it generates; it cannot
+  prove that no other input changed.
+
 ## Status
 
 0.1.1 (alpha; first release 0.1.0 on 2026-11-10): Python only, Linux and macOS. The release
@@ -44,6 +53,8 @@ didibreak check --intent "add thousands separators to prices"
 didibreak compares your uncommitted changes with `HEAD`. It **runs your
 changed functions**, old and new versions, on your machine; read
 [safety.md](docs/safety.md) for what is isolated and what is not.
+For code you did not write (external pull requests, unattended agents),
+run didibreak inside a container or a CI job.
 
 A real run with didibreak 0.1.0 on a change that added thousands separators
 to a price formatter and also lost the minus sign (trimmed: 7 `UNEXPECTED`
