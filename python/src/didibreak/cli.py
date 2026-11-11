@@ -66,6 +66,14 @@ EXIT_FINDINGS = 1
 EXIT_ERROR = 2
 EXIT_INTERRUPTED = 130
 
+# Detailed Design section 13 (owner decision Q8): Linux and macOS only; the
+# harness needs Unix signals for its per-case timeouts.
+UNSUPPORTED_PLATFORM_MESSAGE = (
+    "didibreak: error: Windows is not supported; didibreak runs on Linux and "
+    "macOS (it needs Unix signals for per-case timeouts); use WSL or a Linux "
+    "container"
+)
+
 AGENT_SNIPPET = """\
 ## Behavior check
 After changing Python functions, run:
@@ -680,6 +688,18 @@ def _run_check(arguments: argparse.Namespace) -> int:
     )
 
 
+def is_supported_platform(platform: str) -> bool:
+    """Whether didibreak runs on this platform (``sys.platform`` value).
+
+    Args:
+        platform: A ``sys.platform`` value such as ``linux`` or ``win32``.
+
+    Returns:
+        False on Windows, True elsewhere.
+    """
+    return platform != "win32"
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the didibreak command line.
 
@@ -688,8 +708,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     Returns:
         The process exit code: 0 no failing findings, 1 failing findings,
-        2 tool or configuration error, 130 interrupted (Ctrl-C).
+        2 tool or configuration error (also on Windows, before any work),
+        130 interrupted (Ctrl-C).
     """
+    if not is_supported_platform(sys.platform):
+        print(UNSUPPORTED_PLATFORM_MESSAGE, file=sys.stderr)
+        return EXIT_ERROR
     parser = build_parser()
     arguments = parser.parse_args(argv)
     if arguments.command == "check":

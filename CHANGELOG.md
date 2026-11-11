@@ -9,7 +9,11 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
-Nothing yet.
+#### Fixed
+
+- On Windows, `didibreak` now stops at once with exit code 2 and a
+  one-line message that Windows is not supported (Linux and macOS are),
+  as the design promised. Before, there was no platform check.
 
 ### 0.1.2
 
