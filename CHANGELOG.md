@@ -23,12 +23,17 @@ JSON report keeps `schema_version: 1`: `usage.cost_usd` could already be
   output tokens per run, for every provider and model. It is checked before
   each request like `max_cost`; functions after the limit are skipped with
   the reason `token limit`, and intent labelling that would exceed it leaves
-  the findings `unclear`.
+  the findings `unclear`. Because it is checked before each request, a
+  single request can go past the limit by the size of its own reply.
 - Provider presets `openrouter`, `ollama` and `lmstudio` for `provider` /
   `--provider`. They use the OpenAI-compatible client and fill in
   `base_url` and `api_key_env` (`OPENROUTER_API_KEY`; no key for the two
   local servers); `model` is required. A `base_url` or `api_key_env` you
-  set replaces the preset's value.
+  set at the same level as the preset, or higher, replaces the preset's
+  value.
+- A preset given as `--provider` discards `base_url` and `api_key_env` from
+  `pyproject.toml`, so `--provider ollama` never uses an OpenRouter URL or
+  key configured there.
 - The README "Change the model" section uses the presets; the prices
   block is now optional and only adds the cost and the `max_cost` limit.
 
@@ -42,9 +47,11 @@ JSON report keeps `schema_version: 1`: `usage.cost_usd` could already be
 
 #### Fixed
 
-- On Windows, `didibreak` now stops at once with exit code 2 and a
-  one-line message that Windows is not supported (Linux and macOS are),
-  as the design promised. Before, there was no platform check.
+- On Windows, `didibreak check` and `didibreak init-agents` now stop at
+  once with exit code 2 and a one-line message that Windows is not
+  supported (Linux and macOS are), as the design promised. Before, there
+  was no platform check.
+- `--help` and `--version` still work on Windows: they run no user code.
 
 ### 0.1.2
 

@@ -10,7 +10,13 @@ from dataclasses import replace
 
 import httpx
 
-from didibreak.config import Config, ConfigError, api_key_variable, read_api_key
+from didibreak.config import (
+    PRESETS,
+    Config,
+    ConfigError,
+    api_key_variable,
+    read_api_key,
+)
 from didibreak.llm.anthropic import DEFAULT_BASE_URL as ANTHROPIC_BASE_URL
 from didibreak.llm.anthropic import AnthropicClient
 from didibreak.llm.common import ClientSettings
@@ -22,7 +28,6 @@ DEFAULT_MODELS = {"openai": "gpt-6-luna", "anthropic": "claude-haiku-5-5"}
 # Presets (task 34) use the OpenAI-compatible client with these URLs, from
 # the services' docs (checked 2026-11-11): openrouter.ai/docs/quickstart,
 # docs.ollama.com/api/openai-compatibility, lmstudio.ai/docs (port 1234).
-PRESETS = ("openrouter", "ollama", "lmstudio")
 DEFAULT_BASE_URLS = {
     "openai": "https://api.openai.com/v1",
     "anthropic": ANTHROPIC_BASE_URL,

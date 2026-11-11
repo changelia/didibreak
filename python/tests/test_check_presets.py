@@ -107,12 +107,48 @@ def test_cli_provider_overrides_the_pyproject_preset(
     assert requests[0].url.host == "localhost"
 
 
-def test_pyproject_base_url_overrides_the_cli_preset_url(
+def test_cli_preset_discards_the_pyproject_url_and_key(
+    requests: list[httpx.Request],
+    repo: FixtureRepository,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Task 34 review, decision 5: --provider ollama must not send the
+    # request, or the OpenRouter key, to the OpenRouter URL from pyproject.
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-fake")
+    write_config(
+        repo,
+        'model = "llama3.2"\n'
+        'base_url = "https://openrouter.ai/api/v1"\n'
+        'api_key_env = "OPENROUTER_API_KEY"\n',
+    )
+
+    assert main(["check", "--provider", "ollama"]) == EXIT_FINDINGS
+
+    assert str(requests[0].url) == "http://localhost:11434/v1/chat/completions"
+    assert "authorization" not in requests[0].headers
+
+
+def test_cli_base_url_still_overrides_a_cli_preset(
     requests: list[httpx.Request], repo: FixtureRepository
 ) -> None:
-    write_config(repo, 'model = "llama3.2"\nbase_url = "http://127.0.0.1:8080/v1"\n')
+    write_config(repo, 'model = "llama3.2"\n')
+    argv = ["check", "--provider", "lmstudio", "--base-url", "http://127.0.0.1:8080/v1"]
 
-    assert main(["check", "--provider", "lmstudio"]) == EXIT_FINDINGS
+    assert main(argv) == EXIT_FINDINGS
+
+    assert str(requests[0].url) == "http://127.0.0.1:8080/v1/chat/completions"
+
+
+def test_pyproject_base_url_overrides_a_pyproject_preset(
+    requests: list[httpx.Request], repo: FixtureRepository
+) -> None:
+    write_config(
+        repo,
+        'provider = "lmstudio"\nmodel = "llama3.2"\n'
+        'base_url = "http://127.0.0.1:8080/v1"\n',
+    )
+
+    assert main(["check"]) == EXIT_FINDINGS
 
     assert str(requests[0].url) == "http://127.0.0.1:8080/v1/chat/completions"
 

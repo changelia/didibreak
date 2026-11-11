@@ -3,6 +3,15 @@
 didibreak reads settings from three places. A CLI flag overrides
 `[tool.didibreak]` in `pyproject.toml`, which overrides the built-in default.
 
+One exception for the provider presets (`openrouter`, `ollama`,
+`lmstudio`): a preset given as `--provider` also discards `base_url` and
+`api_key_env` from `pyproject.toml`, so the preset's own URL and key apply.
+For example, with `base_url = "https://openrouter.ai/api/v1"` in
+`pyproject.toml`, `--provider ollama` sends requests to the local Ollama
+server, without a key. A `--base-url` or `api_key_env` value at the same
+level as the preset or higher still replaces the preset's value, and the
+`pyproject.toml` values are kept when that file names the same preset.
+
 ## Where the config file is found
 
 didibreak uses the nearest `pyproject.toml` from the current directory up to
@@ -45,11 +54,11 @@ in snake_case.
 | `--cases N` | `cases` | integer 1–50 | `12` | Input cases requested per function per round. |
 | `--refine-rounds N` | `refine_rounds` | integer 0–3 | `1` | Extra LLM rounds for a function whose cases found no difference; each round sends the cases already tried with their results. `0` turns refinement off. |
 | `--max-cost USD` | `max_cost` | number > 0 | `0.50` | Hard LLM cost limit per run, in US dollars. |
-| `--max-tokens N` | `max_tokens` | integer ≥ 1 | `200000` | Hard limit on input + output tokens per run, for every provider and model, priced or not. Checked before each request; functions after the limit are skipped (`token limit`). See [providers-and-costs.md](providers-and-costs.md#cost-control). |
+| `--max-tokens N` | `max_tokens` | integer ≥ 1 | `200000` | Hard limit on input + output tokens per run, for every provider and model, priced or not. Checked before each request, so a single request can go past the limit by the size of its own reply; functions after the limit are skipped (`token limit`). See [providers-and-costs.md](providers-and-costs.md#cost-control). |
 | `--timeout SECONDS` | `timeout` | number > 0 | `10` | Timeout per executed case. |
 | `--provider` | `provider` | `openai`, `anthropic`, `openrouter`, `ollama` or `lmstudio` | from the API key | LLM provider (`openai` means any OpenAI-compatible API). `openrouter`, `ollama` and `lmstudio` are presets that fill in `base_url` and `api_key_env` and need `model`. If not set: `openai` when only `OPENAI_API_KEY` is set, `anthropic` when only `ANTHROPIC_API_KEY` is set; otherwise set it. See [providers-and-costs.md](providers-and-costs.md#setting-up-a-provider). |
 | `--model NAME` | `model` | string | none | Model name. The default per provider is listed in [providers-and-costs.md](providers-and-costs.md#default-models). |
-| `--base-url URL` | `base_url` | http(s) URL | provider default | OpenAI-compatible endpoint, e.g. OpenRouter, Ollama, LM Studio. Replaces a preset's URL. |
+| `--base-url URL` | `base_url` | http(s) URL | provider default | OpenAI-compatible endpoint, e.g. OpenRouter, Ollama, LM Studio. Replaces the URL of a preset set at the same level or lower (see the top of this page). |
 | `--python PATH` | `python` | path | the interpreter running didibreak | Interpreter used to import and run your code (Python 3.11 or newer). |
 | `--output-dir PATH` | `output_dir` | path | `.didibreak` | Folder for reports, reproducing tests and the cache. |
 | `--no-cache` | `no_cache` | true / false | `false` | Ignore and do not write the case cache. |

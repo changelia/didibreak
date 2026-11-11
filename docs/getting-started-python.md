@@ -7,7 +7,8 @@ with Python 3.12 on 2026-11-10; the output is real.
 ## What you need
 
 - Python 3.11 or newer, on Linux or macOS. Windows is not supported: there
-  `didibreak` stops with exit code 2 and says so (use WSL or a Linux container).
+  `didibreak check` and `init-agents` stop with exit code 2 and say so (use
+  WSL or a Linux container); only `--help` and `--version` work.
 - `git`. didibreak compares your working tree with a git commit.
 - An API key for OpenAI or Anthropic, or a local model server; see
   [providers-and-costs.md](providers-and-costs.md#setting-up-a-provider).
