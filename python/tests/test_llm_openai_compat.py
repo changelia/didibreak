@@ -213,3 +213,35 @@ def test_client_closes_as_a_context_manager() -> None:
         assert same is client
 
     assert client._http.is_closed
+
+
+def test_json_mode_fallback_is_not_sent_when_the_run_limit_refuses() -> None:
+    # Audit 35a, finding 4: the fallback request skipped the budget check.
+    unsupported = httpx.Response(
+        400,
+        json={"error": {"message": "response_format json_schema is not supported"}},
+    )
+    client, sent = make_client([unsupported])
+
+    with pytest.raises(LLMRequestError, match="json_schema is not supported"):
+        client.complete_json(MESSAGES, SCHEMA, "labels", lambda _spent: False)
+
+    assert len(sent) == 1
+
+
+@pytest.mark.parametrize(
+    ("parameter", "expected"),
+    [("max_completion_tokens", 16000), ("max_tokens", 16000), (None, None)],
+)
+def test_output_cap_uses_only_the_configured_field(
+    parameter: str | None, expected: int | None
+) -> None:
+    reply = httpx.Response(200, json=completion('{"labels": []}'))
+    client, sent = make_client([reply], output_limit_parameter=parameter)
+
+    client.complete_json(MESSAGES, SCHEMA, "labels")
+
+    body = sent[0]["body"]
+    fields = {"max_completion_tokens", "max_tokens"} & set(body)
+    assert fields == (set() if parameter is None else {parameter})
+    assert body.get(parameter or "", None) == expected

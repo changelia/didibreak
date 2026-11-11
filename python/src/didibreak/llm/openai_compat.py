@@ -17,9 +17,11 @@ import httpx
 
 from didibreak import __version__
 from didibreak.llm.common import (
+    MAX_OUTPUT_TOKENS,
     ClientSettings,
     LLMReply,
     LLMRequestError,
+    MayContinue,
     Message,
     RawReply,
     TokenUsage,
@@ -125,6 +127,8 @@ def request_payload(
     }
     if settings.temperature is not None:
         body["temperature"] = settings.temperature
+    if settings.output_limit_parameter is not None:
+        body[settings.output_limit_parameter] = MAX_OUTPUT_TOKENS
     if urlparse(settings.base_url).hostname == "openrouter.ai":
         # Route only to endpoints that support structured outputs (OpenRouter docs).
         body["provider"] = {"require_parameters": True}
@@ -165,7 +169,11 @@ class OpenAICompatibleClient:
         self._http.close()
 
     def complete_json(
-        self, messages: Sequence[Message], schema: Mapping[str, Any], schema_name: str
+        self,
+        messages: Sequence[Message],
+        schema: Mapping[str, Any],
+        schema_name: str,
+        may_continue: MayContinue | None = None,
     ) -> LLMReply:
         """Ask for a JSON object matching ``schema``.
 
@@ -174,6 +182,8 @@ class OpenAICompatibleClient:
             schema: JSON schema of the reply (strict: additionalProperties
                 false and every property required).
             schema_name: Name for the schema.
+            may_continue: Asked before a retry or the JSON-mode fallback
+                request; None allows them.
 
         Returns:
             The schema-valid object and the usage of all calls made.
@@ -182,7 +192,11 @@ class OpenAICompatibleClient:
             LLMError: A subclass from llm.common describing the failure.
         """
         return complete_with_one_retry(
-            lambda: self._attempt(messages, schema, schema_name), schema
+            lambda spent: self._attempt(
+                messages, schema, schema_name, spent, may_continue
+            ),
+            schema,
+            may_continue,
         )
 
     def _post(self, payload: Mapping[str, Any]) -> httpx.Response:
@@ -195,7 +209,12 @@ class OpenAICompatibleClient:
         )
 
     def _attempt(
-        self, messages: Sequence[Message], schema: Mapping[str, Any], schema_name: str
+        self,
+        messages: Sequence[Message],
+        schema: Mapping[str, Any],
+        schema_name: str,
+        spent: TokenUsage,
+        may_continue: MayContinue | None,
     ) -> RawReply:
         payload = request_payload(
             self.settings, messages, schema, schema_name, self._json_mode
@@ -206,6 +225,8 @@ class OpenAICompatibleClient:
             text = str(error).lower()
             if self._json_mode or not any(h in text for h in _SCHEMA_UNSUPPORTED_HINTS):
                 raise
+            if may_continue is not None and not may_continue(spent):
+                raise  # the run's limit does not allow the fallback request
             self._json_mode = True  # stays on for this client's later calls
             payload = request_payload(
                 self.settings, messages, schema, schema_name, True

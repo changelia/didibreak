@@ -23,8 +23,17 @@ the Python package and `js-v*` for the JS/TS package.
   behavior change and exit 0, and `max_cost = nan` switched the cost limit
   off without a message.
 
+- `max_tokens` and `max_cost` are checked again before the retry after an
+  unusable reply and before the JSON-mode fallback request. Before, a
+  cut-off reply and its retry could pass the limit by two full replies
+  (123,000 tokens for a 20,000 limit in the audit).
+
 #### Changed
 
+- Each LLM request asks for at most 16,000 output tokens where the server
+  documents the field: `max_completion_tokens` for OpenAI and OpenRouter,
+  `max_tokens` for Anthropic (as before), Ollama and LM Studio. Other
+  OpenAI-compatible servers get no such field.
 - `check` exits with code 2 when changed functions were selected but none
   could be checked because of an error (provider unreachable, invalid
   replies, cost or token limit, import failure); the report is still

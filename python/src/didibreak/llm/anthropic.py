@@ -18,8 +18,10 @@ import httpx
 
 from didibreak import __version__
 from didibreak.llm.common import (
+    MAX_OUTPUT_TOKENS,
     ClientSettings,
     LLMReply,
+    MayContinue,
     Message,
     RawReply,
     TokenUsage,
@@ -31,8 +33,8 @@ from didibreak.llm.common import (
 API_VERSION = "2026-10-21"
 DEFAULT_BASE_URL = "https://api.anthropic.com"
 # Room for adaptive thinking plus a JSON reply; non-streaming requests stay
-# well under the HTTP timeouts at this size.
-MAX_TOKENS = 16000
+# well under the HTTP timeouts at this size. The Messages API requires it.
+MAX_TOKENS = MAX_OUTPUT_TOKENS
 
 
 def _int(value: object) -> int:
@@ -135,7 +137,11 @@ class AnthropicClient:
         self._http.close()
 
     def complete_json(
-        self, messages: Sequence[Message], schema: Mapping[str, Any], schema_name: str
+        self,
+        messages: Sequence[Message],
+        schema: Mapping[str, Any],
+        schema_name: str,
+        may_continue: MayContinue | None = None,
     ) -> LLMReply:
         """Ask for a JSON object matching ``schema``.
 
@@ -145,6 +151,7 @@ class AnthropicClient:
             schema: JSON schema of the reply (objects need
                 additionalProperties false).
             schema_name: Unused by this API; kept for the shared signature.
+            may_continue: Asked before a retry; None allows it.
 
         Returns:
             The schema-valid object and the usage of all calls made.
@@ -152,7 +159,9 @@ class AnthropicClient:
         Raises:
             LLMError: A subclass from llm.common describing the failure.
         """
-        return complete_with_one_retry(lambda: self._attempt(messages, schema), schema)
+        return complete_with_one_retry(
+            lambda _spent: self._attempt(messages, schema), schema, may_continue
+        )
 
     def _attempt(
         self, messages: Sequence[Message], schema: Mapping[str, Any]
