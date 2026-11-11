@@ -5,8 +5,10 @@ import dataclasses
 import pytest
 from report_samples import check_snapshot, sample_report
 
-from didibreak.report import ReportUsage
-from didibreak.report.text import counted, results_text
+from didibreak.harness import Case, Outcome
+from didibreak.report import Report, ReportUsage, SkippedItem
+from didibreak.report.json import report_json
+from didibreak.report.text import counted, printable, results_text
 
 
 def test_text_snapshot() -> None:
@@ -69,3 +71,51 @@ def test_usage_line_says_cost_unknown_without_a_price() -> None:
     last = results_text(report).splitlines()[-1]
 
     assert last.endswith("600 output tokens · cost unknown")
+
+
+ESCAPE = "\x1b]0;owned\x07\x1b[2J"
+
+
+def hostile_report() -> Report:
+    # Audit 35a, finding 8: LLM text and user reprs reached the terminal as is.
+    report = sample_report()
+    finding = dataclasses.replace(
+        report.findings[1],
+        case=Case((f"'{ESCAPE}'",)),
+        after=Outcome("return", "app.Weird", f"<Weird {ESCAPE}>"),
+        reason=f"looks fine{ESCAPE}\nreally",
+    )
+    return dataclasses.replace(
+        report,
+        findings=(finding,),
+        skipped=(SkippedItem("app/x.py::g", f"llm request rejected: {ESCAPE}"),),
+    )
+
+
+def test_text_report_has_no_terminal_control_characters() -> None:
+    text = results_text(hostile_report(), color=True)
+
+    controls = {c for c in text if ord(c) < 0x20 and c != "\n"}
+    assert controls == {"\x1b"}  # only didibreak's own color codes
+    assert "\x1b]" not in text and "\x07" not in text and "\x1b[2J" not in text
+    assert r"\x1b]0;owned\x07\x1b[2J" in text
+    assert "looks fine" in text and "really" in text
+
+
+def test_json_report_keeps_the_original_text() -> None:
+    data = report_json(hostile_report())
+
+    assert data["findings"][0]["reason"] == f"looks fine{ESCAPE}\nreally"
+    assert data["findings"][0]["after"]["repr"] == f"<Weird {ESCAPE}>"
+
+
+@pytest.mark.parametrize(
+    ("text", "shown"),
+    [
+        ("plain é 字", "plain é 字"),
+        ("a\tb\r\nc", "a b  c"),
+        ("\x00\x1f\x7f\x9b", r"\x00\x1f\x7f\x9b"),
+    ],
+)
+def test_printable_replaces_only_control_characters(text: str, shown: str) -> None:
+    assert printable(text) == shown

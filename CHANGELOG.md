@@ -36,6 +36,9 @@ the Python package and `js-v*` for the JS/TS package.
   `GOOGLE_APPLICATION_CREDENTIALS`), and `*_URL`, `*_URI`, `*_DSN`
   variables whose URL carries a password (`postgres://user:pass@...`).
   A `DATABASE_URL` without a password is kept.
+- The text report no longer passes terminal control characters from LLM
+  text or your code's `repr`s to the terminal: they appear as `\xNN`, and
+  line breaks inside a reason become spaces. The JSON report is unchanged.
 
 #### Changed
 

@@ -46,6 +46,10 @@ Order:
    show none of these lines.
 
 Labels are colored only when stdout is a terminal and `NO_COLOR` is not set.
+Text that comes from the LLM or from your code (arguments, `repr`s, reasons,
+provider messages) is shown without terminal control characters: tabs and
+line breaks become spaces, and other control characters appear as `\xNN`
+(for example `\x1b`). The JSON report keeps the original text.
 
 Example (the part after the header and the estimate):
 

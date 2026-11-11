@@ -13,10 +13,37 @@ from collections.abc import Sequence
 from didibreak.compare import Finding
 from didibreak.functions import Detection
 from didibreak.harness import Outcome
-from didibreak.report import Report
+from didibreak.report import Report, SkippedItem
 
 _COLORS = {"unexpected": "31", "unclear": "33", "expected": "32", "new_function": "36"}
 _INDENT = 13
+_SPACE_CONTROLS = "\t\n\r"
+
+
+def printable(text: str) -> str:
+    r"""Text safe for a terminal: no control characters (audit 35a, finding 8).
+
+    LLM replies and the user's ``repr`` can contain escape sequences that
+    move the cursor or change the terminal. Tabs and line breaks become
+    spaces; any other C0 or C1 control character is shown as ``\xNN``.
+    The JSON report keeps the text unchanged.
+
+    Args:
+        text: Text from the LLM or from the code under test.
+
+    Returns:
+        The text with control characters replaced.
+    """
+    return "".join(_printable_character(character) for character in text)
+
+
+def _printable_character(character: str) -> str:
+    code = ord(character)
+    if character in _SPACE_CONTROLS:
+        return " "
+    if code < 0x20 or 0x7F <= code < 0xA0:
+        return f"\\x{code:02x}"
+    return character
 
 
 def counted(count: int, noun: str) -> str:
@@ -69,8 +96,8 @@ def _describe(outcome: Outcome | None) -> str:
     if outcome is None:
         return "(new function)"
     if outcome.kind == "exception":
-        return f"raises {outcome.type_name}"
-    return outcome.repr
+        return f"raises {printable(outcome.type_name)}"
+    return printable(outcome.repr)
 
 
 def _finding_lines(finding: Finding, color: bool) -> list[str]:
@@ -78,13 +105,14 @@ def _finding_lines(finding: Finding, color: bool) -> list[str]:
     arguments += [f"{key}={value}" for key, value in finding.case.kwargs.items()]
     heading = (finding.label or "").upper().replace("_", "-")
     label = _paint(f"{heading:<{_INDENT}}", finding.label or "unclear", color)
+    call = printable(f"{finding.function}({', '.join(arguments)})")
     lines = [
-        f"  {label}{finding.function}({', '.join(arguments)})",
+        f"  {label}{call}",
         f"  {'':<{_INDENT}}before {_describe(finding.before)} → "
         f"after {_describe(finding.after)}",
     ]
     if finding.reason:
-        lines.append(f"  {'':<{_INDENT}}{finding.reason}")
+        lines.append(f"  {'':<{_INDENT}}{printable(finding.reason)}")
     return lines
 
 
@@ -105,6 +133,11 @@ def _usage_line(report: Report) -> str:
         f"LLM: {counted(usage.calls, 'call')} · {usage.input_tokens} input tokens · "
         f"{usage.output_tokens} output tokens{reasoning}{cost}"
     )
+
+
+def _item_line(prefix: str, item: SkippedItem) -> str:
+    # Skip reasons can quote the provider; test calls hold LLM arguments.
+    return f"  {prefix}: {printable(f'{item.function} ({item.reason})')}"
 
 
 def results_text(report: Report, color: bool = False, llm: bool = True) -> str:
@@ -130,12 +163,12 @@ def results_text(report: Report, color: bool = False, llm: bool = True) -> str:
     for _, group in report.by_label():
         for finding in group:
             lines += _finding_lines(finding, color)
-    lines += [f"  skipped: {item.function} ({item.reason})" for item in report.skipped]
+    lines += [_item_line("skipped", item) for item in report.skipped]
     if report.removed:
         lines.append(f"Removed: {', '.join(report.removed)}")
     if report.test_files:
         lines.append(f"Reproducing tests: {', '.join(report.test_files)}")
-    lines += [f"  no test: {item.function} ({item.reason})" for item in report.no_tests]
+    lines += [_item_line("no test", item) for item in report.no_tests]
     if report.type_mismatch_dropped:
         lines.append(
             f"{report.type_mismatch_dropped} findings dropped "
@@ -153,8 +186,7 @@ def results_text(report: Report, color: bool = False, llm: bool = True) -> str:
                 f"{report.refinement_cases} more cases"
             )
         lines += [
-            f"  refinement skipped: {item.function} ({item.reason})"
-            for item in report.refinement_skipped
+            _item_line("refinement skipped", item) for item in report.refinement_skipped
         ]
         # Detailed Design 7: the usage line comes last.
         lines.append(_usage_line(report))
