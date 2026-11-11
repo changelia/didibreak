@@ -12,7 +12,7 @@ from fixture_repos import FixtureRepository, build_fixture_repository
 
 from didibreak import cli, llm
 from didibreak.cache import GITIGNORE_TEXT
-from didibreak.cli import EXIT_ERROR, EXIT_FINDINGS, EXIT_OK, main
+from didibreak.cli import EXIT_FINDINGS, EXIT_OK, main
 from didibreak.config import Config
 
 FUNCTION = "app/utils/phone.py::normalize_phone"
@@ -214,18 +214,55 @@ def test_token_limit_from_pyproject_applies_and_the_flag_overrides_it(
     assert events == ["estimate", "estimate", "request"]
 
 
-def test_unpriced_remote_model_exits_2_with_a_hint(
+def test_unpriced_remote_model_runs_with_a_warning_and_unknown_cost(
     events: list[str], capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assert main(["check", "--model", "my-private-model"]) == EXIT_ERROR
+    assert main(["check", "--model", "my-private-model"]) == EXIT_FINDINGS
 
-    assert events == []  # no estimate, no request
-    err = "".join(capsys.readouterr())
+    assert events == ["estimate", "request"]
+    out, err = capsys.readouterr()
+    assert ", cost unknown (limit 200,000 tokens)" in out
     assert "no price is known for model 'my-private-model'" in err
+    assert "max_cost is not enforced; max_tokens (200,000) still applies" in err
     assert (
         '[tool.didibreak.prices] "my-private-model" = { input = ..., output = ... }'
         in err
     )
+    assert "output tokens (400 reasoning) · cost unknown" in out
+
+
+def test_unpriced_model_warns_even_in_quiet_mode(
+    events: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    main(["check", "--model", "my-private-model", "-q"])
+
+    out, err = capsys.readouterr()
+    assert "Estimated" not in out + err
+    assert "max_cost is not enforced" in err
+
+
+def test_unpriced_model_json_report_has_null_cost(
+    events: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    code = main(["check", "--model", "my-private-model", "--format", "json"])
+
+    out, err = capsys.readouterr()
+    report = json.loads(out)
+    assert code == EXIT_FINDINGS
+    assert report["usage"]["cost_usd"] is None
+    assert report["usage"]["calls"] == 1  # a difference found: no refinement
+    assert "max_cost is not enforced" in err
+
+
+def test_unpriced_model_is_still_bounded_by_max_tokens(
+    events: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    argv = ["check", "--model", "my-private-model", "--max-tokens", "100"]
+
+    assert main(argv) == EXIT_OK
+
+    assert events == ["estimate"]
+    assert f"skipped: {FUNCTION} (token limit)" in "".join(capsys.readouterr())
 
 
 @pytest.mark.parametrize("host", ["localhost:11434", "127.0.0.1:1234"])

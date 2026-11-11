@@ -47,6 +47,7 @@ from didibreak.harness import Case, HarnessSettings
 from didibreak.intent import NO_INTENT_REASON, intent_text, mark_unclear
 from didibreak.llm import create_client
 from didibreak.llm.common import LLMAuthError, LLMModelError
+from didibreak.llm.pricing import unknown_price_warning
 from didibreak.llm_session import LLMSession, Plan
 from didibreak.pipeline import (
     Analysis,
@@ -293,6 +294,8 @@ def _print_estimate(
     tokens = f"~{usage.input_tokens:,} input + ~{usage.output_tokens:,} output tokens"
     if session.local:
         cost = ", cost $0 (local)"
+    elif session.unpriced:
+        cost = f", cost unknown (limit {session.config.max_tokens:,} tokens)"
     else:
         cost = f", ~${estimate.cost_usd or 0:.4f} (limit {_money(max_cost)})"
     if plan.refinement or plan.labelling:
@@ -363,8 +366,8 @@ def _start_llm(
     """Plan the LLM requests, show the estimate, ask; None when declined.
 
     Raises:
-        ConfigError: Missing provider, model or key, or an unpriced
-            non-local model (exit 2, before any request).
+        ConfigError: Missing provider, model or key (exit 2, before any
+            request).
     """
 
     def factory(config: Config, environment: Mapping[str, str]) -> object:
@@ -374,6 +377,10 @@ def _start_llm(
     plan = session.plan(functions, intent)
     if not plan.calls:
         return session  # every case is cached
+    if session.unpriced:
+        # Printed even with -q: a cost limit the user may rely on is off.
+        warning = unknown_price_warning(session.settings.model, config.max_tokens)
+        print(warning, file=sys.stderr, flush=True)
     if not arguments.quiet:
         # Part of the text report; in JSON mode stdout holds only the report.
         stream = sys.stdout if config.format == "text" else sys.stderr

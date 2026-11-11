@@ -41,7 +41,7 @@ from didibreak.llm.common import (
     LLMUnavailableError,
     TokenUsage,
 )
-from didibreak.llm.pricing import LOCAL, cost_usd, prices_from_config, required_price
+from didibreak.llm.pricing import LOCAL, cost_usd, prices_from_config, run_price
 from didibreak.pipeline import (
     CHARS_PER_TOKEN,
     Budget,
@@ -97,6 +97,7 @@ class LLMSession:
     factory: ClientFactory
     budget: Budget
     local: bool = False
+    unpriced: bool = False
     _client: Any = field(default=None, repr=False)
 
     @classmethod
@@ -162,9 +163,8 @@ class LLMSession:
         cases are not cached, as if no round found a difference. With an
         intent, one labelling request is added (labels are never cached).
 
-        Raises:
-            ConfigError: A request is needed and the model has no price and
-                is not local (owner decision 2026-11-07).
+        When a request is needed, sets ``local`` (cost 0) or ``unpriced``
+        (no known price: cost unknown, only max_tokens applies; task 34).
         """
         count = self.config.cases
         initial = [f for f in functions if self._cached(f, 0) is None]
@@ -178,10 +178,9 @@ class LLMSession:
         price = None
         if initial or rounds or labelling:
             overrides = prices_from_config(self.config.prices)
-            price = required_price(
-                self.settings.model, self.settings.base_url, overrides
-            )
-            self.local = price.source == LOCAL
+            price = run_price(self.settings.model, self.settings.base_url, overrides)
+            self.local = price is not None and price.source == LOCAL
+            self.unpriced = price is None
             self.budget = Budget(
                 price, self.config.max_cost, count, self.config.max_tokens
             )

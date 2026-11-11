@@ -10,7 +10,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
-from didibreak.config import ConfigError
 from didibreak.llm.common import TokenUsage
 
 PRICES_CHECKED = "2026-11-06"
@@ -94,8 +93,9 @@ def price_for(model: str, overrides: Mapping[str, Price] | None = None) -> Price
     return BUILT_IN_PRICES.get(model)
 
 
-# Owner decision 2026-11-07: a model served on this machine costs nothing;
-# any other model needs a price so that max_cost can be enforced.
+# Owner decision 2026-11-07: a model served on this machine costs nothing.
+# Since task 34 (owner decision 2026-11-10) any other model without a price
+# runs too, with an unknown cost; max_tokens still bounds it.
 LOCAL_HOSTS = ("localhost", "127.0.0.1")
 LOCAL = "local"
 LOCAL_PRICE = Price(input=0.0, output=0.0, source=LOCAL)
@@ -106,10 +106,10 @@ def is_local(base_url: str) -> bool:
     return urlparse(base_url).hostname in LOCAL_HOSTS
 
 
-def required_price(
+def run_price(
     model: str, base_url: str, overrides: Mapping[str, Price] | None = None
-) -> Price:
-    """The model's price; a local endpoint without one costs 0.
+) -> Price | None:
+    """The price a run uses; a local endpoint without one costs 0.
 
     Args:
         model: Model name.
@@ -117,20 +117,22 @@ def required_price(
         overrides: Prices from the ``prices`` setting.
 
     Returns:
-        The configured or built-in price, or LOCAL_PRICE for a local endpoint.
-
-    Raises:
-        ConfigError: A non-local model has no price, so max_cost could not be
-            enforced.
+        The configured or built-in price, LOCAL_PRICE for a local endpoint,
+        or None when the cost is unknown (max_cost cannot be enforced).
     """
     price = price_for(model, overrides)
-    if price is not None:
-        return price
-    if is_local(base_url):
+    if price is None and is_local(base_url):
         return LOCAL_PRICE
-    raise ConfigError(
-        f"no price is known for model {model!r}, so max_cost cannot be enforced; "
-        f'add it in pyproject.toml: [tool.didibreak.prices] "{model}" = '
+    return price
+
+
+def unknown_price_warning(model: str, max_tokens: int) -> str:
+    """The warning shown before a run whose model has no known price."""
+    return (
+        f"didibreak: warning: no price is known for model {model!r}, so the "
+        f"cost is unknown and max_cost is not enforced; max_tokens "
+        f"({max_tokens:,}) still applies. To enforce max_cost, add the price "
+        f'in pyproject.toml: [tool.didibreak.prices] "{model}" = '
         "{ input = ..., output = ... } (US dollars per million tokens)"
     )
 

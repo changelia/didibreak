@@ -14,7 +14,8 @@ from didibreak.llm.pricing import (
     is_local,
     price_for,
     prices_from_config,
-    required_price,
+    run_price,
+    unknown_price_warning,
 )
 
 
@@ -117,19 +118,28 @@ def test_local_endpoints_are_localhost_and_127_0_0_1(url: str, local: bool) -> N
     assert is_local(url) is local
 
 
-def test_required_price_prefers_a_known_price_then_local_zero() -> None:
+def test_run_price_prefers_a_known_price_then_local_zero() -> None:
     overrides = prices_from_config({"llama": {"input": 0.2, "output": 0.4}})
 
     assert (
-        required_price("gpt-6-luna", "https://api.openai.com/v1")
+        run_price("gpt-6-luna", "https://api.openai.com/v1")
         == BUILT_IN_PRICES["gpt-6-luna"]
     )
-    assert required_price("llama", "http://localhost:11434/v1", overrides).input == 0.2
-    assert required_price("llama", "http://localhost:11434/v1") == LOCAL_PRICE
+    local = run_price("llama", "http://localhost:11434/v1", overrides)
+    assert local is not None and local.input == 0.2
+    assert run_price("llama", "http://localhost:11434/v1") == LOCAL_PRICE
 
 
-def test_unpriced_remote_model_is_a_configuration_error() -> None:
-    with pytest.raises(
-        ConfigError, match=r'add it in pyproject.toml: \[tool.didibreak.prices\] "x"'
-    ):
-        required_price("x", "https://openrouter.ai/api/v1")
+def test_unpriced_remote_model_has_an_unknown_price() -> None:
+    assert run_price("x", "https://openrouter.ai/api/v1") is None
+
+
+def test_unknown_price_warning_says_what_is_off_and_how_to_fix_it() -> None:
+    warning = unknown_price_warning("x/model", 200_000)
+
+    assert "no price is known for model 'x/model'" in warning
+    assert "max_cost is not enforced" in warning
+    assert "max_tokens (200,000) still applies" in warning
+    assert '[tool.didibreak.prices] "x/model" = { input = ..., output = ... }' in (
+        warning
+    )

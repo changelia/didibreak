@@ -84,3 +84,14 @@ def test_json_outcomes_message_only_for_exceptions_and_null_before_for_new() -> 
     assert findings[2]["before"] is None
     assert findings[2]["after"]["message"].startswith("not enough values")
     assert findings[2]["kwargs"] == {"strict": "True"}
+
+
+@needs_schema
+def test_unknown_cost_is_null_and_valid_for_schema_version_1() -> None:
+    report = replace(sample_report(), usage=ReportUsage(2, 1000, 600, None, None))
+
+    data = report_json(report)
+
+    assert data["schema_version"] == 1
+    assert data["usage"]["cost_usd"] is None
+    validate(data)

@@ -100,7 +100,7 @@ def _usage_line(report: Report) -> str:
     elif usage.cost_usd is not None:
         cost = f" · cost ${usage.cost_usd:.4f}"
     else:
-        cost = ""
+        cost = " · cost unknown"
     return (
         f"LLM: {counted(usage.calls, 'call')} · {usage.input_tokens} input tokens · "
         f"{usage.output_tokens} output tokens{reasoning}{cost}"

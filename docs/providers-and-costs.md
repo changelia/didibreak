@@ -77,9 +77,16 @@ docs on 2026-11-06:
 
 A model on this machine (`base_url` on `localhost` or `127.0.0.1`, such as
 Ollama or LM Studio) without a price costs nothing: the estimate and the
-usage line show `cost $0 (local)`. Any other model without a price stops
-`check` with exit code 2 before any request, because `max_cost` could not be
-enforced; didibreak never guesses a price. Add one with the `prices`
+usage line show `cost $0 (local)`. Any other model without a price runs,
+but didibreak never guesses a price, so `max_cost` cannot be enforced:
+
+- the estimate ends with `cost unknown (limit 200,000 tokens)`;
+- a warning on stderr (shown even with `-q`) says that max_cost is not
+  enforced, that `max_tokens` still applies, and how to add the price;
+- the usage line ends with `cost unknown`, and the JSON report has
+  `"cost_usd": null`.
+
+To get a cost and the `max_cost` limit, add the price with the `prices`
 setting:
 
 ```toml

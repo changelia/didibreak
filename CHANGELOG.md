@@ -17,6 +17,14 @@ the Python package and `js-v*` for the JS/TS package.
   the reason `token limit`, and intent labelling that would exceed it leaves
   the findings `unclear`.
 
+#### Changed
+
+- A remote model without a known price no longer stops `check` with exit
+  code 2: it runs with a warning that `max_cost` is not enforced and
+  `max_tokens` still applies. The estimate and the usage line say
+  `cost unknown`, and the JSON report has `"cost_usd": null` (already
+  allowed by schema version 1). Local models still cost 0.
+
 #### Fixed
 
 - On Windows, `didibreak` now stops at once with exit code 2 and a
