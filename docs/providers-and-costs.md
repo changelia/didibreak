@@ -58,9 +58,10 @@ LLM: 0 calls · 0 input tokens · 0 output tokens · cost $0.0000
   `The estimate is above max_tokens (...)` follows it. The default comes
   from the evaluation: its largest run used 7,658 tokens for one function,
   and ten functions of 20–80 lines are estimated at 85,000–121,000 tokens
-  with refinement and labelling. The check uses estimates, so one request
-  can use more than estimated; the limit can be passed by at most that
-  request.
+  with refinement and labelling. The limit is checked before each request,
+  against the tokens used so far plus that request's estimate; no output
+  limit is sent with the request. So a single request can go past the
+  limit by the size of its own reply, and no request is sent after that.
 - After the run, the actual tokens and cost are shown, for example (from a
   test run with a fake provider):
   `LLM: 1 call · 1000 input tokens · 600 output tokens (400 reasoning) · cost $0.0004`.

@@ -23,7 +23,8 @@ JSON report keeps `schema_version: 1`: `usage.cost_usd` could already be
   output tokens per run, for every provider and model. It is checked before
   each request like `max_cost`; functions after the limit are skipped with
   the reason `token limit`, and intent labelling that would exceed it leaves
-  the findings `unclear`.
+  the findings `unclear`. Because it is checked before each request, a
+  single request can go past the limit by the size of its own reply.
 - Provider presets `openrouter`, `ollama` and `lmstudio` for `provider` /
   `--provider`. They use the OpenAI-compatible client and fill in
   `base_url` and `api_key_env` (`OPENROUTER_API_KEY`; no key for the two
