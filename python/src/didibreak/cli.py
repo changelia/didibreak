@@ -138,6 +138,13 @@ _CONFIG_FLAGS: tuple[tuple[str, str, Callable[[str], object], str, str], ...] = 
     ("--cases", "cases", int, "N", "cases per function, 1-50 (default: 12)"),
     ("--refine-rounds", "refine_rounds", int, "N", "extra rounds, 0-3 (default: 1)"),
     ("--max-cost", "max_cost", float, "USD", "cost limit per run (default: 0.50)"),
+    (
+        "--max-tokens",
+        "max_tokens",
+        int,
+        "N",
+        "input + output token limit per run (default: 200000)",
+    ),
     ("--timeout", "timeout", float, "SECONDS", "per-case timeout (default: 10)"),
     ("--provider", "provider", str, "|".join(PROVIDERS), "LLM provider"),
     ("--model", "model", str, "NAME", "model name"),
@@ -301,6 +308,13 @@ def _print_estimate(
     if not session.local and (estimate.cost_usd or 0) > max_cost:
         print(
             "The estimate is above max_cost: functions after the limit are skipped.",
+            file=stream,
+        )
+    if usage.input_tokens + usage.output_tokens > session.config.max_tokens:
+        print(
+            "The estimate is above max_tokens "
+            f"({session.config.max_tokens:,}): functions after the limit are "
+            "skipped.",
             file=stream,
         )
     cached = functions - plan.initial

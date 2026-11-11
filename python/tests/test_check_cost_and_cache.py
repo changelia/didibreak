@@ -190,6 +190,30 @@ def test_cost_limit_skips_cleanly_and_reports_it(
     assert f"skipped: {FUNCTION} (cost limit)" in err
 
 
+def test_token_limit_skips_cleanly_and_reports_it(
+    events: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["check", "--max-tokens", "100"]) == EXIT_OK
+
+    assert events == ["estimate"]  # the request would exceed the limit
+    err = "".join(capsys.readouterr())
+    assert "The estimate is above max_tokens (100)" in err
+    assert f"skipped: {FUNCTION} (token limit)" in err
+
+
+def test_token_limit_from_pyproject_applies_and_the_flag_overrides_it(
+    events: list[str], repo: FixtureRepository, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (repo.repository.path / "pyproject.toml").write_text(
+        "[tool.didibreak]\nmax_tokens = 100\n", encoding="utf-8"
+    )
+    assert main(["check", "--no-cache"]) == EXIT_OK
+    assert f"skipped: {FUNCTION} (token limit)" in "".join(capsys.readouterr())
+
+    assert main(["check", "--no-cache", "--max-tokens", "1000000"]) == EXIT_FINDINGS
+    assert events == ["estimate", "estimate", "request"]
+
+
 def test_unpriced_remote_model_exits_2_with_a_hint(
     events: list[str], capsys: pytest.CaptureFixture[str]
 ) -> None:

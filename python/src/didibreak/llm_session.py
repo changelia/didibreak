@@ -44,7 +44,6 @@ from didibreak.llm.common import (
 from didibreak.llm.pricing import LOCAL, cost_usd, prices_from_config, required_price
 from didibreak.pipeline import (
     CHARS_PER_TOKEN,
-    COST_LIMIT_REASON,
     Budget,
     Estimate,
     Generation,
@@ -121,7 +120,7 @@ class LLMSession:
                 CaseCache(folder, provider, settings.model, template.version),
                 CaseCache(folder, provider, settings.model, refinement.version),
             )
-        budget = Budget(None, config.max_cost, config.cases)
+        budget = Budget(None, config.max_cost, config.cases, config.max_tokens)
         return cls(
             config,
             environment,
@@ -183,7 +182,9 @@ class LLMSession:
                 self.settings.model, self.settings.base_url, overrides
             )
             self.local = price.source == LOCAL
-            self.budget = Budget(price, self.config.max_cost, count)
+            self.budget = Budget(
+                price, self.config.max_cost, count, self.config.max_tokens
+            )
         first = estimate_generation(initial, count, self.template, price)
         more = estimate_refinement(rounds, count, self.refinement_template, price)
         usage = first.usage + more.usage
@@ -222,8 +223,9 @@ class LLMSession:
         if not sent:
             return tuple(findings)
         messages = build_label_messages(intent, sent, self.label_template)
-        if not self.budget.allows(messages):
-            return mark_unclear(findings, LABELLING_FAILED + COST_LIMIT_REASON)
+        refusal = self.budget.refusal(messages)
+        if refusal is not None:
+            return mark_unclear(findings, LABELLING_FAILED + refusal)
         if self._client is None:
             self._client = self.factory(self.config, self.environment)
         try:

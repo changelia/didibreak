@@ -6,6 +6,7 @@ import pytest
 
 from didibreak.cases import load_template
 from didibreak.compare import Finding
+from didibreak.config import Config
 from didibreak.harness import Case, Outcome
 from didibreak.intent import (
     LABEL_PROMPT_FILE,
@@ -20,6 +21,8 @@ from didibreak.intent import (
     to_label,
 )
 from didibreak.llm.common import schema_errors
+from didibreak.llm_session import LLMSession
+from didibreak.pipeline import TOKEN_LIMIT_REASON, Budget
 
 PHONE = "app/utils/phone.py::normalize_phone"
 
@@ -136,3 +139,17 @@ def test_prompt_lists_every_finding_with_both_outcomes() -> None:
 def test_label_schema_is_strict_and_accepts_a_valid_reply() -> None:
     assert schema_errors(reply(("f1", "expected")), LABELS_SCHEMA) == []
     assert schema_errors(reply(("f1", "maybe")), LABELS_SCHEMA)
+
+
+def test_labelling_over_the_token_limit_sends_nothing_and_says_why() -> None:
+    def no_client(config: Config, environment: object) -> object:
+        raise AssertionError("no request may be sent")
+
+    config = Config(no_cache=True, provider="openai")
+    session = LLMSession.open(config, {"OPENAI_API_KEY": "sk-fake"}, no_client)
+    session.budget = Budget(None, None, config.cases, max_tokens=1)
+
+    (labelled,) = session.label([finding("f1")], "the intent", NO_INTENT_REASON)
+
+    assert labelled.label == "unclear"
+    assert labelled.reason == f"intent labelling failed: {TOKEN_LIMIT_REASON}"

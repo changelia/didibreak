@@ -30,6 +30,7 @@ from didibreak.pipeline import (
     NO_NEW_CASES_REASON,
     NO_VALID_CASES_REASON,
     OUTPUT_TOKENS_PER_CASE,
+    TOKEN_LIMIT_REASON,
     UNAVAILABLE_REASON,
     Budget,
     estimate_call,
@@ -307,3 +308,58 @@ def test_a_shared_budget_limits_all_rounds_and_rounds_report_their_own_usage() -
     assert second.usage.calls == 0
     assert second.cost_usd == 0.0
     assert budget.usage == heavy
+
+
+def _first_request_tokens(count: int) -> int:
+    estimate = estimate_call(
+        build_messages(function("f"), count, load_template()),
+        count,
+        OUTPUT_TOKENS_PER_CASE,
+    )
+    return estimate.input_tokens + estimate.output_tokens
+
+
+@pytest.mark.parametrize("price", [PRICE, None], ids=["priced", "unpriced"])
+def test_token_limit_skips_the_rest_with_or_without_a_price(
+    price: Price | None,
+) -> None:
+    heavy = TokenUsage(3000, 2000, None, 0, 1)
+    client = FakeClient({"f": cases("1"), "g": cases("2")}, usage=heavy)
+    limit = 5000 + _first_request_tokens(5) - 1  # f fits, g does not
+    budget = Budget(price, None, 5, max_tokens=limit)
+
+    result = generate_cases(
+        client, [function("f"), function("g")], 5, load_template(), budget=budget
+    )
+
+    assert list(result.cases) == ["app/m.py::f"]
+    assert [f.skip_reason for f in result.skipped] == [TOKEN_LIMIT_REASON]
+    assert result.usage.calls == 1
+
+
+def test_a_request_that_fits_the_token_limit_exactly_is_sent() -> None:
+    client = FakeClient({"f": cases("1")})
+    budget = Budget(None, None, 5, max_tokens=_first_request_tokens(5))
+
+    result = generate_cases(client, [function("f")], 5, load_template(), budget=budget)
+
+    assert result.skipped == ()
+    assert len(client.prompts) == 1
+
+
+def test_a_too_small_token_limit_sends_nothing() -> None:
+    client = FakeClient({"f": cases("1")})
+    budget = Budget(None, None, 5, max_tokens=_first_request_tokens(5) - 1)
+
+    result = generate_cases(client, [function("f")], 5, load_template(), budget=budget)
+
+    assert client.prompts == []
+    assert [f.skip_reason for f in result.skipped] == [TOKEN_LIMIT_REASON]
+
+
+def test_cost_limit_wins_when_both_limits_are_exceeded() -> None:
+    budget = Budget(PRICE, 1e-12, 5, max_tokens=1)
+
+    messages = build_messages(function("f"), 5, load_template())
+
+    assert budget.refusal(messages) == COST_LIMIT_REASON

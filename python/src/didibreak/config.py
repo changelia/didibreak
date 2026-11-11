@@ -24,6 +24,15 @@ _DEFAULT_API_KEY_VARIABLES = {
 }
 
 
+# Input + output tokens per run (task 34). The largest of the 76 evaluation
+# runs used 7,658 tokens for its one function (evaluation/rerun-21a), so a
+# full default run (max_functions = 10) uses about 77,000. The estimate the
+# limit is checked against is on the safe side: 85,000-121,000 for ten
+# 20-80 line functions with refinement and labelling. 200,000 does not cut
+# such a run but bounds a model whose price is unknown.
+DEFAULT_MAX_TOKENS = 200_000
+
+
 class ConfigError(Exception):
     """A configuration value or file is invalid; the message is user-facing."""
 
@@ -45,6 +54,7 @@ class Config:
     cases: int = 12
     refine_rounds: int = 1
     max_cost: float = 0.50
+    max_tokens: int = DEFAULT_MAX_TOKENS
     timeout: float = 10.0
     provider: str | None = None
     model: str | None = None
@@ -167,6 +177,7 @@ _VALIDATORS: dict[str, Callable[[str, object], object]] = {
     "cases": _integer(1, 50),
     "refine_rounds": _integer(0, 3),
     "max_cost": _positive_number,
+    "max_tokens": _integer(1, None),
     "timeout": _positive_number,
     "provider": _choice(PROVIDERS),
     "model": _non_empty_string,

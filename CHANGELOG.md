@@ -9,6 +9,14 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
+#### Added
+
+- `--max-tokens` / `max_tokens` (default 200,000): a hard limit on input +
+  output tokens per run, for every provider and model. It is checked before
+  each request like `max_cost`; functions after the limit are skipped with
+  the reason `token limit`, and intent labelling that would exceed it leaves
+  the findings `unclear`.
+
 #### Fixed
 
 - On Windows, `didibreak` now stops at once with exit code 2 and a
