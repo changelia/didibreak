@@ -23,6 +23,17 @@ the Python package and `js-v*` for the JS/TS package.
   behavior change and exit 0, and `max_cost = nan` switched the cost limit
   off without a message.
 
+#### Changed
+
+- `check` exits with code 2 when changed functions were selected but none
+  could be checked because of an error (provider unreachable, invalid
+  replies, cost or token limit, import failure); the report is still
+  printed. Before, such a run exited 0 although nothing was checked.
+  Functions skipped by design (async, instance methods, generators,
+  obvious I/O) are not errors: the run still exits 0, and the text report
+  now says "No function was checked". The `init-agents` snippet tells
+  agents to report `functions_checked: 0`.
+
 ### 0.1.3
 
 Released when the tag `py-v0.1.3` is pushed. Simpler model switching. The
