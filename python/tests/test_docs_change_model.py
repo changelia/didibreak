@@ -1,4 +1,4 @@
-"""The README "Change the model" recipes load with the config code (task 27)."""
+"""The README "Change the model" recipes load with the config code (tasks 27, 34)."""
 
 import re
 from pathlib import Path
@@ -14,14 +14,25 @@ pytestmark = pytest.mark.skipif(
     not (ROOT / "docs").is_dir(), reason="needs the full repository checkout"
 )
 ENVIRONMENT = {"OPENAI_API_KEY": "placeholder", "OPENROUTER_API_KEY": "placeholder"}
+PRICES = "[tool.didibreak.prices]"
 
 
-def recipes(page: Path) -> list[str]:
+def blocks(page: Path) -> list[str]:
     """The TOML blocks of the page's "Change the model" section."""
     text = page.read_text(encoding="utf-8")
     section = re.search(r"## Change the model\n(.*?)\n## ", text + "\n## ", re.DOTALL)
     assert section, f"{page.name} has no Change the model section"
     return re.findall(r"```toml\n(.*?)```", section.group(1), re.DOTALL)
+
+
+def recipes() -> list[str]:
+    """The model setups, without the prices block."""
+    return [block for block in blocks(ROOT / "README.md") if PRICES not in block]
+
+
+def prices_block() -> str:
+    (block,) = [block for block in blocks(ROOT / "README.md") if PRICES in block]
+    return block
 
 
 def price_source(recipe: str, tmp_path: Path) -> str | None:
@@ -36,24 +47,33 @@ def price_source(recipe: str, tmp_path: Path) -> str | None:
     return None if price is None else price.source
 
 
-def test_both_readmes_show_the_same_three_recipes() -> None:
-    root = recipes(ROOT / "README.md")
+def test_both_readmes_show_the_same_recipes() -> None:
+    root = blocks(ROOT / "README.md")
 
-    assert len(root) == 3
-    assert recipes(ROOT / "python" / "README.md") == root
-
-
-@pytest.mark.parametrize("index", range(3))
-def test_recipe_loads_and_has_a_price(index: int, tmp_path: Path) -> None:
-    recipe = recipes(ROOT / "README.md")[index]
-
-    source = price_source(recipe, tmp_path)
-
-    assert source == (LOCAL if "localhost" in recipe else "prices setting")
+    assert len(recipes()) == 3
+    assert blocks(ROOT / "python" / "README.md") == root
 
 
-def test_a_paid_model_without_a_price_has_an_unknown_cost(tmp_path: Path) -> None:
-    recipe = recipes(ROOT / "README.md")[0]
-    without_price = recipe.split("[tool.didibreak.prices]")[0]
+@pytest.mark.parametrize(
+    ("index", "provider"), [(0, None), (1, "openrouter"), (2, "ollama")]
+)
+def test_recipes_use_the_presets(index: int, provider: str | None) -> None:
+    recipe = recipes()[index]
 
-    assert price_source(without_price, tmp_path) is None
+    assert (f'provider = "{provider}"' in recipe) is (provider is not None)
+    assert "base_url" not in recipe
+    assert "api_key_env" not in recipe
+
+
+@pytest.mark.parametrize("index", [0, 1])
+def test_paid_recipes_run_without_a_price_and_get_one_from_the_block(
+    index: int, tmp_path: Path
+) -> None:
+    recipe = recipes()[index]
+
+    assert price_source(recipe, tmp_path) is None
+    assert price_source(recipe + "\n" + prices_block(), tmp_path) == "prices setting"
+
+
+def test_local_recipe_costs_nothing(tmp_path: Path) -> None:
+    assert price_source(recipes()[2], tmp_path) == LOCAL

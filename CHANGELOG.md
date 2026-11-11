@@ -21,6 +21,8 @@ the Python package and `js-v*` for the JS/TS package.
   `base_url` and `api_key_env` (`OPENROUTER_API_KEY`; no key for the two
   local servers); `model` is required. A `base_url` or `api_key_env` you
   set replaces the preset's value.
+- The README "Change the model" section uses the presets; the prices
+  block is now optional and only adds the cost and the `max_cost` limit.
 
 #### Changed
 
