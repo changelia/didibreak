@@ -11,6 +11,28 @@ the Python package and `js-v*` for the JS/TS package.
 
 Nothing yet.
 
+### 0.1.2
+
+Released when the tag `py-v0.1.2` is pushed. No change to what `didibreak`
+does; documentation only.
+
+#### Changed
+
+- README and the PyPI page say what didibreak is and is not: an extra
+  check next to your tests, not a production safety net; it finds behavior
+  changes on the inputs it generates and cannot prove that no other input
+  changed.
+- README, the PyPI page and `docs/safety.md` recommend running didibreak
+  inside a container or a CI job for code you did not write (external pull
+  requests, unattended agents).
+- README and the PyPI page have a "Change the model" section with three
+  setups that work with 0.1.x: another OpenAI model with its `prices`
+  entry, OpenRouter, and a local Ollama server. It explains why a paid
+  model without a price stops with exit code 2.
+- The remaining examples recorded with a development build
+  (`docs/output-format.md`, `docs/providers-and-costs.md`,
+  `CONTRIBUTING.md`) are re-recorded with didibreak 0.1.1 from PyPI.
+
 ### 0.1.1
 
 Released when the tag `py-v0.1.1` is pushed. No change to what `didibreak`
