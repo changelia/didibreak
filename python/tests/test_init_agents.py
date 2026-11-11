@@ -16,7 +16,9 @@ If any finding has label "unexpected", fix the code so that behavior is preserve
 then run the check again. Report "unclear" findings to the user instead of guessing.
 "new_function" findings do not fail the check; mention them to the user
 and do not change code for them unless the user asks.
-Exit code 2 means a setup problem: report it to the user.
+Exit code 2 means nothing could be checked (setup problem, provider down,
+cost or token limit): report the error to the user.
+If summary.functions_checked is 0, tell the user that nothing was checked and why.
 Stop after 3 check rounds and report what is left.
 """
 

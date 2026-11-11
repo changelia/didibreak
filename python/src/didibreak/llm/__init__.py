@@ -7,6 +7,7 @@ and labels findings; it never supplies code that is executed.
 
 from collections.abc import Mapping
 from dataclasses import replace
+from urllib.parse import urlparse
 
 import httpx
 
@@ -76,6 +77,33 @@ def resolve_provider(config: Config, environment: Mapping[str, str]) -> str:
     )
 
 
+def output_limit_parameter(provider: str, base_url: str) -> str | None:
+    """The request field that caps a reply's output, where the server documents it.
+
+    Checked in each service's docs on 2026-11-11 (audit 35a): OpenAI and
+    OpenRouter document ``max_completion_tokens`` (OpenAI's ``max_tokens`` does
+    not work with reasoning models); Ollama and LM Studio document only
+    ``max_tokens``. Anthropic always sends ``max_tokens`` in its own client.
+    Any other OpenAI-compatible server gets no cap, since an unknown field
+    may be rejected.
+
+    Args:
+        provider: The resolved provider.
+        base_url: The API base URL.
+
+    Returns:
+        The field name, or None.
+    """
+    host = urlparse(base_url).hostname
+    if provider in ("ollama", "lmstudio"):
+        return "max_tokens"
+    if provider == "openrouter" or host == "openrouter.ai":
+        return "max_completion_tokens"
+    if provider == "openai" and host == "api.openai.com":
+        return "max_completion_tokens"
+    return None
+
+
 def client_settings(config: Config, environment: Mapping[str, str]) -> ClientSettings:
     """Resolve provider, model, base URL and API key from the configuration.
 
@@ -115,6 +143,7 @@ def client_settings(config: Config, environment: Mapping[str, str]) -> ClientSet
         api_key=read_api_key(config, environment),
         api_key_variable=api_key_variable(config),
         temperature=config.temperature,
+        output_limit_parameter=output_limit_parameter(provider, base_url),
     )
 
 

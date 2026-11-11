@@ -11,6 +11,58 @@ the Python package and `js-v*` for the JS/TS package.
 
 Nothing yet.
 
+### 0.1.4
+
+Released when the tag `py-v0.1.4` is pushed. Safety and correctness fixes
+from the code audit (`evaluation/audit-35a.md`). The JSON report keeps
+`schema_version: 1`.
+
+#### Fixed
+
+- Safety: functions that run shell commands or processes (`os.system`,
+  `os.popen`, `os.exec*`, `os.spawn*`, `pty`, ...), change files
+  (`os.rename`, `os.makedirs`, `os.chmod`, `Path.rename`, ...) or use
+  network and database clients (`http.client`, `smtplib`, `ftplib`,
+  `psycopg`, `pymysql`, `redis`, `boto3`, ...) are now skipped as obvious
+  I/O instead of being run with the LLM's inputs. The docs now say plainly
+  that the rules are a heuristic and a container is the real isolation.
+- `timeout`, `max_cost` and `prices` reject `nan` and `inf`, as flags and
+  in `pyproject.toml` (exit code 2). `--timeout nan` used to hide every
+  behavior change and exit 0, and `max_cost = nan` switched the cost limit
+  off without a message.
+
+- `max_tokens` and `max_cost` are checked again before the retry after an
+  unusable reply and before the JSON-mode fallback request. Before, a
+  cut-off reply and its retry could pass the limit by two full replies
+  (123,000 tokens for a 20,000 limit in the audit).
+- A return value whose dict keys or set elements raise in `__repr__` is
+  now recorded as a normal return (`<repr failed: ...>`, compared by type)
+  instead of a process crash (`didibreak.ProcessExited`), which also gave
+  new functions a false finding.
+- Safety: more credentials are removed from the environment of the code
+  under test: names ending in `_PWD` or `_CREDENTIALS` (`MYSQL_PWD`,
+  `GOOGLE_APPLICATION_CREDENTIALS`), and `*_URL`, `*_URI`, `*_DSN`
+  variables whose URL carries a password (`postgres://user:pass@...`).
+  A `DATABASE_URL` without a password is kept.
+- The text report no longer passes terminal control characters from LLM
+  text or your code's `repr`s to the terminal: they appear as `\xNN`, and
+  line breaks inside a reason become spaces. The JSON report is unchanged.
+
+#### Changed
+
+- Each LLM request asks for at most 16,000 output tokens where the server
+  documents the field: `max_completion_tokens` for OpenAI and OpenRouter,
+  `max_tokens` for Anthropic (as before), Ollama and LM Studio. Other
+  OpenAI-compatible servers get no such field.
+- `check` exits with code 2 when changed functions were selected but none
+  could be checked because of an error (provider unreachable, invalid
+  replies, cost or token limit, import failure); the report is still
+  printed. Before, such a run exited 0 although nothing was checked.
+  Functions skipped by design (async, instance methods, generators,
+  obvious I/O) are not errors: the run still exits 0, and the text report
+  now says "No function was checked". The `init-agents` snippet tells
+  agents to report `functions_checked: 0`.
+
 ### 0.1.3
 
 Released when the tag `py-v0.1.3` is pushed. Simpler model switching. The

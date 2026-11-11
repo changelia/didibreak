@@ -227,9 +227,13 @@ class LLMSession:
             return mark_unclear(findings, LABELLING_FAILED + refusal)
         if self._client is None:
             self._client = self.factory(self.config, self.environment)
+
+        def may_continue(spent: TokenUsage) -> bool:
+            return self.budget.refusal(messages, spent) is None
+
         try:
             reply = self._client.complete_json(
-                messages, LABELS_SCHEMA, LABELS_SCHEMA_NAME
+                messages, LABELS_SCHEMA, LABELS_SCHEMA_NAME, may_continue
             )
         except LLMInvalidResponseError as error:
             self.budget.add(error.usage)

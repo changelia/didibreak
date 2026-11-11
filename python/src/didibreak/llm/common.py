@@ -24,6 +24,11 @@ MAX_BACKOFF_SECONDS = 30.0
 RETRY_STATUSES = frozenset({408, 409, 429, 500, 502, 503, 504, 529})
 ERROR_TEXT_LIMIT = 300
 SHORT_MESSAGE_LIMIT = 120
+# Output tokens one request may produce (audit 35a, finding 4): more than five
+# times the largest call measured in the evaluation (2,990), and the value the
+# Anthropic client always sent. Sent only where the server documents the
+# parameter (ClientSettings.output_limit_parameter).
+MAX_OUTPUT_TOKENS = 16000
 
 
 @dataclass(frozen=True)
@@ -108,6 +113,9 @@ class ClientSettings:
         temperature: Sent only when set (owner decision 2026-11-06).
         timeout: Read timeout per request, seconds.
         max_retries: Retries after the first attempt for retryable failures.
+        output_limit_parameter: Request field that caps the output at
+            MAX_OUTPUT_TOKENS (``max_completion_tokens`` or ``max_tokens``),
+            or None for servers whose field is not known.
     """
 
     model: str
@@ -117,6 +125,7 @@ class ClientSettings:
     temperature: float | None = None
     timeout: float = REQUEST_TIMEOUT
     max_retries: int = MAX_RETRIES
+    output_limit_parameter: str | None = None
 
 
 class LLMError(Exception):
@@ -162,6 +171,12 @@ class LLMInvalidResponseError(LLMError):
         self.usage = usage or TokenUsage()
 
 
+# Asked before a client sends another request within one complete_json call
+# (a retry or a fallback), with the usage this call has spent so far; False
+# means the run's cost or token limit does not allow it.
+MayContinue = Callable[[TokenUsage], bool]
+
+
 class LLMClient(Protocol):
     """The one call both clients offer."""
 
@@ -170,6 +185,7 @@ class LLMClient(Protocol):
         messages: Sequence[Message],
         schema: Mapping[str, Any],
         schema_name: str,
+        may_continue: MayContinue | None = None,
     ) -> LLMReply:
         """Ask for a JSON object matching ``schema``; see the implementations."""
         ...
@@ -355,35 +371,42 @@ def _parse(raw: RawReply, schema: Mapping[str, Any]) -> dict[str, Any] | str:
 
 
 def complete_with_one_retry(
-    attempt: Callable[[], RawReply], schema: Mapping[str, Any]
+    attempt: Callable[[TokenUsage], RawReply],
+    schema: Mapping[str, Any],
+    may_continue: MayContinue | None = None,
 ) -> LLMReply:
     """Call the provider, and once more if the reply is not schema-valid JSON.
 
     Spec: one retry on invalid JSON, then the caller skips the function.
+    The retry is sent only if ``may_continue`` allows it (audit 35a,
+    finding 4), so a cut-off reply cannot double the run's spending.
 
     Args:
-        attempt: Sends one request and returns the raw reply.
+        attempt: Sends one request, given the usage spent so far in this
+            call, and returns the raw reply.
         schema: JSON schema the reply must match.
+        may_continue: Asked before the retry; None allows it.
 
     Returns:
         The parsed object with the usage of every call made.
 
     Raises:
-        LLMInvalidResponseError: Both replies were unusable; carries the
-            usage of both calls.
+        LLMInvalidResponseError: The replies were unusable (the retry is
+            skipped when not allowed); carries the usage of the calls made.
     """
     total = TokenUsage()
     problem = ""
-    for _ in range(2):
-        raw = attempt()
+    for number in range(2):
+        if number and may_continue is not None and not may_continue(total):
+            break
+        raw = attempt(total)
         total += raw.usage
         parsed = _parse(raw, schema)
         if isinstance(parsed, dict):
             return LLMReply(parsed, total, raw.model)
         problem = parsed
-    raise LLMInvalidResponseError(
-        f"invalid LLM response after one retry: {problem}", total
-    )
+    retried = "after one retry" if total.calls > 1 else "(no retry: run limit)"
+    raise LLMInvalidResponseError(f"invalid LLM response {retried}: {problem}", total)
 
 
 def http_client(

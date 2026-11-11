@@ -12,7 +12,7 @@ from fixture_repos import FixtureRepository, build_fixture_repository
 
 from didibreak import cli, llm
 from didibreak.cache import GITIGNORE_TEXT
-from didibreak.cli import EXIT_FINDINGS, EXIT_OK, main
+from didibreak.cli import EXIT_ERROR, EXIT_FINDINGS, EXIT_OK, main
 from didibreak.config import Config
 
 FUNCTION = "app/utils/phone.py::normalize_phone"
@@ -181,19 +181,22 @@ def test_no_cache_asks_the_llm_again(events: list[str]) -> None:
 def test_cost_limit_skips_cleanly_and_reports_it(
     events: list[str], capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assert main(["check", "--max-cost", "0.000001"]) == EXIT_OK
+    # Owner decision 2026-11-11 (task 35): nothing checked because of an
+    # error exits 2 instead of passing.
+    assert main(["check", "--max-cost", "0.000001"]) == EXIT_ERROR
 
     assert events == ["estimate"]  # the request would exceed the limit
     err = "".join(capsys.readouterr())
     assert "(limit $0.000001)" in err
     assert "The estimate is above max_cost" in err
     assert f"skipped: {FUNCTION} (cost limit)" in err
+    assert "no changed function could be checked" in err
 
 
 def test_token_limit_skips_cleanly_and_reports_it(
     events: list[str], capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assert main(["check", "--max-tokens", "100"]) == EXIT_OK
+    assert main(["check", "--max-tokens", "100"]) == EXIT_ERROR
 
     assert events == ["estimate"]  # the request would exceed the limit
     err = "".join(capsys.readouterr())
@@ -207,7 +210,7 @@ def test_token_limit_from_pyproject_applies_and_the_flag_overrides_it(
     (repo.repository.path / "pyproject.toml").write_text(
         "[tool.didibreak]\nmax_tokens = 100\n", encoding="utf-8"
     )
-    assert main(["check", "--no-cache"]) == EXIT_OK
+    assert main(["check", "--no-cache"]) == EXIT_ERROR
     assert f"skipped: {FUNCTION} (token limit)" in "".join(capsys.readouterr())
 
     assert main(["check", "--no-cache", "--max-tokens", "1000000"]) == EXIT_FINDINGS
@@ -259,7 +262,7 @@ def test_unpriced_model_is_still_bounded_by_max_tokens(
 ) -> None:
     argv = ["check", "--model", "my-private-model", "--max-tokens", "100"]
 
-    assert main(argv) == EXIT_OK
+    assert main(argv) == EXIT_ERROR
 
     assert events == ["estimate"]
     assert f"skipped: {FUNCTION} (token limit)" in "".join(capsys.readouterr())

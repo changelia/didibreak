@@ -46,6 +46,10 @@ Order:
    show none of these lines.
 
 Labels are colored only when stdout is a terminal and `NO_COLOR` is not set.
+Text that comes from the LLM or from your code (arguments, `repr`s, reasons,
+provider messages) is shown without terminal control characters: tabs and
+line breaks become spaces, and other control characters appear as `\xNN`
+(for example `\x1b`). The JSON report keeps the original text.
 
 Example (the part after the header and the estimate):
 
@@ -320,5 +324,5 @@ How the base outcome is asserted:
 | --- | --- |
 | `0` | No failing findings. |
 | `1` | Failing findings: `unexpected` or `unclear` with the default `--fail-on unclear`; only `unexpected` with `--fail-on unexpected`. `new_function` findings never fail the run. |
-| `2` | Tool or configuration error: not a git repository, git missing, invalid flag or config value, missing API key. |
+| `2` | Tool or configuration error: not a git repository, git missing, invalid flag or config value, missing API key. Also when changed functions were selected but none could be checked because of an error (`llm unavailable`, `invalid llm response`, `llm request rejected`, `cost limit`, `token limit`, or an import failure); the report is still printed. Functions skipped by design (async, instance methods, generators, obvious I/O) do not count: if every changed function is skipped by design, the code is `0`, `summary.functions_checked` is `0` and the text report says "No function was checked". |
 | `130` | Interrupted with Ctrl-C; temporary worktrees, copies and processes are removed first. |

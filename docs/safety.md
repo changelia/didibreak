@@ -26,6 +26,12 @@ The I/O check looks at:
 
 ## What is not covered
 
+**The skip rules are a heuristic, not isolation.** They look for known
+names in the source. A function whose I/O is hidden behind a helper
+function in another module, or reached through dynamic code, is still run
+with the LLM's inputs. A container (or a CI job) is the real isolation:
+use one for code you did not write.
+
 - **Calls into other modules are not followed.** If `store()` calls
   `helpers.save()` and `save()` writes a file, `store()` is not skipped and the
   write happens when didibreak runs it. Keep side effects out of the functions
@@ -88,12 +94,23 @@ LLM output is never executed as code.
 ### Environment variables that are removed
 
 Before your code runs, didibreak removes variables that look like
-credentials, so the function under test cannot use your API keys or tokens.
-A name matches, ignoring case, when it:
+credentials, so the function under test cannot use your API keys, tokens or
+database passwords. Names are matched ignoring case. A variable is removed
+when its name:
 
-- ends with `_KEY` (`OPENAI_API_KEY`, `AWS_SECRET_ACCESS_KEY`);
-- contains `TOKEN`, `SECRET` or `PASSWORD` (`GITHUB_TOKEN`, `DB_PASSWORD`);
-- is the variable named by `api_key_env`.
+- ends with `_KEY`, `_PWD` or `_CREDENTIALS` (`OPENAI_API_KEY`,
+  `AWS_SECRET_ACCESS_KEY`, `MYSQL_PWD`, `GOOGLE_APPLICATION_CREDENTIALS`);
+- contains `TOKEN`, `SECRET` or `PASSWORD` (`GITHUB_TOKEN`, `DB_PASSWORD`,
+  `PGPASSWORD`);
+- is the variable named by `api_key_env`;
+- ends with `_URL`, `_URI` or `_DSN` **and** its value is a URL with a
+  password (`postgres://app:s3cret@db/prod`, `redis://:s3cret@cache:6379`).
+
+A connection string without a password stays, because the code under test
+may need it: `DATABASE_URL=postgres://localhost/app` and
+`postgres://app@localhost/app` are kept. So are `PWD` and `OLDPWD`, which
+hold folders, not passwords. Credentials passed in other ways (a URL in a
+variable with another name, a config file) are not detected.
 
 Code that reads such a variable sees it as missing, which can change its
 behavior.

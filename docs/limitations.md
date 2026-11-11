@@ -45,20 +45,38 @@ function; see [safety.md](safety.md).
 Obvious I/O. Names are resolved through the module's imports and aliases, so
 `from subprocess import run` and `import shutil as sh` are recognized:
 
-- calls to `open`, `os.remove`, `os.unlink`, `os.rmdir`, `shutil.rmtree`,
-  `shutil.move`, `shutil.copy*` (any `shutil` function starting with `copy`),
-  `urllib.request.*` (any function in `urllib.request`) and `sqlite3.connect`;
-- any use or import of the modules `subprocess`, `requests`, `httpx`, `socket`;
+- calls that open files: `open`, `io.open`;
+- calls that run commands or processes: `os.system`, `os.popen`, `os.exec*`,
+  `os.spawn*`, `os.posix_spawn*`, `os.fork*`, `os.kill*`,
+  `asyncio.create_subprocess_*` (`*` means any name starting that way, for
+  example `os.execvp`);
+- calls that change files and folders: `os.remove`, `os.unlink`, `os.rmdir`,
+  `os.removedirs`, `os.rename`, `os.renames`, `os.replace`, `os.mkdir`,
+  `os.makedirs`, `os.chmod`, `os.chown`, `os.truncate`, `os.symlink`,
+  `os.link`, `shutil.rmtree`, `shutil.move`, `shutil.copy*`, `shutil.chown`,
+  `shutil.make_archive`, `shutil.unpack_archive`;
+- network and database calls: `urllib.request.*` (any function in
+  `urllib.request`), `sqlite3.connect`, `sqlalchemy.create_engine`;
+- any use or import of these modules or their submodules: `subprocess`,
+  `pty`, `socket`, `requests`, `httpx`, `urllib3`, `aiohttp`, `http.client`,
+  `smtplib`, `ftplib`, `imaplib`, `poplib`, `paramiko`, `psycopg`,
+  `psycopg2`, `pymysql`, `MySQLdb`, `mysql.connector`, `pymongo`, `redis`,
+  `boto3` (`http.client` matches, but `http.HTTPStatus` does not);
 - `pathlib.Path` methods `open`, `read_bytes`, `read_text`, `write_bytes`,
-  `write_text`, `unlink`, `rmdir`, `mkdir`, `touch`, matched by method name on
-  any object, because the type of a variable is not known from the source;
+  `write_text`, `unlink`, `rmdir`, `mkdir`, `touch`, `rename`, `chmod`,
+  `symlink_to`, `hardlink_to`, matched by method name on any object, because
+  the type of a variable is not known from the source (`Path.replace` is not
+  on the list: it would also match every `str.replace`);
 - database calls `<receiver>.<method>(...)` where the receiver is `session`,
   `db`, `cursor`, `conn` or `connection` and the method is `add`, `commit`,
   `delete`, `execute`, `executemany`, `flush`, `merge`, `query`, `refresh`,
   `rollback` or `scalars` (for example `session.commit()`).
 
-The check is a scan of names in the source, so it can miss I/O that is not
-on this list, and it can skip a function that only looks like I/O. Rules are
+The check is a heuristic: a scan of names in the source, not a sandbox. It
+misses I/O that is not on this list, I/O hidden behind a helper function in
+another module, and I/O reached through `getattr`, `eval` or plugins. It can
+also skip a function that only looks like I/O (for example a DataFrame's
+`rename`). A container is the real isolation; see [safety.md](safety.md). Rules are
 checked in the order of the table; the first match is the reason.
 
 ## Inputs from the LLM

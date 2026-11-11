@@ -472,24 +472,30 @@ class Budget:
         if self.price is not None:
             self.cost += cost_usd(usage, self.price)
 
-    def refusal(self, messages: Sequence[Message]) -> str | None:
+    def refusal(
+        self, messages: Sequence[Message], spent: TokenUsage | None = None
+    ) -> str | None:
         """Why one more request with these messages must not be sent, or None.
 
         The request's estimate plus the usage so far must fit under max_cost
         (only with a price) and under max_tokens (always).
 
+        Args:
+            messages: The request to send.
+            spent: Usage of earlier requests of the same call that is not
+                recorded yet (a retry or fallback inside the client).
+
         Returns:
             COST_LIMIT_REASON, TOKEN_LIMIT_REASON, or None when it fits.
         """
-        observed = self.usage.calls and self.usage.output_tokens / (
-            self.usage.calls * self.count
-        )
+        used = self.usage + (spent or TokenUsage())
+        observed = used.calls and used.output_tokens / (used.calls * self.count)
         estimate = estimate_call(
             messages, self.count, observed or OUTPUT_TOKENS_PER_CASE
         )
-        if self._over_max_cost(estimate):
+        if self._over_max_cost(estimate + (spent or TokenUsage())):
             return COST_LIMIT_REASON
-        tokens = _total(self.usage) + _total(estimate)
+        tokens = _total(used) + _total(estimate)
         if self.max_tokens is not None and tokens > self.max_tokens:
             return TOKEN_LIMIT_REASON
         return None
@@ -515,8 +521,14 @@ def _ask(
     client: LLMClient, messages: Sequence[Message], spending: Budget
 ) -> LLMReply | str | object:
     """The reply, a skip reason for this function, or _UNAVAILABLE."""
+
+    def may_continue(spent: TokenUsage) -> bool:
+        return spending.refusal(messages, spent) is None
+
     try:
-        reply = client.complete_json(messages, CASES_SCHEMA, CASES_SCHEMA_NAME)
+        reply = client.complete_json(
+            messages, CASES_SCHEMA, CASES_SCHEMA_NAME, may_continue
+        )
     except LLMInvalidResponseError as error:
         spending.add(error.usage)
         return INVALID_RESPONSE_REASON

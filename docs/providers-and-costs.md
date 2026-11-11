@@ -59,9 +59,17 @@ LLM: 0 calls · 0 input tokens · 0 output tokens · cost $0.0000
   from the evaluation: its largest run used 7,658 tokens for one function,
   and ten functions of 20–80 lines are estimated at 85,000–121,000 tokens
   with refinement and labelling. The limit is checked before each request,
-  against the tokens used so far plus that request's estimate; no output
-  limit is sent with the request. So a single request can go past the
-  limit by the size of its own reply, and no request is sent after that.
+  against the tokens used so far plus that request's estimate, including
+  the retry after an unusable reply and the JSON-mode fallback request. So
+  a single request can go past the limit by the size of its own reply, and
+  no request is sent after that.
+- Each request also asks the server to stop after 16,000 output tokens
+  (more than five times the largest request in the evaluation), with the
+  field each server documents: `max_completion_tokens` for OpenAI and
+  OpenRouter, `max_tokens` for Anthropic, Ollama and LM Studio. Other
+  OpenAI-compatible servers get no such field, since an unknown field may
+  be rejected; there one reply is limited only by the model. A reply cut
+  off at the limit is an unusable reply (`invalid llm response`).
 - After the run, the actual tokens and cost are shown, for example (from a
   test run with a fake provider):
   `LLM: 1 call · 1000 input tokens · 600 output tokens (400 reasoning) · cost $0.0004`.

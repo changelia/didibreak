@@ -95,7 +95,10 @@ def test_prices_setting_is_read_from_pyproject(tmp_path: Path) -> None:
         ("cheap", "must be a table of model"),
         ({"m": {"input": 1}}, "prices.m: prices must be a table"),
         ({"m": {"input": 1, "output": 1, "total": 2}}, "unknown field 'total'"),
-        ({"m": {"input": -1, "output": 1}}, "prices.m.input must be >= 0"),
+        (
+            {"m": {"input": -1, "output": 1}},
+            "prices.m.input must be a finite number >= 0",
+        ),
         ({"m": {"input": "x", "output": 1}}, "prices.m.input must be a number"),
     ],
 )

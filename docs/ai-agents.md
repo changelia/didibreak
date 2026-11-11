@@ -24,7 +24,9 @@ If any finding has label "unexpected", fix the code so that behavior is preserve
 then run the check again. Report "unclear" findings to the user instead of guessing.
 "new_function" findings do not fail the check; mention them to the user
 and do not change code for them unless the user asks.
-Exit code 2 means a setup problem: report it to the user.
+Exit code 2 means nothing could be checked (setup problem, provider down,
+cost or token limit): report the error to the user.
+If summary.functions_checked is 0, tell the user that nothing was checked and why.
 Stop after 3 check rounds and report what is left.
 ```
 
@@ -56,10 +58,18 @@ $0.50) still limits each run.
 3. Read the exit code:
    - `0`: no unexpected or unclear findings. Done. `new_function`
      findings never change the exit code; they are still in the report.
+     If `summary.functions_checked` is `0`, every changed function was
+     skipped by design (async, instance method, obvious I/O, ...; the
+     reasons are in `summary.skipped`): tell the user that nothing was
+     checked and why.
    - `1`: there are findings; handle them by label (below).
-   - `2`: didibreak could not run (missing key, invalid config, not a git
-     repository). The error is on stderr and stdout is empty. Report it to
-     the user; do not retry the same command.
+   - `2`: didibreak could not check the change. Either it could not run at
+     all (missing key, invalid config, not a git repository; stdout is
+     empty), or functions were selected but none could be checked because
+     of an error: the provider was unreachable, the cost or token limit was
+     reached, or the modules failed to import (the report is on stdout, the
+     reasons in `summary.skipped`). The error is on stderr. Report it to the
+     user; do not retry the same command.
 4. After fixing code, run the check again. Stop after 3 check rounds and
    report what is left instead of looping: every run costs LLM calls
    (cached cases make repeated runs cheaper, labels are never cached).

@@ -50,6 +50,11 @@ from didibreak.llm.common import LLMAuthError, LLMModelError
 from didibreak.llm.pricing import unknown_price_warning
 from didibreak.llm_session import LLMSession, Plan
 from didibreak.pipeline import (
+    COST_LIMIT_REASON,
+    INVALID_RESPONSE_REASON,
+    REQUEST_REJECTED_PREFIX,
+    TOKEN_LIMIT_REASON,
+    UNAVAILABLE_REASON,
     Analysis,
     Generation,
     analyze,
@@ -83,7 +88,9 @@ If any finding has label "unexpected", fix the code so that behavior is preserve
 then run the check again. Report "unclear" findings to the user instead of guessing.
 "new_function" findings do not fail the check; mention them to the user
 and do not change code for them unless the user asks.
-Exit code 2 means a setup problem: report it to the user.
+Exit code 2 means nothing could be checked (setup problem, provider down,
+cost or token limit): report the error to the user.
+If summary.functions_checked is 0, tell the user that nothing was checked and why.
 Stop after 3 check rounds and report what is left.
 """
 
@@ -105,6 +112,58 @@ def exit_code_for(labels: Iterable[str], fail_on: str) -> int:
     # and none was a real bug.
     failing = {"unexpected"} if fail_on == "unexpected" else {"unexpected", "unclear"}
     return EXIT_FINDINGS if any(label in failing for label in labels) else EXIT_OK
+
+
+# Skip reasons that mean something went wrong, not that the function is
+# unsupported by design (owner decision 2026-11-11, task 35 review): when
+# selected functions exist and none was checked for one of these, the run
+# exits 2 instead of passing with nothing checked.
+ERROR_SKIP_REASONS = (
+    UNAVAILABLE_REASON,
+    INVALID_RESPONSE_REASON,
+    REQUEST_REJECTED_PREFIX.rstrip(),
+    COST_LIMIT_REASON,
+    TOKEN_LIMIT_REASON,
+    "import failed",
+    "import timed out",
+    "import resolved outside tree",
+    "function not found after import",
+)
+_LISTED_ERRORS = 3
+
+
+def nothing_checked_error(
+    report: Report, selected: Sequence[ChangedFunction]
+) -> str | None:
+    """The exit-2 message when no selected function could be checked, or None.
+
+    Args:
+        report: The run's report.
+        selected: Functions chosen for checking (after the testability rules).
+
+    Returns:
+        A one-line message naming up to three functions and their reasons
+        when nothing was checked and at least one selected function was
+        skipped for an error; None otherwise, also when every selected
+        function was skipped by design (for example ``no valid cases``).
+    """
+    if report.functions_checked or not selected:
+        return None
+    names = {function.report_name for function in selected}
+    errors = [
+        item
+        for item in report.skipped
+        if item.function in names and item.reason.startswith(ERROR_SKIP_REASONS)
+    ]
+    if not errors:
+        return None
+    listed = "; ".join(f"{i.function} ({i.reason})" for i in errors[:_LISTED_ERRORS])
+    more = len(errors) - _LISTED_ERRORS
+    listed += f"; and {more} more" if more > 0 else ""
+    return (
+        f"no changed function could be checked: {listed}. Fix the cause "
+        "(provider, limits or imports) and run again"
+    )
 
 
 def _flag_value(key: str, convert: Callable[[str], object]) -> Callable[[str], object]:
@@ -703,6 +762,10 @@ def _run_check(arguments: argparse.Namespace) -> int:
         no_tests=tuple(SkippedItem(call, reason) for call, reason in tests.not_written),
     )
     _print_report(report, config, llm=llm_cases is not None)
+    problem = nothing_checked_error(report, detection.functions)
+    if problem is not None:
+        print(f"didibreak: error: {problem}", file=sys.stderr)
+        return EXIT_ERROR
     return exit_code_for(
         [finding.label for finding in analysis.findings if finding.label],
         config.fail_on,

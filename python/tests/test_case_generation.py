@@ -1,8 +1,10 @@
 """pipeline.generate_cases with a fake LLM client (no network)."""
 
+import json
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+import httpx
 import pytest
 
 from didibreak.cases import (
@@ -14,6 +16,7 @@ from didibreak.cases import (
 from didibreak.functions import ChangedFunction
 from didibreak.harness import Case, Outcome
 from didibreak.llm.common import (
+    ClientSettings,
     LLMAuthError,
     LLMInvalidResponseError,
     LLMModelError,
@@ -23,6 +26,7 @@ from didibreak.llm.common import (
     Message,
     TokenUsage,
 )
+from didibreak.llm.openai_compat import OpenAICompatibleClient
 from didibreak.llm.pricing import Price, cost_usd
 from didibreak.pipeline import (
     COST_LIMIT_REASON,
@@ -66,7 +70,11 @@ class FakeClient:
         self.prompts: list[str] = []
 
     def complete_json(
-        self, messages: Sequence[Message], schema: Mapping[str, Any], schema_name: str
+        self,
+        messages: Sequence[Message],
+        schema: Mapping[str, Any],
+        schema_name: str,
+        may_continue: Any = None,
     ) -> LLMReply:
         prompt = messages[-1].content
         self.prompts.append(prompt)
@@ -363,3 +371,42 @@ def test_cost_limit_wins_when_both_limits_are_exceeded() -> None:
     messages = build_messages(function("f"), 5, load_template())
 
     assert budget.refusal(messages) == COST_LIMIT_REASON
+
+
+def test_audit_case_stays_within_max_tokens_plus_one_reply() -> None:
+    # Audit 35a, finding 4: every reply is cut off. Before 0.1.4 the client
+    # retried without asking the budget (123,000 tokens for a 20,000 limit)
+    # and sent no output cap.
+    sent: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        sent.append(json.loads(request.content))
+        body = {
+            "choices": [{"message": {"content": ""}, "finish_reason": "length"}],
+            "usage": {"prompt_tokens": 1500, "completion_tokens": 16000},
+        }
+        return httpx.Response(200, json=body)
+
+    settings = ClientSettings(
+        model="gpt-6-luna",
+        base_url="https://api.openai.com/v1",
+        output_limit_parameter="max_completion_tokens",
+    )
+    client = OpenAICompatibleClient(
+        settings, httpx.MockTransport(handler), sleep=lambda _: None
+    )
+    budget = Budget(None, None, 12, max_tokens=20_000)
+
+    result = generate_cases(
+        client, [function("f"), function("g")], 12, load_template(), budget=budget
+    )
+
+    assert [body["max_completion_tokens"] for body in sent] == [16000]
+    assert [(f.qualname, f.skip_reason) for f in result.skipped] == [
+        ("f", INVALID_RESPONSE_REASON),
+        ("g", TOKEN_LIMIT_REASON),
+    ]
+    one_reply = 1500 + 16000
+    used = budget.usage.input_tokens + budget.usage.output_tokens
+    assert used == one_reply  # the retry was not sent
+    assert used <= 20_000 + one_reply

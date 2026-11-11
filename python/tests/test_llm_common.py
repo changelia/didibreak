@@ -250,7 +250,7 @@ def raw(text: str | None, problem: str | None = None) -> RawReply:
 def test_valid_reply_is_parsed_on_the_first_call() -> None:
     replies = [raw('{"labels": []}')]
 
-    reply = complete_with_one_retry(lambda: replies.pop(0), SCHEMA)
+    reply = complete_with_one_retry(lambda _spent: replies.pop(0), SCHEMA)
 
     assert reply.data == {"labels": []}
     assert reply.usage.calls == 1
@@ -259,7 +259,7 @@ def test_valid_reply_is_parsed_on_the_first_call() -> None:
 def test_invalid_reply_is_retried_once_and_usage_is_summed() -> None:
     replies = [raw("not json"), raw('{"labels": []}')]
 
-    reply = complete_with_one_retry(lambda: replies.pop(0), SCHEMA)
+    reply = complete_with_one_retry(lambda _spent: replies.pop(0), SCHEMA)
 
     assert reply.usage == TokenUsage(20, 8, None, 0, 2)
 
@@ -279,7 +279,7 @@ def test_second_invalid_reply_raises_with_the_usage(
     replies = [first, second]
 
     with pytest.raises(LLMInvalidResponseError, match=problem) as info:
-        complete_with_one_retry(lambda: replies.pop(0), SCHEMA)
+        complete_with_one_retry(lambda _spent: replies.pop(0), SCHEMA)
 
     assert info.value.usage.calls == 2
 
@@ -287,3 +287,30 @@ def test_second_invalid_reply_raises_with_the_usage(
 def test_tests_cannot_reach_the_real_network() -> None:
     with pytest.raises(RuntimeError, match="real network access in a test"):
         httpx.get("https://api.openai.com/v1/models")
+
+
+def test_retry_is_skipped_when_the_run_limit_does_not_allow_it() -> None:
+    # Audit 35a, finding 4: the retry used to be sent without a budget check.
+    replies = [raw("not json"), raw('{"labels": []}')]
+    asked: list[TokenUsage] = []
+
+    def may_continue(spent: TokenUsage) -> bool:
+        asked.append(spent)
+        return False
+
+    with pytest.raises(LLMInvalidResponseError, match="no retry") as info:
+        complete_with_one_retry(lambda _spent: replies.pop(0), SCHEMA, may_continue)
+
+    assert asked == [TokenUsage(10, 4, None, 0, 1)]  # the first call's usage
+    assert info.value.usage.calls == 1
+    assert len(replies) == 1  # the second reply was never requested
+
+
+def test_retry_is_sent_when_the_run_limit_allows_it() -> None:
+    replies = [raw("not json"), raw('{"labels": []}')]
+
+    reply = complete_with_one_retry(
+        lambda _spent: replies.pop(0), SCHEMA, lambda _spent: True
+    )
+
+    assert reply.usage.calls == 2

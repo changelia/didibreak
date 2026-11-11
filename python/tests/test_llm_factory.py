@@ -194,3 +194,37 @@ def test_openrouter_preset_without_its_key_names_the_variable() -> None:
 def test_presets_are_never_inferred_from_the_environment() -> None:
     with pytest.raises(ConfigError, match="neither OPENAI_API_KEY"):
         resolve_provider(Config(), PRESET_ENV)
+
+
+@pytest.mark.parametrize(
+    ("config", "parameter"),
+    [
+        (Config(provider="openai"), "max_completion_tokens"),
+        (Config(provider="openrouter", model="m"), "max_completion_tokens"),
+        (
+            Config(
+                provider="openai", model="m", base_url="https://openrouter.ai/api/v1"
+            ),
+            "max_completion_tokens",
+        ),
+        (Config(provider="ollama", model="m"), "max_tokens"),
+        (Config(provider="lmstudio", model="m"), "max_tokens"),
+        (Config(provider="anthropic"), None),  # its client always sends max_tokens
+        (
+            Config(provider="openai", model="m", base_url="http://localhost:8000/v1"),
+            None,
+        ),
+        (
+            Config(provider="openai", model="m", base_url="https://api.groq.com/v1"),
+            None,
+        ),
+    ],
+)
+def test_output_cap_field_only_for_servers_that_document_it(
+    config: Config, parameter: str | None
+) -> None:
+    environment = {**ENV, "OPENROUTER_API_KEY": "sk-or"}
+
+    settings = client_settings(config, environment)
+
+    assert settings.output_limit_parameter == parameter
