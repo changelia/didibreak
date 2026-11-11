@@ -38,7 +38,7 @@ def test_defaults_match_detailed_design() -> None:
         ("cases", 51, "cases must be >= 1 and <= 50; got 51"),
         ("refine_rounds", 4, "refine_rounds must be >= 0 and <= 3; got 4"),
         ("max_functions", True, "max_functions must be an integer, got True"),
-        ("timeout", 0, "timeout must be greater than 0; got 0"),
+        ("timeout", 0, "timeout must be a finite number greater than 0; got 0"),
         ("max_cost", "cheap", "max_cost must be a number, got 'cheap'"),
         ("max_tokens", 0, "max_tokens must be >= 1; got 0"),
         ("max_tokens", 1.5, "max_tokens must be an integer, got 1.5"),
@@ -222,3 +222,31 @@ def test_file_url_is_kept_unless_a_higher_level_chooses_another_preset(
 
     assert config.base_url == "https://openrouter.ai/api/v1"
     assert config.api_key_env == "OPENROUTER_API_KEY"
+
+
+# Audit 35a, finding 2: nan and inf switched limits off without a message.
+@pytest.mark.parametrize("key", ["timeout", "max_cost"])
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf"), -1.0])
+def test_limits_must_be_finite_and_positive(key: str, value: float) -> None:
+    with pytest.raises(ConfigError, match=f"{key} must be a finite number greater"):
+        validate(key, value)
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), 0, -5])
+def test_max_tokens_must_be_a_positive_integer(value: float) -> None:
+    with pytest.raises(ConfigError, match="max_tokens must be"):
+        validate("max_tokens", value)
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf")])
+def test_prices_must_be_finite(value: float) -> None:
+    with pytest.raises(ConfigError, match=r"prices\.m\.input must be a finite number"):
+        validate("prices", {"m": {"input": value, "output": 1.0}})
+
+
+def test_toml_nan_in_pyproject_is_rejected(tmp_path: Path) -> None:
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text("[tool.didibreak]\ntimeout = nan\n", encoding="utf-8")
+
+    with pytest.raises(ConfigError, match="timeout must be a finite number"):
+        read_config_table(pyproject)

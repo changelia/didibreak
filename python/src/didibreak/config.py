@@ -5,6 +5,7 @@ built-in default. Every key is validated the same way wherever it comes from,
 so the CLI and the config file produce identical error messages.
 """
 
+import math
 import os
 import shutil
 import tomllib
@@ -117,8 +118,10 @@ def _integer(minimum: int, maximum: int | None) -> Callable[[str, object], int]:
 def _positive_number(key: str, value: object) -> float:
     if isinstance(value, bool) or not isinstance(value, int | float):
         raise ConfigError(f"{key} must be a number, got {value!r}")
-    if value <= 0:
-        raise ConfigError(f"{key} must be greater than 0; got {value}")
+    # nan and inf would switch a limit off silently (audit 35a, finding 2):
+    # nan > 0 is False, and a nan timeout made every case crash the same way.
+    if not math.isfinite(value) or value <= 0:
+        raise ConfigError(f"{key} must be a finite number greater than 0; got {value}")
     return float(value)
 
 
@@ -151,8 +154,10 @@ def _prices(key: str, value: object) -> dict[str, dict[str, float]]:
         for name, number in entry.items():
             if isinstance(number, bool) or not isinstance(number, int | float):
                 raise ConfigError(f"{key}.{model}.{name} must be a number")
-            if number < 0:
-                raise ConfigError(f"{key}.{model}.{name} must be >= 0; got {number}")
+            if not math.isfinite(number) or number < 0:
+                raise ConfigError(
+                    f"{key}.{model}.{name} must be a finite number >= 0; got {number}"
+                )
             prices[name] = float(number)
         table[str(model)] = prices
     return table

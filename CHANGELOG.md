@@ -18,6 +18,10 @@ the Python package and `js-v*` for the JS/TS package.
   `psycopg`, `pymysql`, `redis`, `boto3`, ...) are now skipped as obvious
   I/O instead of being run with the LLM's inputs. The docs now say plainly
   that the rules are a heuristic and a container is the real isolation.
+- `timeout`, `max_cost` and `prices` reject `nan` and `inf`, as flags and
+  in `pyproject.toml` (exit code 2). `--timeout nan` used to hide every
+  behavior change and exit 0, and `max_cost = nan` switched the cost limit
+  off without a message.
 
 ### 0.1.3
 
