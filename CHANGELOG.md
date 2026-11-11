@@ -31,6 +31,11 @@ the Python package and `js-v*` for the JS/TS package.
   now recorded as a normal return (`<repr failed: ...>`, compared by type)
   instead of a process crash (`didibreak.ProcessExited`), which also gave
   new functions a false finding.
+- Safety: more credentials are removed from the environment of the code
+  under test: names ending in `_PWD` or `_CREDENTIALS` (`MYSQL_PWD`,
+  `GOOGLE_APPLICATION_CREDENTIALS`), and `*_URL`, `*_URI`, `*_DSN`
+  variables whose URL carries a password (`postgres://user:pass@...`).
+  A `DATABASE_URL` without a password is kept.
 
 #### Changed
 

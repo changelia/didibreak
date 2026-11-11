@@ -18,6 +18,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 _CHILD_SCRIPT = Path(__file__).with_name("_harness_child.py")
 # -s: no user site-packages. -P: the script's folder is not put on sys.path.
@@ -30,8 +31,14 @@ _INTERPRETER_FLAGS = ("-s", "-P", "-B")
 # names ending with one of the suffixes or containing one of the words.
 # Broader than Detailed Design section 4 (*_API_KEY, *_TOKEN, *_SECRET), so
 # that names such as AWS_SECRET_ACCESS_KEY are covered too.
-SECRET_SUFFIXES = ("_KEY",)
+# _PWD covers MYSQL_PWD; PASSWORD covers PGPASSWORD. _CREDENTIALS values are
+# credentials or the path of a credentials file (audit 35a, finding 6).
+SECRET_SUFFIXES = ("_KEY", "_PWD", "_CREDENTIALS")
 SECRET_WORDS = ("TOKEN", "SECRET", "PASSWORD")
+# Connection strings are removed only when they carry a password
+# (``postgres://user:pass@host/db``); a plain DATABASE_URL stays, because the
+# code under test may need it without credentials.
+URL_SUFFIXES = ("_URL", "_URI", "_DSN")
 # Extra time for interpreter start and import before the child is killed.
 _KILL_GRACE_SECONDS = 5.0
 PROCESS_EXITED_TYPE = "didibreak.ProcessExited"
@@ -116,12 +123,30 @@ class HarnessResult:
     skip_reason: str | None = None
 
 
-def is_secret_variable(name: str) -> bool:
-    """Whether an environment variable looks like it holds a credential."""
+def has_password(url: str) -> bool:
+    """Whether a URL carries a password (``scheme://user:password@host``)."""
+    try:
+        parts = urlsplit(url.strip())
+    except ValueError:
+        return False
+    return bool(parts.scheme and parts.netloc and parts.password)
+
+
+def is_secret_variable(name: str, value: str = "") -> bool:
+    """Whether an environment variable looks like it holds a credential.
+
+    Args:
+        name: Variable name, matched ignoring case.
+        value: Its value; needed for ``*_URL``, ``*_URI`` and ``*_DSN`` names,
+            which count only when the URL carries a password.
+
+    Returns:
+        True when the variable should not reach the user's code.
+    """
     upper = name.upper()
-    return upper.endswith(SECRET_SUFFIXES) or any(
-        word in upper for word in SECRET_WORDS
-    )
+    if upper.endswith(SECRET_SUFFIXES) or any(word in upper for word in SECRET_WORDS):
+        return True
+    return upper.endswith(URL_SUFFIXES) and has_password(value)
 
 
 def child_environment(
@@ -142,7 +167,7 @@ def child_environment(
         name: value
         for name, value in environment.items()
         if not name.startswith("PYTHON")
-        and not is_secret_variable(name)
+        and not is_secret_variable(name, value)
         and name != api_key_env
     }
     kept.update(PYTHONHASHSEED="0", TZ="UTC")

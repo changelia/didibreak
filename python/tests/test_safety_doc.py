@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from didibreak.harness import SECRET_SUFFIXES, SECRET_WORDS
+from didibreak.harness import SECRET_SUFFIXES, SECRET_WORDS, URL_SUFFIXES
 
 DOC = Path(__file__).resolve().parents[2] / "docs" / "safety.md"
 
@@ -18,7 +18,9 @@ def test_every_credential_pattern_is_documented() -> None:
     text = DOC.read_text(encoding="utf-8")
 
     missing = [
-        name for name in (*SECRET_SUFFIXES, *SECRET_WORDS) if f"`{name}`" not in text
+        name
+        for name in (*SECRET_SUFFIXES, *SECRET_WORDS, *URL_SUFFIXES)
+        if f"`{name}`" not in text
     ]
 
     assert missing == []

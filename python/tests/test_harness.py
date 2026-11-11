@@ -377,3 +377,39 @@ def test_a_return_value_whose_repr_raises_is_not_a_crash(tmp_path: Path) -> None
         ("return", "builtins.dict", "<repr failed: RuntimeError>"),
     ] * 2
     assert all(o.stable and o.value is None for o in result.outcomes)
+
+
+# Audit 35a, finding 6: these reached the user's code before 0.1.4.
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [
+        ("DATABASE_URL", "postgres://app:s3cret@db.example.com/prod"),
+        ("REDIS_URL", "redis://:s3cret@cache:6379/0"),
+        ("MONGO_URI", "mongodb+srv://u:p@cluster/db"),
+        ("SENTRY_DSN", "https://key:secret@sentry.example.com/1"),
+        ("MYSQL_PWD", "s3cret"),
+        ("PGPASSWORD", "s3cret"),
+        ("GOOGLE_APPLICATION_CREDENTIALS", "/home/me/key.json"),
+        ("aws_credentials", "x"),
+    ],
+)
+def test_credential_carrying_variables_are_removed(name: str, value: str) -> None:
+    assert harness.is_secret_variable(name, value)
+    assert name not in harness.child_environment({name: value, "PATH": "/bin"})
+
+
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [
+        ("DATABASE_URL", "postgres://localhost/app"),
+        ("DATABASE_URL", "postgres://app@localhost/app"),  # user, no password
+        ("REDIS_URL", "redis://cache:6379/0"),
+        ("API_BASE_URL", "https://api.example.com/v1"),
+        ("PWD", "/home/me/project"),
+        ("OLDPWD", "/home/me"),
+        ("SOME_URL", "not a url: x:y@z"),
+    ],
+)
+def test_urls_without_credentials_are_kept(name: str, value: str) -> None:
+    assert not harness.is_secret_variable(name, value)
+    assert harness.child_environment({name: value})[name] == value
