@@ -76,6 +76,10 @@ setting:
 "openai/gpt-6-luna" = { input = 0.10, output = 0.50 }
 ```
 
+The key is the model name exactly as in `model` (here an OpenRouter model).
+Copy-paste setups for another OpenAI model, OpenRouter and Ollama are in
+the README section [Change the model](../README.md#change-the-model).
+
 ## Case cache
 
 Accepted cases are stored in `.didibreak/cache/cases/` (inside

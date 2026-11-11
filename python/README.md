@@ -44,4 +44,50 @@ Requires Python 3.11 or newer, Linux or macOS, and git. The 0.1 releases are
 alpha. No telemetry: the only network requests go to the LLM
 provider you configure, with your own API key.
 
+## Change the model
+
+The default is `gpt-6-luna` (OpenAI) or `claude-haiku-5-5` (Anthropic).
+To use another model, add one of these to `pyproject.toml`:
+
+```toml
+# Another OpenAI model (key in OPENAI_API_KEY)
+[tool.didibreak]
+model = "gpt-6-sol"
+
+[tool.didibreak.prices]  # US dollars per million tokens, from the model page
+"gpt-6-sol" = { input = 2.00, cached_input = 0.20, output = 10.00 }
+```
+
+```toml
+# OpenRouter (key in OPENROUTER_API_KEY)
+[tool.didibreak]
+provider = "openai"
+base_url = "https://openrouter.ai/api/v1"
+api_key_env = "OPENROUTER_API_KEY"
+model = "openai/gpt-6-sol"
+
+[tool.didibreak.prices]
+"openai/gpt-6-sol" = { input = 2.00, output = 10.00 }
+```
+
+```toml
+# A local server such as Ollama: no key, no price needed
+[tool.didibreak]
+provider = "openai"
+base_url = "http://localhost:11434/v1"
+api_key_env = ""
+model = "llama3.2"
+```
+
+For one run, `--model gpt-6-sol` works too, with the `prices` entry above.
+A paid model that has no price stops `check` with exit code 2 before any
+request: without a price, didibreak cannot keep the run under `max_cost`
+(default $0.50), and it never guesses one. Only `gpt-6-luna` and
+`claude-haiku-5-5` have built-in prices; a model on `localhost` costs
+nothing. Prices above were checked on 2026-11-11 and change; the
+provider's page is the reference. The OpenAI recipe was run live with
+0.1.1; OpenRouter and Ollama are checked against their documentation only.
+Details:
+[providers-and-costs.md](https://github.com/changelia/didibreak/blob/main/docs/providers-and-costs.md).
+
 Full documentation: https://github.com/changelia/didibreak/tree/main/docs
