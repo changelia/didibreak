@@ -23,9 +23,9 @@ too low for even one request (nothing is sent):
 
 ```text
 $ didibreak check --max-cost 0.000001
-didibreak 0.1.0.dev0 · working tree vs HEAD (0bd2306bffdf)
+didibreak 0.1.1 · working tree vs HEAD (804faa715da2)
 1 changed function(s) to check (0 new)
-Estimated: up to 2 LLM calls (1 + up to 1 refinement) with gpt-6-luna, ~2,094 input + ~4,320 output tokens, ~$0.0024 (limit $0.000001)
+Estimated: up to 2 LLM calls (1 + up to 1 refinement) with gpt-6-luna, ~2,341 input + ~4,320 output tokens, ~$0.0024 (limit $0.000001)
 The estimate is above max_cost: functions after the limit are skipped.
 0 cases · 0 behavior changes · 0 flaky dropped
   skipped: app/utils/phone.py::normalize_phone (cost limit)
@@ -75,6 +75,10 @@ setting:
 [tool.didibreak.prices]
 "openai/gpt-6-luna" = { input = 0.10, output = 0.50 }
 ```
+
+The key is the model name exactly as in `model` (here an OpenRouter model).
+Copy-paste setups for another OpenAI model, OpenRouter and Ollama are in
+the README section [Change the model](../README.md#change-the-model).
 
 ## Case cache
 

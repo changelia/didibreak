@@ -2,6 +2,9 @@
 
 How your code is executed and isolated, and what is not covered.
 
+> For code you did not write (external pull requests, unattended agents),
+> run didibreak inside a container or a CI job.
+
 ## Which functions are never executed
 
 Before running anything, didibreak skips functions it cannot run safely: async
@@ -32,7 +35,8 @@ The I/O check looks at:
 - Importing your module runs its top-level code.
 - Your function's own side effects still happen: a file written to an
   absolute path, for example, is really written. There is no container or
-  sandbox in v0.1.
+  sandbox in 0.1.x: for code you did not write, run didibreak inside a
+  container or a CI job yourself.
 
 ## What didibreak writes
 

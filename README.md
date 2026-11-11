@@ -15,9 +15,18 @@ check what someone thought of, and agents often write tests that confirm their
 own code. Behavior that nobody asserted can change silently. didibreak uses the
 old version as the reference, so it needs no hand-written expected values.
 
+## What didibreak is and is not
+
+- **It is** an extra check next to your tests: it runs the old and the new
+  version of each changed function on inputs it generates and shows where
+  they behave differently, labelled against what you asked for.
+- **It is not** a production safety net or a replacement for tests and
+  review. It finds behavior changes on the inputs it generates; it cannot
+  prove that no other input changed.
+
 ## Status
 
-0.1.1 (alpha; first release 0.1.0 on 2026-11-10): Python only, Linux and macOS. The release
+0.1.2 (alpha; first release 0.1.0 on 2026-11-10): Python only, Linux and macOS. The release
 precision gate is met: in an evaluation on seven real libraries, 87% of `unexpected` findings
 were real behavior changes ([evaluation/README.md](evaluation/README.md)).
 The 7 libraries were chosen for literal-friendly functions, the labels are
@@ -44,6 +53,8 @@ didibreak check --intent "add thousands separators to prices"
 didibreak compares your uncommitted changes with `HEAD`. It **runs your
 changed functions**, old and new versions, on your machine; read
 [safety.md](docs/safety.md) for what is isolated and what is not.
+For code you did not write (external pull requests, unattended agents),
+run didibreak inside a container or a CI job.
 
 A real run with didibreak 0.1.0 on a change that added thousands separators
 to a price formatter and also lost the minus sign (trimmed: 7 `UNEXPECTED`
@@ -87,6 +98,52 @@ Details: [limitations.md](docs/limitations.md).
 
 For AI coding agents: `didibreak check --format json` and
 `didibreak init-agents` ([Use with AI agents](docs/ai-agents.md)).
+
+## Change the model
+
+The default is `gpt-6-luna` (OpenAI) or `claude-haiku-5-5` (Anthropic).
+To use another model, add one of these to `pyproject.toml`:
+
+```toml
+# Another OpenAI model (key in OPENAI_API_KEY)
+[tool.didibreak]
+model = "gpt-6-sol"
+
+[tool.didibreak.prices]  # US dollars per million tokens, from the model page
+"gpt-6-sol" = { input = 2.00, cached_input = 0.20, output = 10.00 }
+```
+
+```toml
+# OpenRouter (key in OPENROUTER_API_KEY)
+[tool.didibreak]
+provider = "openai"
+base_url = "https://openrouter.ai/api/v1"
+api_key_env = "OPENROUTER_API_KEY"
+model = "openai/gpt-6-sol"
+
+[tool.didibreak.prices]
+"openai/gpt-6-sol" = { input = 2.00, output = 10.00 }
+```
+
+```toml
+# A local server such as Ollama: no key, no price needed
+[tool.didibreak]
+provider = "openai"
+base_url = "http://localhost:11434/v1"
+api_key_env = ""
+model = "llama3.2"
+```
+
+For one run, `--model gpt-6-sol` works too, with the `prices` entry above.
+A paid model that has no price stops `check` with exit code 2 before any
+request: without a price, didibreak cannot keep the run under `max_cost`
+(default $0.50), and it never guesses one. Only `gpt-6-luna` and
+`claude-haiku-5-5` have built-in prices; a model on `localhost` costs
+nothing. Prices above were checked on 2026-11-11 and change; the
+provider's page is the reference. The OpenAI recipe was run live with
+0.1.1; OpenRouter and Ollama are checked against their documentation only.
+Details:
+[providers-and-costs.md](docs/providers-and-costs.md).
 
 ## Privacy
 
