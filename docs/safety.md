@@ -26,6 +26,12 @@ The I/O check looks at:
 
 ## What is not covered
 
+**The skip rules are a heuristic, not isolation.** They look for known
+names in the source. A function whose I/O is hidden behind a helper
+function in another module, or reached through dynamic code, is still run
+with the LLM's inputs. A container (or a CI job) is the real isolation:
+use one for code you did not write.
+
 - **Calls into other modules are not followed.** If `store()` calls
   `helpers.save()` and `save()` writes a file, `store()` is not skipped and the
   write happens when didibreak runs it. Keep side effects out of the functions

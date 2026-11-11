@@ -9,7 +9,15 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
-Nothing yet.
+#### Fixed
+
+- Safety: functions that run shell commands or processes (`os.system`,
+  `os.popen`, `os.exec*`, `os.spawn*`, `pty`, ...), change files
+  (`os.rename`, `os.makedirs`, `os.chmod`, `Path.rename`, ...) or use
+  network and database clients (`http.client`, `smtplib`, `ftplib`,
+  `psycopg`, `pymysql`, `redis`, `boto3`, ...) are now skipped as obvious
+  I/O instead of being run with the LLM's inputs. The docs now say plainly
+  that the rules are a heuristic and a container is the real isolation.
 
 ### 0.1.3
 
