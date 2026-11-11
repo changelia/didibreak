@@ -9,6 +9,14 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
+Nothing yet.
+
+### 0.1.3
+
+Released when the tag `py-v0.1.3` is pushed. Simpler model switching. The
+JSON report keeps `schema_version: 1`: `usage.cost_usd` could already be
+`null`, and no field was added.
+
 #### Added
 
 - `--max-tokens` / `max_tokens` (default 200,000): a hard limit on input +
