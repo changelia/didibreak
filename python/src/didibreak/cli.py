@@ -729,14 +729,16 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     Returns:
         The process exit code: 0 no failing findings, 1 failing findings,
-        2 tool or configuration error (also on Windows, before any work),
-        130 interrupted (Ctrl-C).
+        2 tool or configuration error (also for a command on Windows,
+        before any work), 130 interrupted (Ctrl-C).
     """
-    if not is_supported_platform(sys.platform):
+    parser = build_parser()
+    # --help and --version end inside parse_args and run no user code, so
+    # they work on Windows too (owner decision 2026-11-11, task 34 review).
+    arguments = parser.parse_args(argv)
+    if arguments.command is not None and not is_supported_platform(sys.platform):
         print(UNSUPPORTED_PLATFORM_MESSAGE, file=sys.stderr)
         return EXIT_ERROR
-    parser = build_parser()
-    arguments = parser.parse_args(argv)
     if arguments.command == "check":
         try:
             return _run_check(arguments)

@@ -68,9 +68,9 @@ def test_installed_metadata_version_matches_package_version() -> None:
 
 
 @pytest.mark.parametrize(
-    "argv", [["check"], ["init-agents"], ["--version"], []], ids=str
+    "argv", [["check"], ["check", "--yes"], ["init-agents"]], ids=" ".join
 )
-def test_windows_exits_2_with_one_line_before_any_work(
+def test_windows_commands_exit_2_with_one_line_before_any_work(
     argv: list[str],
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -80,16 +80,46 @@ def test_windows_exits_2_with_one_line_before_any_work(
     def no_work(*args: object, **kwargs: object) -> None:
         raise AssertionError("didibreak did work on Windows")
 
-    monkeypatch.setattr("didibreak.cli.build_parser", no_work)
+    monkeypatch.setattr("didibreak.cli._run_check", no_work)
 
     exit_code = main(argv)
 
     captured = capsys.readouterr()
     assert exit_code == 2
-    assert captured.out == ""
+    assert captured.out == ""  # init-agents printed nothing
     assert captured.err.count("\n") == 1
     assert "Windows is not supported" in captured.err
     assert "Linux and macOS" in captured.err
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [["--version"], ["--help"], ["check", "--help"], ["init-agents", "--help"]],
+    ids=" ".join,
+)
+def test_windows_help_and_version_still_work(
+    argv: list[str],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(sys, "platform", "win32")
+
+    with pytest.raises(SystemExit) as exit_info:
+        main(argv)
+
+    captured = capsys.readouterr()
+    assert exit_info.value.code == 0
+    assert "Windows is not supported" not in captured.err
+    assert captured.out.startswith(("usage: didibreak", EXPECTED_VERSION_LINE))
+
+
+def test_windows_without_a_command_prints_help(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(sys, "platform", "win32")
+
+    assert main([]) == 0
+    assert capsys.readouterr().out.startswith("usage: didibreak")
 
 
 @pytest.mark.parametrize("platform", ["linux", "darwin"])

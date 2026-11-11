@@ -42,9 +42,11 @@ JSON report keeps `schema_version: 1`: `usage.cost_usd` could already be
 
 #### Fixed
 
-- On Windows, `didibreak` now stops at once with exit code 2 and a
-  one-line message that Windows is not supported (Linux and macOS are),
-  as the design promised. Before, there was no platform check.
+- On Windows, `didibreak check` and `didibreak init-agents` now stop at
+  once with exit code 2 and a one-line message that Windows is not
+  supported (Linux and macOS are), as the design promised. Before, there
+  was no platform check.
+- `--help` and `--version` still work on Windows: they run no user code.
 
 ### 0.1.2
 
