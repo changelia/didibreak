@@ -9,11 +9,26 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
+Nothing yet.
+
+### 0.1.5
+
+Released when the tag `py-v0.1.5` is pushed. Cleanup and contributor
+readiness from the code audit (`evaluation/audit-35a.md`, findings 7 and
+9–12). The JSON report keeps `schema_version: 1`.
+
 #### Added
 
 - GitHub issue templates: a bug report that asks for the didibreak and
   Python versions, the OS, the exact command and the output (with API keys
   removed), a feature request, and links to the docs.
+
+#### Fixed
+
+- Absolute symbolic links that point into the repository are no longer
+  copied into the temporary copy the current version runs from, so code
+  run from the copy cannot write the real files through them. Relative
+  links and links outside the repository are still copied.
 
 #### Changed
 
@@ -22,10 +37,12 @@ the Python package and `js-v*` for the JS/TS package.
   at most 2,000 characters, with usable keyword names. `--cases-file` now
   also rejects longer arguments and keyword names such as `class`, as LLM
   replies always did.
-- Absolute symbolic links that point into the repository are no longer
-  copied into the temporary copy the current version runs from, so code
-  run from the copy cannot write the real files through them. Relative
-  links and links outside the repository are still copied.
+- Internal cleanup with no change to the output: dead code removed, stale
+  comments rewritten, and the longest functions (`check`, the harness
+  child start, the git change list, the report builder) split into named
+  steps.
+- AGENTS.md and CONTRIBUTING: never pipe a check through a command that
+  hides its exit code (`| tail`); use `set -o pipefail`.
 
 ### 0.1.4
 
