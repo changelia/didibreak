@@ -128,6 +128,26 @@ def test_cli_preset_discards_the_pyproject_url_and_key(
     assert "authorization" not in requests[0].headers
 
 
+def test_cli_openai_discards_the_pyproject_url_of_another_server(
+    requests: list[httpx.Request],
+    repo: FixtureRepository,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Pre-launch review, finding 6: the OpenAI key went to the pyproject host.
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-fake")
+    write_config(
+        repo,
+        'provider = "ollama"\nmodel = "gpt-6-luna"\n'
+        'base_url = "http://gpu-box.example:11434/v1"\n',
+    )
+
+    assert main(["check", "--provider", "openai"]) == EXIT_FINDINGS
+
+    assert {str(r.url) for r in requests} == {
+        "https://api.openai.com/v1/chat/completions"
+    }
+
+
 def test_cli_base_url_still_overrides_a_cli_preset(
     requests: list[httpx.Request], repo: FixtureRepository
 ) -> None:

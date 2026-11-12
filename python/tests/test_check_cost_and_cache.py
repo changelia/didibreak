@@ -278,7 +278,9 @@ def test_local_endpoint_without_a_price_costs_nothing(
     monkeypatch.delenv("OPENAI_API_KEY")
     argv = ["check", "--provider", "openai", "--base-url", f"http://{host}/v1"]
     (Path.cwd() / "pyproject.toml").write_text(
-        '[tool.didibreak]\nmodel = "llama3.2"\napi_key_env = ""\n', encoding="utf-8"
+        # The same provider as the flag, so api_key_env = "" is kept.
+        '[tool.didibreak]\nprovider = "openai"\nmodel = "llama3.2"\napi_key_env = ""\n',
+        encoding="utf-8",
     )
 
     assert main(argv) == EXIT_FINDINGS

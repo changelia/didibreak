@@ -180,9 +180,10 @@ They have no default model, so `model` is required.
 | `lmstudio` | `http://localhost:1234/v1` | none (LM Studio needs none unless you turn authentication on) |
 
 A `base_url` or `api_key_env` you set at the same level as the preset, or
-higher, replaces the preset's value; a preset given as `--provider`
-discards the ones in `pyproject.toml`
-([details](configuration-python.md)). Set one yourself, for example
+higher, replaces the preset's value; a `--provider` flag that names
+another provider than `pyproject.toml` discards the ones in
+`pyproject.toml` ([details](configuration-python.md)), for presets and
+`openai` or `anthropic` alike. Set one yourself, for example
 `api_key_env = "LM_STUDIO_TOKEN"` when LM Studio authentication is on, or
 another port in `base_url`. The URLs come from the services' documentation
 (checked 2026-11-11). Other OpenAI-compatible services still work with

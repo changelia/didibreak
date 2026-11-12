@@ -3,14 +3,21 @@
 didibreak reads settings from three places. A CLI flag overrides
 `[tool.didibreak]` in `pyproject.toml`, which overrides the built-in default.
 
-One exception for the provider presets (`openrouter`, `ollama`,
-`lmstudio`): a preset given as `--provider` also discards `base_url` and
-`api_key_env` from `pyproject.toml`, so the preset's own URL and key apply.
-For example, with `base_url = "https://openrouter.ai/api/v1"` in
-`pyproject.toml`, `--provider ollama` sends requests to the local Ollama
-server, without a key. A `--base-url` or `api_key_env` value at the same
-level as the preset or higher still replaces the preset's value, and the
-`pyproject.toml` values are kept when that file names the same preset.
+One exception, so that an API key is never sent to another provider's
+server: a `--provider` flag that differs from the `provider` in
+`pyproject.toml` also discards `base_url` and `api_key_env` from
+`pyproject.toml`, and that provider's own URL and key variable apply. For
+example, with `provider = "ollama"` and
+`base_url = "http://gpu-box:11434/v1"` in `pyproject.toml`,
+`--provider openai` sends requests, and the OpenAI key, to
+`https://api.openai.com/v1`, not to `gpu-box`; with
+`base_url = "https://openrouter.ai/api/v1"` there, `--provider ollama`
+sends them to the local Ollama server, without a key. `--base-url` given
+on the command line still applies, and the `pyproject.toml` values are
+kept when that file names the same provider. A `pyproject.toml` without
+`provider` counts as another provider: to keep its `base_url` or
+`api_key_env` (a config-only key) with `--provider`, add the same
+`provider` to the file.
 
 ## Where the config file is found
 

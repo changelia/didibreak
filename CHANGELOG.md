@@ -40,6 +40,11 @@ findings 1, 2, 5, 6 and 7). The JSON report keeps `schema_version: 1`.
   lower-case names too). Before, a password in `DB_PASS` could reach the
   report, the reproducing test and the labelling request through a return
   value.
+- `--provider openai` or `--provider anthropic` kept a `base_url` and
+  `api_key_env` from `pyproject.toml` that were meant for another
+  provider, so the API key was sent to that host. Any `--provider` that
+  differs from the file's `provider` now discards both, as presets
+  already did; `--base-url` on the command line still applies.
 
 ### 0.1.5
 
