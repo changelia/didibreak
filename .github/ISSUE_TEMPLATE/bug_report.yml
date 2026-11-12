@@ -1,0 +1,64 @@
+name: Bug report
+description: didibreak crashed, reported something wrong, or did not do what the docs say.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Remove API keys and other secrets** from
+        everything you paste below. didibreak never prints your key, but your
+        shell history, environment or config might contain it.
+  - type: input
+    id: version
+    attributes:
+      label: didibreak version
+      description: Output of `didibreak --version`.
+      placeholder: didibreak 0.1.5
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      description: Output of `python --version` for the interpreter that runs your code.
+      placeholder: Python 3.12.7
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux
+        - macOS
+        - Other (please say which below)
+    validations:
+      required: true
+  - type: input
+    id: provider
+    attributes:
+      label: LLM provider and model
+      description: For example `openai` / `gpt-6-luna`, or `ollama` / `llama3.2`. Write "none" for `--cases-file` runs.
+  - type: textarea
+    id: command
+    attributes:
+      label: Exact command
+      description: The full `didibreak` command line, and the `[tool.didibreak]` table from `pyproject.toml` if you have one.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: The text output, or the JSON report from `--format json`, and anything printed on stderr. Remove API keys first.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: What should have happened instead. A small function that shows the problem helps most.
+    validations:
+      required: true

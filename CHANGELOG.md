@@ -9,7 +9,11 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
-Nothing yet.
+#### Added
+
+- GitHub issue templates: a bug report that asks for the didibreak and
+  Python versions, the OS, the exact command and the output (with API keys
+  removed), a feature request, and links to the docs.
 
 ### 0.1.4
 
