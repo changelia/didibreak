@@ -40,6 +40,18 @@ uv run ruff format --check .
 uv run mypy src
 ```
 
+Read each command's exit status, not only its last lines. Never pipe a
+check through a command that hides the exit code, such as
+`uv run pytest | tail`: the pipeline exits 0 even when tests fail. If you
+need to shorten the output, use `set -o pipefail` first, or check the
+status explicitly:
+
+```bash
+set -o pipefail
+uv run pytest -q | tail -5    # fails when pytest fails
+uv run pytest -q; echo "exit $?"
+```
+
 Configuration lives in `python/pyproject.toml`:
 
 - Ruff rules `E`, `F`, `W`, `I`, `B`, `UP`, `SIM`, `RUF`, `D` (Google

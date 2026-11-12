@@ -36,6 +36,10 @@ on this repository, and to the people who run them. They are a summary of
   uv run mypy src
   ```
 
+- Never pipe a check through a command that hides its exit code, such as
+  `uv run pytest | tail`: the pipeline then succeeds even when tests fail.
+  Run the check on its own, or use `set -o pipefail`, or check the exit
+  status explicitly (`uv run pytest; echo "exit $?"`) before committing.
 - Update the docs and `CHANGELOG.md` (Unreleased) when behavior, a flag, a
   config key or the output changes. Examples in the docs are real output.
 - Report honestly: say which checks you ran and their real output; never
