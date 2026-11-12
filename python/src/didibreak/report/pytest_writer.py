@@ -16,6 +16,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from didibreak._harness_child import normalize
+from didibreak.arguments import format_call
 from didibreak.cache import ignore_output_dir
 from didibreak.compare import Finding
 from didibreak.functions import module_name
@@ -108,11 +109,9 @@ def _builtin_exception(type_name: str) -> str | None:
 
 
 def _call(subject_name: str, finding: Finding, qualname: str) -> str:
-    arguments = [*finding.case.args]
-    arguments += [f"{key}={value}" for key, value in finding.case.kwargs.items()]
     method = qualname.partition(".")[2]
     target = f"{subject_name}.{method}" if method else subject_name
-    return f"{target}({', '.join(arguments)})"
+    return format_call(target, finding.case.args, finding.case.kwargs)
 
 
 def _return_lines(call: str, finding: Finding) -> list[str]:
@@ -301,9 +300,7 @@ def _shown(path: Path, root: Path) -> str:
 
 def finding_call(finding: Finding) -> str:
     """``path::qualname(args)`` as the text report shows a finding."""
-    arguments = [*finding.case.args]
-    arguments += [f"{key}={value}" for key, value in finding.case.kwargs.items()]
-    return f"{finding.function}({', '.join(arguments)})"
+    return format_call(finding.function, finding.case.args, finding.case.kwargs)
 
 
 def write_tests(

@@ -15,6 +15,14 @@ the Python package and `js-v*` for the JS/TS package.
   Python versions, the OS, the exact command and the output (with API keys
   removed), a feature request, and links to the docs.
 
+#### Changed
+
+- One rule checks case arguments everywhere (LLM replies, the case cache,
+  the developer option `--cases-file` and the harness): Python literals of
+  at most 2,000 characters, with usable keyword names. `--cases-file` now
+  also rejects longer arguments and keyword names such as `class`, as LLM
+  replies always did.
+
 ### 0.1.4
 
 Released when the tag `py-v0.1.4` is pushed. Safety and correctness fixes

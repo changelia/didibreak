@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from didibreak.cases import is_literal
+from didibreak.arguments import case_problem
 from didibreak.functions import ChangedFunction
 from didibreak.harness import Case
 
@@ -135,9 +135,7 @@ def _case_from_json(item: Any) -> Case | None:
     )
     if not isinstance(args, list) or not isinstance(kwargs, dict):
         return None
-    texts = [*args, *kwargs.values()]
-    names_ok = all(isinstance(name, str) and name.isidentifier() for name in kwargs)
-    if not names_ok or not all(is_literal(text) for text in texts):
+    if case_problem(args, kwargs) is not None:
         return None
     return Case(
         tuple(args), dict(kwargs), rationale if isinstance(rationale, str) else ""

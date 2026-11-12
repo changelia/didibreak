@@ -6,7 +6,6 @@ cases with the LLM under the run's budget (cost and token limits). Cases
 can also come from the hidden developer option ``--cases-file``.
 """
 
-import ast
 import json
 import math
 from collections.abc import Mapping, Sequence
@@ -14,6 +13,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
+from didibreak.arguments import case_problem
 from didibreak.cases import (
     CASES_SCHEMA,
     CASES_SCHEMA_NAME,
@@ -77,11 +77,9 @@ def _case(item: object, number: int) -> tuple[str, Case]:
         raise ValueError(f'{where}: "kwargs" must map names to strings')
     if not isinstance(rationale, str):
         raise ValueError(f'{where}: "rationale" must be a string')
-    for text in (*args, *kwargs.values()):
-        try:
-            ast.literal_eval(text)
-        except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
-            raise ValueError(f"{where}: not a Python literal: {text!r}") from None
+    problem = case_problem(args, kwargs)
+    if problem is not None:
+        raise ValueError(f"{where}: {problem}")
     return function, Case(tuple(args), dict(kwargs), rationale)
 
 

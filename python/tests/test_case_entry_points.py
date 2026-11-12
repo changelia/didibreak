@@ -67,10 +67,11 @@ NOWHERE = dict.fromkeys(ENTRY_POINTS, False)
         (["print(1)"], {}, NOWHERE),
         (["x"], {}, NOWHERE),
         ([], {"x": "open('f')"}, NOWHERE),
-        # Before task 35c the entry points disagreed on these three:
-        ([LONG], {}, {**NOWHERE, "cases_file": True, "harness": True}),
-        ([], {"class": "1"}, {**EVERYWHERE, "llm": False}),
-        ([], {"not a name": "1"}, {**NOWHERE, "cases_file": True, "harness": True}),
+        # Before task 35c --cases-file and the harness accepted these, and
+        # the cache accepted keyword names such as "class"; now one rule.
+        ([LONG], {}, NOWHERE),
+        ([], {"class": "1"}, NOWHERE),
+        ([], {"not a name": "1"}, NOWHERE),
     ],
     ids=[
         "literals",

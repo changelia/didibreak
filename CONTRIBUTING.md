@@ -162,7 +162,9 @@ generation schema with a `function` key per case:
 }
 ```
 
-`args` and `kwargs` values are Python literals written as strings;
+`args` and `kwargs` values are Python literals written as strings, at
+most 2,000 characters each, and keyword names must be usable Python names:
+the same rule as for LLM replies (`python/src/didibreak/arguments.py`).
 `kwargs` and `rationale` may be left out. A changed function without cases
 in the file is listed as skipped (`no cases`). Example on the
 `phone_regression` fixture (all three documented cases; real output):

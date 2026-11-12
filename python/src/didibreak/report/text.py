@@ -10,6 +10,7 @@ Colors only when the caller asks for them.
 
 from collections.abc import Sequence
 
+from didibreak.arguments import format_call
 from didibreak.compare import Finding
 from didibreak.functions import Detection
 from didibreak.harness import Outcome
@@ -101,11 +102,11 @@ def _describe(outcome: Outcome | None) -> str:
 
 
 def _finding_lines(finding: Finding, color: bool) -> list[str]:
-    arguments = [*finding.case.args]
-    arguments += [f"{key}={value}" for key, value in finding.case.kwargs.items()]
     heading = (finding.label or "").upper().replace("_", "-")
     label = _paint(f"{heading:<{_INDENT}}", finding.label or "unclear", color)
-    call = printable(f"{finding.function}({', '.join(arguments)})")
+    call = printable(
+        format_call(finding.function, finding.case.args, finding.case.kwargs)
+    )
     lines = [
         f"  {label}{call}",
         f"  {'':<{_INDENT}}before {_describe(finding.before)} → "

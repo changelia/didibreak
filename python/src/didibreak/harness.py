@@ -7,7 +7,6 @@ pickle. Each case has its own timeout, and the parent kills a child that
 outlives all of them.
 """
 
-import ast
 import contextlib
 import json
 import os
@@ -19,6 +18,8 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
+
+from didibreak.arguments import case_problem
 
 _CHILD_SCRIPT = Path(__file__).with_name("_harness_child.py")
 # -s: no user site-packages. -P: the script's folder is not put on sys.path.
@@ -175,14 +176,11 @@ def child_environment(
 
 
 def _check_literals(cases: Sequence[Case]) -> None:
+    # Defensive: every entry point already checks with the same rule.
     for case in cases:
-        for text in (*case.args, *case.kwargs.values()):
-            try:
-                ast.literal_eval(text)
-            except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
-                raise ValueError(
-                    f"case argument is not a Python literal: {text!r}"
-                ) from None
+        problem = case_problem(case.args, case.kwargs)
+        if problem is not None:
+            raise ValueError(f"invalid case argument: {problem}")
 
 
 def _outcome(record: Mapping[str, Any]) -> Outcome:

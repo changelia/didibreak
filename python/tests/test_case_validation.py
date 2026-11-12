@@ -6,12 +6,8 @@ from typing import Any
 
 import pytest
 
-from didibreak.cases import (
-    CASES_SCHEMA,
-    MAX_ARGUMENT_LENGTH,
-    accept_cases,
-    is_literal,
-)
+from didibreak.arguments import MAX_ARGUMENT_LENGTH, is_literal
+from didibreak.cases import CASES_SCHEMA, accept_cases
 from didibreak.harness import Case
 from didibreak.llm.common import schema_errors
 

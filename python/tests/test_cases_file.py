@@ -45,6 +45,15 @@ def test_cases_are_grouped_by_function_in_file_order(tmp_path: Path) -> None:
             {"cases": [{"function": "a.py::f", "args": ["__import__('os')"]}]},
             "case 1: not a Python literal",
         ),
+        # Same rule as LLM replies since task 35c (audit 35a, finding 11).
+        (
+            {"cases": [{"function": "a.py::f", "kwargs": {"class": "1"}}]},
+            "case 1: unusable keyword name 'class'",
+        ),
+        (
+            {"cases": [{"function": "a.py::f", "args": ["'" + "a" * 3000 + "'"]}]},
+            "case 1: longer than 2000 characters",
+        ),
     ],
 )
 def test_invalid_files_name_the_file_and_the_problem(

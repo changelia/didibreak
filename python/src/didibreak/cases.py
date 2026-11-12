@@ -7,7 +7,6 @@ into the package at build time). Every proposed argument must pass
 """
 
 import ast
-import keyword
 import textwrap
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -15,6 +14,7 @@ from importlib import resources
 from string import Template
 from typing import Any
 
+from didibreak.arguments import case_problem, format_call
 from didibreak.compare import finding_id
 from didibreak.functions import ChangedFunction
 from didibreak.harness import Case, Outcome
@@ -38,9 +38,6 @@ NEW_TASK = (
     "which it raises an unexpected exception or does not finish."
 )
 NO_OLD_SOURCE = "(none: new function)"
-# Longer arguments are dropped as invalid: they bloat prompts, reports and
-# the harness request without making a case more useful.
-MAX_ARGUMENT_LENGTH = 2000
 
 CASES_SCHEMA_NAME = "didibreak_cases"
 # Strict structured output needs additionalProperties false on every object,
@@ -176,9 +173,7 @@ class CaseRun:
 
 def describe_call(qualname: str, case: Case) -> str:
     """``name(arg, key=value)`` as written in the case."""
-    name = qualname.rsplit(".", 1)[-1]
-    arguments = [*case.args, *(f"{k}={v}" for k, v in case.kwargs.items())]
-    return f"{name}({', '.join(arguments)})"
+    return format_call(qualname.rsplit(".", 1)[-1], case.args, case.kwargs)
 
 
 def describe_outcome(outcome: Outcome) -> str:
@@ -253,34 +248,18 @@ class CaseBatch:
     invalid: int
 
 
-def is_literal(text: object) -> bool:
-    """Whether text is a Python literal of acceptable length (data, not code)."""
-    if not isinstance(text, str) or len(text) > MAX_ARGUMENT_LENGTH:
-        return False
-    try:
-        ast.literal_eval(text)
-    except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
-        return False
-    return True
-
-
-def _keyword_arguments(pairs: object) -> dict[str, str] | None:
+def _keyword_arguments(pairs: object) -> dict[str, object] | None:
+    # The schema sends keyword arguments as {name, value} pairs (task 12).
     if not isinstance(pairs, list):
         return None
-    kwargs: dict[str, str] = {}
+    kwargs: dict[str, object] = {}
     for pair in pairs:
         if not isinstance(pair, dict):
             return None
         name, value = pair.get("name"), pair.get("value")
-        usable = (
-            isinstance(name, str)
-            and name.isidentifier()
-            and not keyword.iskeyword(name)
-            and name not in kwargs
-        )
-        if not usable or not is_literal(value):
+        if not isinstance(name, str) or name in kwargs:
             return None
-        kwargs[str(name)] = str(value)
+        kwargs[name] = value
     return kwargs
 
 
@@ -288,13 +267,17 @@ def _case(item: object) -> Case | None:
     if not isinstance(item, dict):
         return None
     args = item.get("args")
-    if not isinstance(args, list) or not all(is_literal(text) for text in args):
-        return None
     kwargs = _keyword_arguments(item.get("kwargs", []))
-    if kwargs is None:
+    if not isinstance(args, list) or kwargs is None:
+        return None
+    if case_problem(args, kwargs) is not None:
         return None
     rationale = item.get("rationale")
-    return Case(tuple(args), kwargs, rationale if isinstance(rationale, str) else "")
+    return Case(
+        tuple(str(a) for a in args),
+        {name: str(value) for name, value in kwargs.items()},
+        rationale if isinstance(rationale, str) else "",
+    )
 
 
 def accept_cases(data: Mapping[str, Any], count: int, function: str) -> CaseBatch:
