@@ -216,35 +216,32 @@ class _ChildRun:
     exit_code: int
 
 
-def _start_child(
-    target: Target,
-    cases: Sequence[Case],
+def _write_request(
+    path: Path, target: Target, cases: Sequence[Case], timeout: float
+) -> None:
+    """The JSON file the child reads: where the function is and the cases."""
+    request = {
+        "tree": str(target.tree),
+        "import_root": str(target.import_root),
+        "module": target.module,
+        "qualname": target.qualname,
+        "timeout": timeout,
+        "cases": [
+            {"args": list(case.args), "kwargs": dict(case.kwargs)} for case in cases
+        ],
+    }
+    path.write_text(json.dumps(request), encoding="utf-8")
+
+
+def _spawn(
     settings: HarnessSettings,
     environment: Mapping[str, str],
-    folder: Path,
-) -> _ChildRun:
-    request = folder / "request.json"
-    results = folder / "results.jsonl"
-    results.unlink(missing_ok=True)
-    request.write_text(
-        json.dumps(
-            {
-                "tree": str(target.tree),
-                "import_root": str(target.import_root),
-                "module": target.module,
-                "qualname": target.qualname,
-                "timeout": settings.timeout,
-                "cases": [
-                    {"args": list(case.args), "kwargs": dict(case.kwargs)}
-                    for case in cases
-                ],
-            }
-        ),
-        encoding="utf-8",
-    )
-    working_directory = folder / "cwd"
-    working_directory.mkdir(exist_ok=True)
-    process = subprocess.Popen(
+    request: Path,
+    results: Path,
+    working_directory: Path,
+) -> subprocess.Popen[bytes]:
+    """Start the child in its own session, with no terminal and no output."""
+    return subprocess.Popen(
         [
             settings.python,
             *_INTERPRETER_FLAGS,
@@ -260,17 +257,41 @@ def _start_child(
         stderr=subprocess.DEVNULL,
         start_new_session=True,
     )
-    killed = False
+
+
+def _wait_or_kill(process: subprocess.Popen[bytes], seconds: float) -> bool:
+    """Wait for the child; kill its process group in any case.
+
+    Returns:
+        True when the child outlived ``seconds`` and was killed.
+    """
     try:
-        # An import check runs no case but still gets one timeout to import.
-        process.wait(
-            timeout=settings.timeout * max(len(cases), 1) + _KILL_GRACE_SECONDS
-        )
+        process.wait(timeout=seconds)
+        return False
     except subprocess.TimeoutExpired:
-        killed = True
+        return True
     finally:
         _kill_group(process)
         process.wait()
+
+
+def _start_child(
+    target: Target,
+    cases: Sequence[Case],
+    settings: HarnessSettings,
+    environment: Mapping[str, str],
+    folder: Path,
+) -> _ChildRun:
+    request = folder / "request.json"
+    results = folder / "results.jsonl"
+    results.unlink(missing_ok=True)
+    _write_request(request, target, cases, settings.timeout)
+    working_directory = folder / "cwd"
+    working_directory.mkdir(exist_ok=True)
+    process = _spawn(settings, environment, request, results, working_directory)
+    # An import check runs no case but still gets one timeout to import.
+    limit = settings.timeout * max(len(cases), 1) + _KILL_GRACE_SECONDS
+    killed = _wait_or_kill(process, limit)
     return _ChildRun(_read_records(results), killed, process.returncode)
 
 

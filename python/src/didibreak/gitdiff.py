@@ -199,6 +199,39 @@ def _is_python(path: str | None) -> bool:
     return path is not None and path.endswith(".py")
 
 
+def _changes_since(root: Path, base_sha: str) -> tuple[list[ChangedFile], list[str]]:
+    """All changed files (any extension) and deleted paths, untracked included.
+
+    Raises:
+        GitError: If git fails.
+    """
+    diff = _git(root, "diff", "--name-status", "-z", "-M", base_sha, "--")
+    untracked = _git(root, "ls-files", "--others", "--exclude-standard", "-z")
+    for result in (diff, untracked):
+        if result.returncode != 0:
+            raise GitError(f"git failed: {result.stderr.strip()}")
+    changed, deleted = parse_name_status(diff.stdout)
+    changed += [
+        ChangedFile(path, None, "untracked")
+        for path in untracked.stdout.split("\0")
+        if path
+    ]
+    return changed, deleted
+
+
+def _as_python_change(item: ChangedFile) -> tuple[ChangedFile | None, str | None]:
+    """The Python file to check and the Python base path that is gone, if any."""
+    old_is_python = _is_python(item.old_path)
+    if not _is_python(item.path):
+        # A Python file renamed to another extension is gone as Python code.
+        renamed_away = item.status == "renamed" and item.old_path and old_is_python
+        return None, item.old_path if renamed_away else None
+    if item.status == "renamed" and not old_is_python:
+        # Renamed from a non-Python file: there is no Python base version.
+        return ChangedFile(item.path, None, "added"), None
+    return item, None
+
+
 def changed_python_files(
     root: Path, base_sha: str, exclude: Sequence[str] = ()
 ) -> ChangedFiles:
@@ -219,18 +252,7 @@ def changed_python_files(
     Raises:
         GitError: If git fails.
     """
-    diff = _git(root, "diff", "--name-status", "-z", "-M", base_sha, "--")
-    untracked = _git(root, "ls-files", "--others", "--exclude-standard", "-z")
-    for result in (diff, untracked):
-        if result.returncode != 0:
-            raise GitError(f"git failed: {result.stderr.strip()}")
-
-    changed, deleted = parse_name_status(diff.stdout)
-    changed += [
-        ChangedFile(path, None, "untracked")
-        for path in untracked.stdout.split("\0")
-        if path
-    ]
+    changed, deleted = _changes_since(root, base_sha)
     patterns = (*DEFAULT_EXCLUDES, *exclude)
     python_files: list[ChangedFile] = []
     excluded: list[str] = []
@@ -239,16 +261,9 @@ def changed_python_files(
             if _is_python(item.path):
                 excluded.append(item.path)
             continue
-        old_is_python = _is_python(item.old_path)
-        if not _is_python(item.path):
-            # A Python file renamed to another extension is gone as Python code.
-            if item.status == "renamed" and item.old_path and old_is_python:
-                deleted.append(item.old_path)
-        elif item.status == "renamed" and not old_is_python:
-            # Renamed from a non-Python file: there is no Python base version.
-            python_files.append(ChangedFile(item.path, None, "added"))
-        else:
-            python_files.append(item)
+        kept, gone = _as_python_change(item)
+        python_files += [kept] if kept else []
+        deleted += [gone] if gone else []
     return ChangedFiles(
         changed=tuple(sorted(python_files, key=lambda item: item.path)),
         deleted=tuple(
