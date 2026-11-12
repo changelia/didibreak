@@ -129,9 +129,10 @@ def run_guarded(code: str, scratch: Path, cwd: Path) -> str:
         cwd=cwd,
         capture_output=True,
         text=True,
-        check=True,
+        check=False,
         env={**os.environ, "TMPDIR": str(scratch)},
     )
+    assert done.returncode == 0, done.stderr
     return done.stdout
 
 
