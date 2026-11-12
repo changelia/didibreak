@@ -505,10 +505,6 @@ class Budget:
             return False  # without a price the cost limit cannot be enforced
         return self.cost + cost_usd(estimate, self.price) > self.max_cost
 
-    def allows(self, messages: Sequence[Message]) -> bool:
-        """Whether one more request with these messages fits under the limits."""
-        return self.refusal(messages) is None
-
 
 def _total(usage: TokenUsage) -> int:
     return usage.input_tokens + usage.output_tokens
@@ -546,8 +542,6 @@ def generate_cases(
     functions: Sequence[ChangedFunction],
     count: int,
     template: PromptTemplate,
-    price: Price | None = None,
-    max_cost: float | None = None,
     budget: Budget | None = None,
     previous: Mapping[str, Sequence[CaseRun]] | None = None,
 ) -> Generation:
@@ -559,11 +553,8 @@ def generate_cases(
         count: Cases to request per function (``cases``).
         template: The case generation or, with ``previous``, the refinement
             prompt template.
-        price: The model's price; None means tokens only and no limit.
-        max_cost: Stop before a request whose estimated cost would take the
-            total above this many US dollars.
-        budget: Shared spending of the run (all rounds); when given, it
-            replaces ``price`` and ``max_cost``.
+        budget: Shared spending and limits of the run (all rounds); None
+            means no price and no limits.
         previous: For a refinement round, the cases already run per report
             name; their results go into the prompt and repeated cases are
             dropped.
@@ -579,7 +570,7 @@ def generate_cases(
         LLMAuthError: The key was rejected (HTTP 401/403).
         LLMModelError: The model was not found (HTTP 404).
     """
-    spending = budget or Budget(price, max_cost, count)
+    spending = budget or Budget(None, None, count)
     usage_before, cost_before = spending.usage, spending.cost
     cases: dict[str, tuple[Case, ...]] = {}
     skipped: list[ChangedFunction] = []

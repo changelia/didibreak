@@ -420,19 +420,3 @@ def commit_messages(root: Path, base_sha: str) -> list[str]:
     if result.returncode != 0:
         return []
     return [text.strip() for text in result.stdout.split("\0") if text.strip()]
-
-
-def commit_message(root: Path, ref: str = "HEAD") -> str | None:
-    """The full message of a commit, or None if it cannot be read.
-
-    Args:
-        root: Repository root.
-        ref: Commit to read.
-
-    Returns:
-        The message without surrounding whitespace, or None.
-    """
-    result = _git(root, "log", "-1", "--format=%B", ref, "--")
-    if result.returncode != 0:
-        return None
-    return result.stdout.strip() or None

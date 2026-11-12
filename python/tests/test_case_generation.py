@@ -204,7 +204,9 @@ def test_cost_limit_stops_before_the_request_that_would_exceed_it() -> None:
     limit = cost_usd(heavy, PRICE) * 1.5  # room for one such request
     functions = [function("f"), function("g"), function("h")]
 
-    result = generate_cases(client, functions, 5, load_template(), PRICE, limit)
+    result = generate_cases(
+        client, functions, 5, load_template(), budget=Budget(PRICE, limit, 5)
+    )
 
     assert list(result.cases) == ["app/m.py::f"]
     assert [(f.qualname, f.skip_reason) for f in result.skipped] == [
@@ -219,7 +221,9 @@ def test_cost_limit_stops_before_the_request_that_would_exceed_it() -> None:
 def test_limit_too_low_for_the_first_request_sends_nothing() -> None:
     client = FakeClient({"f": cases("1")})
 
-    result = generate_cases(client, [function("f")], 5, load_template(), PRICE, 1e-9)
+    result = generate_cases(
+        client, [function("f")], 5, load_template(), budget=Budget(PRICE, 1e-9, 5)
+    )
 
     assert client.prompts == []
     assert [f.skip_reason for f in result.skipped] == [COST_LIMIT_REASON]
@@ -235,7 +239,9 @@ def test_observed_completion_tokens_replace_the_default_estimate() -> None:
     limit = cost_usd(first, PRICE) * 1.5
     functions = [function("f"), function("g"), function("h")]
 
-    result = generate_cases(client, functions, 5, template, PRICE, limit)
+    result = generate_cases(
+        client, functions, 5, template, budget=Budget(PRICE, limit, 5)
+    )
 
     assert len(result.cases) == 3
 
@@ -243,7 +249,9 @@ def test_observed_completion_tokens_replace_the_default_estimate() -> None:
 def test_without_a_price_there_is_no_limit_and_no_cost() -> None:
     client = FakeClient({"f": cases("1")})
 
-    result = generate_cases(client, [function("f")], 5, load_template(), None, 0.0)
+    result = generate_cases(
+        client, [function("f")], 5, load_template(), budget=Budget(None, 0.0, 5)
+    )
 
     assert list(result.cases) == ["app/m.py::f"]
     assert result.cost_usd is None
@@ -253,7 +261,9 @@ def test_failed_attempts_are_counted_in_the_cost() -> None:
     error = LLMInvalidResponseError("bad", TokenUsage(1000, 1000, None, 0, 2))
     client = FakeClient({"f": error})
 
-    result = generate_cases(client, [function("f")], 5, load_template(), PRICE, 10.0)
+    result = generate_cases(
+        client, [function("f")], 5, load_template(), budget=Budget(PRICE, 10.0, 5)
+    )
 
     assert result.cost_usd == pytest.approx((1000 * 1.0 + 1000 * 10.0) / 1_000_000)
 

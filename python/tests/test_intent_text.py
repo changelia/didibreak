@@ -1,6 +1,6 @@
 from conftest import GitRepository
 
-from didibreak.gitdiff import commit_message, commit_messages
+from didibreak.gitdiff import commit_messages
 from didibreak.intent import COMMIT_MESSAGES_HEADER, COMMIT_MESSAGES_LIMIT, intent_text
 
 
@@ -59,11 +59,3 @@ def test_commit_messages_since_the_base_newest_first(
     ]
     assert commit_messages(git_repository.path, head) == []
     assert commit_messages(git_repository.path, "0" * 40) == []
-
-
-def test_commit_message_is_read_from_git(git_repository: GitRepository) -> None:
-    git_repository.write("a.py", "x = 1\n")
-    git_repository.commit("Add a\n\nBody line")
-
-    assert commit_message(git_repository.path) == "Add a\n\nBody line"
-    assert commit_message(git_repository.path, "no-such-ref") is None
