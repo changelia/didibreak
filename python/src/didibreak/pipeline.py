@@ -1,9 +1,9 @@
 """Analysis pipeline: run the cases of each changed function on both versions.
 
 Wires the base worktree, a temporary copy of the working tree, the harness
-and the comparison rules together for ``didibreak check``. Cases come from
-the hidden developer option ``--cases-file`` until LLM case generation
-exists (task 14).
+and the comparison rules together for ``didibreak check``, and generates
+cases with the LLM under the run's budget (cost and token limits). Cases
+can also come from the hidden developer option ``--cases-file``.
 """
 
 import ast
@@ -54,8 +54,8 @@ UNAVAILABLE_REASON = "llm unavailable"
 NO_VALID_CASES_REASON = "no valid cases"
 NO_NEW_CASES_REASON = "no new cases"  # refinement proposed only tried cases
 REQUEST_REJECTED_PREFIX = "llm request rejected: "
-# Until intent labelling exists (task 17), the relation of a finding to the
-# intent cannot be decided: "unclear" (Detailed Design section 5.3).
+# Label of a changed-function finding before intent labelling runs (and
+# when it cannot run): its relation to the intent is not decided yet.
 UNLABELLED = "unclear"
 
 
