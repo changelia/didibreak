@@ -32,14 +32,16 @@ _INTERPRETER_FLAGS = ("-s", "-P", "-B")
 # names ending with one of the suffixes or containing one of the words.
 # Broader than Detailed Design section 4 (*_API_KEY, *_TOKEN, *_SECRET), so
 # that names such as AWS_SECRET_ACCESS_KEY are covered too.
-# _PWD covers MYSQL_PWD; PASSWORD covers PGPASSWORD. _CREDENTIALS values are
-# credentials or the path of a credentials file (audit 35a, finding 6).
-SECRET_SUFFIXES = ("_KEY", "_PWD", "_CREDENTIALS")
-SECRET_WORDS = ("TOKEN", "SECRET", "PASSWORD")
-# Connection strings are removed only when they carry a password
-# (``postgres://user:pass@host/db``); a plain DATABASE_URL stays, because the
-# code under test may need it without credentials.
-URL_SUFFIXES = ("_URL", "_URI", "_DSN")
+# _PWD covers MYSQL_PWD; PASS covers PGPASSWORD, DB_PASS and SMTP_PASSWD;
+# _PAT covers personal access tokens such as GH_PAT. _CREDENTIALS values are
+# credentials or the path of a credentials file (audit 35a, finding 6;
+# pre-launch review, finding 5).
+SECRET_SUFFIXES = ("_KEY", "_PWD", "_PAT", "_CREDENTIALS")
+SECRET_WORDS = ("PASS", "TOKEN", "SECRET", "APIKEY", "API_KEY")
+# Connection strings and proxy settings are removed only when they carry a
+# password (``postgres://user:pass@host/db``, ``http://user:pass@proxy:8080``);
+# a plain DATABASE_URL stays, because the code under test may need it.
+URL_SUFFIXES = ("_URL", "_URI", "_DSN", "_PROXY")
 # Extra time for interpreter start and import before the child is killed.
 _KILL_GRACE_SECONDS = 5.0
 PROCESS_EXITED_TYPE = "didibreak.ProcessExited"
@@ -138,8 +140,9 @@ def is_secret_variable(name: str, value: str = "") -> bool:
 
     Args:
         name: Variable name, matched ignoring case.
-        value: Its value; needed for ``*_URL``, ``*_URI`` and ``*_DSN`` names,
-            which count only when the URL carries a password.
+        value: Its value; needed for ``*_URL``, ``*_URI``, ``*_DSN`` and
+            ``*_PROXY`` names, which count only when the URL carries a
+            password.
 
     Returns:
         True when the variable should not reach the user's code.

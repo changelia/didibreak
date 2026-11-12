@@ -149,17 +149,23 @@ credentials, so the function under test cannot use your API keys, tokens or
 database passwords. Names are matched ignoring case. A variable is removed
 when its name:
 
-- ends with `_KEY`, `_PWD` or `_CREDENTIALS` (`OPENAI_API_KEY`,
-  `AWS_SECRET_ACCESS_KEY`, `MYSQL_PWD`, `GOOGLE_APPLICATION_CREDENTIALS`);
-- contains `TOKEN`, `SECRET` or `PASSWORD` (`GITHUB_TOKEN`, `DB_PASSWORD`,
-  `PGPASSWORD`);
+- ends with `_KEY`, `_PWD`, `_PAT` or `_CREDENTIALS` (`OPENAI_API_KEY`,
+  `AWS_SECRET_ACCESS_KEY`, `MYSQL_PWD`, `GH_PAT`,
+  `GOOGLE_APPLICATION_CREDENTIALS`);
+- contains `PASS`, `TOKEN`, `SECRET`, `APIKEY` or `API_KEY` (`DB_PASS`,
+  `SMTP_PASSWD`, `PGPASSWORD`, `GITHUB_TOKEN`, `OPENAI_APIKEY`). `PASS`
+  also matches names that only contain those letters, such as `BYPASS_X`;
+  they are removed too;
 - is the variable named by `api_key_env`;
-- ends with `_URL`, `_URI` or `_DSN` **and** its value is a URL with a
-  password (`postgres://app:s3cret@db/prod`, `redis://:s3cret@cache:6379`).
+- ends with `_URL`, `_URI`, `_DSN` or `_PROXY` **and** its value is a URL
+  with a password (`postgres://app:s3cret@db/prod`,
+  `redis://:s3cret@cache:6379`, `HTTPS_PROXY=http://me:s3cret@proxy:8080`;
+  lower-case names such as `https_proxy` too).
 
 A connection string without a password stays, because the code under test
 may need it: `DATABASE_URL=postgres://localhost/app` and
-`postgres://app@localhost/app` are kept. So are `PWD` and `OLDPWD`, which
+`postgres://app@localhost/app` are kept, and so is a proxy without a
+password. So are `PWD` and `OLDPWD`, which
 hold folders, not passwords. Credentials passed in other ways (a URL in a
 variable with another name, a config file) are not detected.
 

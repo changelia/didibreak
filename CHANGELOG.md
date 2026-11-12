@@ -31,6 +31,16 @@ findings 1, 2, 5, 6 and 7). The JSON report keeps `schema_version: 1`.
 - A module that writes a file outside that folder while it is imported is
   skipped with `blocked: open` instead of being run.
 
+#### Fixed
+
+- More credentials are removed from the environment of the code under
+  test: names containing `PASS`, `APIKEY` or `API_KEY` (`DB_PASS`,
+  `SMTP_PASSWD`, `OPENAI_APIKEY`), names ending with `_PAT` (`GH_PAT`), and
+  proxy settings with a password (`HTTPS_PROXY=http://me:pw@proxy:8080`,
+  lower-case names too). Before, a password in `DB_PASS` could reach the
+  report, the reproducing test and the labelling request through a return
+  value.
+
 ### 0.1.5
 
 Released when the tag `py-v0.1.5` is pushed. Cleanup and contributor

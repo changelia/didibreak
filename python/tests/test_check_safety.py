@@ -1,12 +1,16 @@
 """check end to end: the safety cases of the 35a audit (no LLM, --cases-file)."""
 
 import json
+from collections.abc import Mapping
 from pathlib import Path
 
+import httpx
 import pytest
 from conftest import GitRepository
 
-from didibreak.cli import EXIT_ERROR, EXIT_OK, main
+from didibreak import cli, llm
+from didibreak.cli import EXIT_ERROR, EXIT_FINDINGS, EXIT_OK, main
+from didibreak.config import Config
 
 NOTIFY = """import os
 
@@ -145,3 +149,63 @@ def test_a_blocked_function_is_skipped_not_reported_and_gets_no_test(
     else:
         assert "skipped: app/run.py::notify (blocked: os.system (base version))" in out
         assert "behavior changes" in out and "UNCLEAR" not in out
+
+
+DSN = """import os
+
+
+def dsn(db):
+    return "postgres://app:" + os.environ.get("DB_PASS", "") + "@db/" + {name}
+"""
+FAKE_SECRET = "FAKE-db-secret-123"
+
+
+def fake_provider(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """Cases and empty labels from a fake provider; returns every request body."""
+    bodies: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(request.content.decode())
+        schema = json.loads(request.content)["response_format"]["json_schema"]
+        data: object = {"labels": []}
+        if schema["name"] != "didibreak_labels":
+            data = {"cases": [{"args": ["'Sales'"], "kwargs": [], "rationale": "r"}]}
+        message = {"content": json.dumps(data)}
+        body = {"choices": [{"message": message, "finish_reason": "stop"}]}
+        return httpx.Response(200, json=body)
+
+    def create(config: Config, environment: Mapping[str, str]) -> object:
+        return llm.create_client(config, environment, httpx.MockTransport(handler))
+
+    monkeypatch.setattr(cli, "create_client", create)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-fake")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    return bodies
+
+
+def test_a_password_variable_reaches_no_report_test_or_request(
+    git_repository: GitRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Pre-launch review, finding 5: DB_PASS was kept, so the function's
+    # return value carried it into the report, the test file and the
+    # labelling request.
+    monkeypatch.setenv("DB_PASS", FAKE_SECRET)
+    bodies = fake_provider(monkeypatch)
+    changed_repository(
+        git_repository, DSN.format(name="db"), DSN.format(name="db.lower()")
+    )
+    monkeypatch.chdir(git_repository.path)
+
+    code = main(["check", "--intent", "lower-case the name", "--no-cache", "--yes"])
+
+    out = capsys.readouterr().out
+    tests = list((git_repository.path / ".didibreak" / "tests").glob("test_*.py"))
+    assert code == EXIT_FINDINGS
+    assert "postgres://app:@db/Sales" in out  # the change is still found
+    assert len(bodies) == 2 and "finding_id" in bodies[1]  # labelling was sent
+    assert len(tests) == 1
+    assert FAKE_SECRET not in out
+    assert all(FAKE_SECRET not in body for body in bodies)
+    assert FAKE_SECRET not in tests[0].read_text()

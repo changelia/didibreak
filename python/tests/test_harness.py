@@ -391,6 +391,16 @@ def test_a_return_value_whose_repr_raises_is_not_a_crash(tmp_path: Path) -> None
         ("PGPASSWORD", "s3cret"),
         ("GOOGLE_APPLICATION_CREDENTIALS", "/home/me/key.json"),
         ("aws_credentials", "x"),
+        # Pre-launch review, finding 5: these names used to be kept.
+        ("DB_PASS", "s3cret"),
+        ("SMTP_PASSWD", "s3cret"),
+        ("OPENAI_APIKEY", "sk-x"),
+        ("APIKEY", "sk-x"),
+        ("SERVICE_API_KEY_ID", "x"),
+        ("GH_PAT", "ghp_x"),
+        ("HTTPS_PROXY", "http://user:s3cret@proxy:8080"),
+        ("http_proxy", "http://user:s3cret@proxy:8080"),
+        ("ALL_PROXY", "socks5://user:s3cret@proxy:1080"),
     ],
 )
 def test_credential_carrying_variables_are_removed(name: str, value: str) -> None:
@@ -408,6 +418,8 @@ def test_credential_carrying_variables_are_removed(name: str, value: str) -> Non
         ("PWD", "/home/me/project"),
         ("OLDPWD", "/home/me"),
         ("SOME_URL", "not a url: x:y@z"),
+        ("HTTPS_PROXY", "http://proxy.example.com:8080"),
+        ("no_proxy", "localhost,127.0.0.1"),
     ],
 )
 def test_urls_without_credentials_are_kept(name: str, value: str) -> None:
