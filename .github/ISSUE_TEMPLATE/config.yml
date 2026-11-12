@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/changelia/didibreak/tree/main/docs
+    about: Getting started, configuration, output format, providers and costs, safety and limitations.
+  - name: Known limitations
+    url: https://github.com/changelia/didibreak/blob/main/docs/limitations.md
+    about: What didibreak does not check, and why some functions are skipped.

@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest something didibreak should do, or do differently.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before you ask, check the [limitations](https://github.com/changelia/didibreak/blob/main/docs/limitations.md):
+        some functions are skipped on purpose (async functions, instance
+        methods, obvious I/O).
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you were trying to do, and where didibreak got in the way or fell short.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+      description: The behavior, flag or output you have in mind. An example command and the output you would expect help most.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Workarounds you use today, or other tools.
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      options:
+        - Python
+        - JavaScript / TypeScript (not released yet)
+        - Both

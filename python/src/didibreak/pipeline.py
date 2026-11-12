@@ -1,12 +1,11 @@
 """Analysis pipeline: run the cases of each changed function on both versions.
 
 Wires the base worktree, a temporary copy of the working tree, the harness
-and the comparison rules together for ``didibreak check``. Cases come from
-the hidden developer option ``--cases-file`` until LLM case generation
-exists (task 14).
+and the comparison rules together for ``didibreak check``, and generates
+cases with the LLM under the run's budget (cost and token limits). Cases
+can also come from the hidden developer option ``--cases-file``.
 """
 
-import ast
 import json
 import math
 from collections.abc import Mapping, Sequence
@@ -14,6 +13,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
+from didibreak.arguments import case_problem
 from didibreak.cases import (
     CASES_SCHEMA,
     CASES_SCHEMA_NAME,
@@ -54,8 +54,8 @@ UNAVAILABLE_REASON = "llm unavailable"
 NO_VALID_CASES_REASON = "no valid cases"
 NO_NEW_CASES_REASON = "no new cases"  # refinement proposed only tried cases
 REQUEST_REJECTED_PREFIX = "llm request rejected: "
-# Until intent labelling exists (task 17), the relation of a finding to the
-# intent cannot be decided: "unclear" (Detailed Design section 5.3).
+# Label of a changed-function finding before intent labelling runs (and
+# when it cannot run): its relation to the intent is not decided yet.
 UNLABELLED = "unclear"
 
 
@@ -77,11 +77,9 @@ def _case(item: object, number: int) -> tuple[str, Case]:
         raise ValueError(f'{where}: "kwargs" must map names to strings')
     if not isinstance(rationale, str):
         raise ValueError(f'{where}: "rationale" must be a string')
-    for text in (*args, *kwargs.values()):
-        try:
-            ast.literal_eval(text)
-        except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
-            raise ValueError(f"{where}: not a Python literal: {text!r}") from None
+    problem = case_problem(args, kwargs)
+    if problem is not None:
+        raise ValueError(f"{where}: {problem}")
     return function, Case(tuple(args), dict(kwargs), rationale)
 
 
@@ -505,10 +503,6 @@ class Budget:
             return False  # without a price the cost limit cannot be enforced
         return self.cost + cost_usd(estimate, self.price) > self.max_cost
 
-    def allows(self, messages: Sequence[Message]) -> bool:
-        """Whether one more request with these messages fits under the limits."""
-        return self.refusal(messages) is None
-
 
 def _total(usage: TokenUsage) -> int:
     return usage.input_tokens + usage.output_tokens
@@ -546,8 +540,6 @@ def generate_cases(
     functions: Sequence[ChangedFunction],
     count: int,
     template: PromptTemplate,
-    price: Price | None = None,
-    max_cost: float | None = None,
     budget: Budget | None = None,
     previous: Mapping[str, Sequence[CaseRun]] | None = None,
 ) -> Generation:
@@ -559,11 +551,8 @@ def generate_cases(
         count: Cases to request per function (``cases``).
         template: The case generation or, with ``previous``, the refinement
             prompt template.
-        price: The model's price; None means tokens only and no limit.
-        max_cost: Stop before a request whose estimated cost would take the
-            total above this many US dollars.
-        budget: Shared spending of the run (all rounds); when given, it
-            replaces ``price`` and ``max_cost``.
+        budget: Shared spending and limits of the run (all rounds); None
+            means no price and no limits.
         previous: For a refinement round, the cases already run per report
             name; their results go into the prompt and repeated cases are
             dropped.
@@ -579,7 +568,7 @@ def generate_cases(
         LLMAuthError: The key was rejected (HTTP 401/403).
         LLMModelError: The model was not found (HTTP 404).
     """
-    spending = budget or Budget(price, max_cost, count)
+    spending = budget or Budget(None, None, count)
     usage_before, cost_before = spending.usage, spending.cost
     cases: dict[str, tuple[Case, ...]] = {}
     skipped: list[ChangedFunction] = []

@@ -4,6 +4,7 @@ All git calls run as subprocesses; this module is the only place that talks
 to git. Nothing here writes to the user's working tree or index.
 """
 
+import os
 import shutil
 import subprocess
 import tempfile
@@ -199,6 +200,39 @@ def _is_python(path: str | None) -> bool:
     return path is not None and path.endswith(".py")
 
 
+def _changes_since(root: Path, base_sha: str) -> tuple[list[ChangedFile], list[str]]:
+    """All changed files (any extension) and deleted paths, untracked included.
+
+    Raises:
+        GitError: If git fails.
+    """
+    diff = _git(root, "diff", "--name-status", "-z", "-M", base_sha, "--")
+    untracked = _git(root, "ls-files", "--others", "--exclude-standard", "-z")
+    for result in (diff, untracked):
+        if result.returncode != 0:
+            raise GitError(f"git failed: {result.stderr.strip()}")
+    changed, deleted = parse_name_status(diff.stdout)
+    changed += [
+        ChangedFile(path, None, "untracked")
+        for path in untracked.stdout.split("\0")
+        if path
+    ]
+    return changed, deleted
+
+
+def _as_python_change(item: ChangedFile) -> tuple[ChangedFile | None, str | None]:
+    """The Python file to check and the Python base path that is gone, if any."""
+    old_is_python = _is_python(item.old_path)
+    if not _is_python(item.path):
+        # A Python file renamed to another extension is gone as Python code.
+        renamed_away = item.status == "renamed" and item.old_path and old_is_python
+        return None, item.old_path if renamed_away else None
+    if item.status == "renamed" and not old_is_python:
+        # Renamed from a non-Python file: there is no Python base version.
+        return ChangedFile(item.path, None, "added"), None
+    return item, None
+
+
 def changed_python_files(
     root: Path, base_sha: str, exclude: Sequence[str] = ()
 ) -> ChangedFiles:
@@ -219,18 +253,7 @@ def changed_python_files(
     Raises:
         GitError: If git fails.
     """
-    diff = _git(root, "diff", "--name-status", "-z", "-M", base_sha, "--")
-    untracked = _git(root, "ls-files", "--others", "--exclude-standard", "-z")
-    for result in (diff, untracked):
-        if result.returncode != 0:
-            raise GitError(f"git failed: {result.stderr.strip()}")
-
-    changed, deleted = parse_name_status(diff.stdout)
-    changed += [
-        ChangedFile(path, None, "untracked")
-        for path in untracked.stdout.split("\0")
-        if path
-    ]
+    changed, deleted = _changes_since(root, base_sha)
     patterns = (*DEFAULT_EXCLUDES, *exclude)
     python_files: list[ChangedFile] = []
     excluded: list[str] = []
@@ -239,16 +262,9 @@ def changed_python_files(
             if _is_python(item.path):
                 excluded.append(item.path)
             continue
-        old_is_python = _is_python(item.old_path)
-        if not _is_python(item.path):
-            # A Python file renamed to another extension is gone as Python code.
-            if item.status == "renamed" and item.old_path and old_is_python:
-                deleted.append(item.old_path)
-        elif item.status == "renamed" and not old_is_python:
-            # Renamed from a non-Python file: there is no Python base version.
-            python_files.append(ChangedFile(item.path, None, "added"))
-        else:
-            python_files.append(item)
+        kept, gone = _as_python_change(item)
+        python_files += [kept] if kept else []
+        deleted += [gone] if gone else []
     return ChangedFiles(
         changed=tuple(sorted(python_files, key=lambda item: item.path)),
         deleted=tuple(
@@ -369,6 +385,26 @@ def visible_files(root: Path) -> list[str]:
     )
 
 
+def points_into(path: Path, root: Path) -> bool:
+    """Whether ``path`` is an absolute symbolic link to a place inside ``root``.
+
+    Relative links are not: copied as they are, they point into the copy.
+
+    Args:
+        path: A file in the working tree.
+        root: Repository root.
+
+    Returns:
+        True for an absolute link whose target resolves inside ``root``.
+    """
+    if not path.is_symlink():
+        return False
+    target = Path(os.readlink(path))
+    if not target.is_absolute():
+        return False
+    return target.resolve().is_relative_to(root.resolve())
+
+
 @contextmanager
 def working_tree_copy(root: Path, skip: Sequence[str] = ()) -> Iterator[Path]:
     """Copy the working tree to a temporary folder (Spec, Safety).
@@ -376,7 +412,10 @@ def working_tree_copy(root: Path, skip: Sequence[str] = ()) -> Iterator[Path]:
     The current version runs from this copy, never from the user's working
     tree. Only files git sees are copied (visible_files), so ``.git``,
     ignored files and virtual environments stay out. Symbolic links are
-    copied as links. The copy is removed on success, on error and on Ctrl-C.
+    copied as links, except absolute links into the repository itself
+    (points_into): through them, code run "from the copy" would read and
+    write the user's real files (audit 35a, finding 7). The copy is removed
+    on success, on error and on Ctrl-C.
 
     Args:
         root: Repository root.
@@ -394,7 +433,7 @@ def working_tree_copy(root: Path, skip: Sequence[str] = ()) -> Iterator[Path]:
     try:
         prefixes = tuple(f"{folder.rstrip('/')}/" for folder in skip)
         for path in visible_files(root):
-            if path.startswith(prefixes):
+            if path.startswith(prefixes) or points_into(root / path, root):
                 continue
             destination = tree / path
             destination.parent.mkdir(parents=True, exist_ok=True)
@@ -420,19 +459,3 @@ def commit_messages(root: Path, base_sha: str) -> list[str]:
     if result.returncode != 0:
         return []
     return [text.strip() for text in result.stdout.split("\0") if text.strip()]
-
-
-def commit_message(root: Path, ref: str = "HEAD") -> str | None:
-    """The full message of a commit, or None if it cannot be read.
-
-    Args:
-        root: Repository root.
-        ref: Commit to read.
-
-    Returns:
-        The message without surrounding whitespace, or None.
-    """
-    result = _git(root, "log", "-1", "--format=%B", ref, "--")
-    if result.returncode != 0:
-        return None
-    return result.stdout.strip() or None

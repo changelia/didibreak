@@ -40,6 +40,18 @@ uv run ruff format --check .
 uv run mypy src
 ```
 
+Read each command's exit status, not only its last lines. Never pipe a
+check through a command that hides the exit code, such as
+`uv run pytest | tail`: the pipeline exits 0 even when tests fail. If you
+need to shorten the output, use `set -o pipefail` first, or check the
+status explicitly:
+
+```bash
+set -o pipefail
+uv run pytest -q | tail -5    # fails when pytest fails
+uv run pytest -q; echo "exit $?"
+```
+
 Configuration lives in `python/pyproject.toml`:
 
 - Ruff rules `E`, `F`, `W`, `I`, `B`, `UP`, `SIM`, `RUF`, `D` (Google
@@ -150,7 +162,9 @@ generation schema with a `function` key per case:
 }
 ```
 
-`args` and `kwargs` values are Python literals written as strings;
+`args` and `kwargs` values are Python literals written as strings, at
+most 2,000 characters each, and keyword names must be usable Python names:
+the same rule as for LLM replies (`python/src/didibreak/arguments.py`).
 `kwargs` and `rationale` may be left out. A changed function without cases
 in the file is listed as skipped (`no cases`). Example on the
 `phone_regression` fixture (all three documented cases; real output):

@@ -213,9 +213,6 @@ _VALIDATORS: dict[str, Callable[[str, object], object]] = {
 
 CONFIG_KEYS = tuple(_VALIDATORS)
 
-# Keys holding filesystem paths; relative values are resolved by resolve_paths().
-PATH_KEYS = ("python", "output_dir")
-
 
 def validate(key: str, value: object) -> object:
     """Validate one setting and return it in its stored form.
@@ -290,7 +287,8 @@ def resolve_paths(
         base_directory: Directory that relative paths are relative to.
 
     Returns:
-        A copy of ``values`` with absolute paths for the keys in PATH_KEYS.
+        A copy of ``values`` with absolute ``python`` and ``output_dir``
+        paths.
 
     Raises:
         ConfigError: If the ``python`` interpreter cannot be found.

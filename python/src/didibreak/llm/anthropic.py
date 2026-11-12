@@ -1,8 +1,9 @@
 """Client for the Anthropic Messages API.
 
 Shapes checked in the official docs on 2026-11-06 (task 12) but
-**unverified by a live call** (no key was available; required before
-release, task 23): header ``anthropic-version: 2026-10-21``,
+**unverified by a live call**: no Anthropic key has been available, so the
+client is labelled experimental in the docs. Header
+``anthropic-version: 2026-10-21``,
 ``output_config.format`` with a JSON schema, JSON text in the first
 ``text`` content block, ``stop_reason`` ``refusal`` / ``max_tokens`` checked
 first, usage ``input_tokens`` / ``output_tokens`` plus cache fields. API
