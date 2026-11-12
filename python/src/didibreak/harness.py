@@ -217,10 +217,11 @@ class _ChildRun:
 
 
 def _write_request(
-    path: Path, target: Target, cases: Sequence[Case], timeout: float
+    path: Path, target: Target, cases: Sequence[Case], timeout: float, scratch: Path
 ) -> None:
     """The JSON file the child reads: where the function is and the cases."""
     request = {
+        "scratch": str(scratch),
         "tree": str(target.tree),
         "import_root": str(target.import_root),
         "module": target.module,
@@ -250,7 +251,12 @@ def _spawn(
             str(results),
         ],
         cwd=working_directory,
-        env=child_environment(environment, settings.api_key_env),
+        # The working directory is the scratch folder of the I/O guard, and
+        # also the temporary folder (tempfile) of the code under test.
+        env={
+            **child_environment(environment, settings.api_key_env),
+            "TMPDIR": str(working_directory),
+        },
         stdin=subprocess.DEVNULL,
         # The user's prints must not reach didibreak's output.
         stdout=subprocess.DEVNULL,
@@ -285,9 +291,9 @@ def _start_child(
     request = folder / "request.json"
     results = folder / "results.jsonl"
     results.unlink(missing_ok=True)
-    _write_request(request, target, cases, settings.timeout)
     working_directory = folder / "cwd"
     working_directory.mkdir(exist_ok=True)
+    _write_request(request, target, cases, settings.timeout, working_directory)
     process = _spawn(settings, environment, request, results, working_directory)
     # An import check runs no case but still gets one timeout to import.
     limit = settings.timeout * max(len(cases), 1) + _KILL_GRACE_SECONDS
@@ -326,6 +332,8 @@ def _run_once(
             header, *records = run.records
             if "skip_reason" in header:
                 return HarnessResult((), header["skip_reason"])
+            if records and "skip_reason" in records[-1]:  # a blocked case
+                return HarnessResult((), records[-1]["skip_reason"])
             outcomes.extend(_outcome(record) for record in records)
             if len(records) == len(remaining):
                 break
@@ -396,7 +404,8 @@ def run_cases(
     Returns:
         One outcome per case, or a skip reason (``import failed: <Type>``,
         ``import resolved outside tree``, ``import timed out``, ``function not
-        found after import``).
+        found after import``, or ``blocked: <event>`` when the import or a
+        case tried an operation the runtime I/O guard stops).
 
     Raises:
         ValueError: If a case argument is not a Python literal.
