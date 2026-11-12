@@ -65,7 +65,13 @@ LLM output is never executed as code.
   temporary git worktree of the base commit. The current version runs from a
   temporary copy of your working tree that holds the files git sees: tracked
   and untracked files, without ignored files, `.git` and the output folder.
-  Both are removed afterwards, also after an error or Ctrl-C.
+  Symbolic links are copied as links, except absolute links that point
+  into your repository (`data -> /home/me/project/data`): through them,
+  code run from the copy would read and write your real files, so they
+  are left out. Relative links point into the copy and are kept. Absolute
+  links outside the repository are kept, so writes through them still
+  reach their target. Both trees are removed afterwards, also after an
+  error or Ctrl-C.
 - **Separate processes.** Each version of a function runs in a new Python
   process started with the `--python` interpreter. Every case runs twice per
   version, in two separate processes, so one function takes four processes

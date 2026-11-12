@@ -22,6 +22,10 @@ the Python package and `js-v*` for the JS/TS package.
   at most 2,000 characters, with usable keyword names. `--cases-file` now
   also rejects longer arguments and keyword names such as `class`, as LLM
   replies always did.
+- Absolute symbolic links that point into the repository are no longer
+  copied into the temporary copy the current version runs from, so code
+  run from the copy cannot write the real files through them. Relative
+  links and links outside the repository are still copied.
 
 ### 0.1.4
 

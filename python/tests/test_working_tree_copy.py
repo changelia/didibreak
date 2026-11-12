@@ -3,7 +3,7 @@ from pathlib import Path
 
 from conftest import GitRepository
 
-from didibreak.gitdiff import visible_files, working_tree_copy
+from didibreak.gitdiff import points_into, visible_files, working_tree_copy
 
 
 def make_repository(git_repository: GitRepository) -> Path:
@@ -64,3 +64,35 @@ def test_symbolic_links_are_copied_as_links(git_repository: GitRepository) -> No
     with working_tree_copy(git_repository.path) as tree:
         assert (tree / "app/alias.py").is_symlink()
         assert os.readlink(tree / "app/alias.py") == "real.py"
+
+
+def test_absolute_links_into_the_repository_are_not_copied(
+    git_repository: GitRepository, tmp_path: Path
+) -> None:
+    # Audit 35a, finding 7: writes through such a link reached the real file.
+    real = git_repository.write("data/real.txt", "original\n")
+    outside = tmp_path / "outside.txt"
+    outside.write_text("shared\n")
+    os.symlink(real, git_repository.path / "data/absolute_inside.txt")
+    os.symlink(outside, git_repository.path / "data/absolute_outside.txt")
+    os.symlink("real.txt", git_repository.path / "data/relative.txt")
+    git_repository.commit("links")
+
+    with working_tree_copy(git_repository.path) as tree:
+        assert not (tree / "data/absolute_inside.txt").exists()
+        assert not (tree / "data/absolute_inside.txt").is_symlink()
+        assert (tree / "data/absolute_outside.txt").is_symlink()
+        assert os.readlink(tree / "data/relative.txt") == "real.txt"
+        assert (tree / "data/real.txt").read_text() == "original\n"
+
+
+def test_an_absolute_link_into_the_repository_through_another_path_is_found(
+    git_repository: GitRepository,
+) -> None:
+    real = git_repository.write("real.txt", "x\n")
+    link = git_repository.path / "link.txt"
+    # A path with "..", still inside the repository once resolved.
+    os.symlink(git_repository.path / "data" / ".." / real.name, link)
+
+    assert points_into(link, git_repository.path)
+    assert not points_into(real, git_repository.path)  # not a link

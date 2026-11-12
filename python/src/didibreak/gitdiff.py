@@ -4,6 +4,7 @@ All git calls run as subprocesses; this module is the only place that talks
 to git. Nothing here writes to the user's working tree or index.
 """
 
+import os
 import shutil
 import subprocess
 import tempfile
@@ -384,6 +385,26 @@ def visible_files(root: Path) -> list[str]:
     )
 
 
+def points_into(path: Path, root: Path) -> bool:
+    """Whether ``path`` is an absolute symbolic link to a place inside ``root``.
+
+    Relative links are not: copied as they are, they point into the copy.
+
+    Args:
+        path: A file in the working tree.
+        root: Repository root.
+
+    Returns:
+        True for an absolute link whose target resolves inside ``root``.
+    """
+    if not path.is_symlink():
+        return False
+    target = Path(os.readlink(path))
+    if not target.is_absolute():
+        return False
+    return target.resolve().is_relative_to(root.resolve())
+
+
 @contextmanager
 def working_tree_copy(root: Path, skip: Sequence[str] = ()) -> Iterator[Path]:
     """Copy the working tree to a temporary folder (Spec, Safety).
@@ -391,7 +412,10 @@ def working_tree_copy(root: Path, skip: Sequence[str] = ()) -> Iterator[Path]:
     The current version runs from this copy, never from the user's working
     tree. Only files git sees are copied (visible_files), so ``.git``,
     ignored files and virtual environments stay out. Symbolic links are
-    copied as links. The copy is removed on success, on error and on Ctrl-C.
+    copied as links, except absolute links into the repository itself
+    (points_into): through them, code run "from the copy" would read and
+    write the user's real files (audit 35a, finding 7). The copy is removed
+    on success, on error and on Ctrl-C.
 
     Args:
         root: Repository root.
@@ -409,7 +433,7 @@ def working_tree_copy(root: Path, skip: Sequence[str] = ()) -> Iterator[Path]:
     try:
         prefixes = tuple(f"{folder.rstrip('/')}/" for folder in skip)
         for path in visible_files(root):
-            if path.startswith(prefixes):
+            if path.startswith(prefixes) or points_into(root / path, root):
                 continue
             destination = tree / path
             destination.parent.mkdir(parents=True, exist_ok=True)
