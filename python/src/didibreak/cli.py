@@ -590,6 +590,39 @@ def _importable(
     )
 
 
+def _skipped(functions: Sequence[ChangedFunction]) -> list[SkippedItem]:
+    return [SkippedItem(f.report_name, f.skip_reason or "") for f in functions]
+
+
+def _skipped_items(
+    detection: Detection, generation: Generation | None, analysis: Analysis
+) -> tuple[SkippedItem, ...]:
+    """Everything not checked, in report order: files, rules, limit, LLM, runs."""
+    return (
+        *(SkippedItem(f.path, f.reason) for f in detection.skipped_files),
+        *_skipped(detection.skipped),
+        *(SkippedItem(f.report_name, "limit") for f in detection.limited),
+        *_skipped(generation.skipped if generation else ()),
+        *_skipped(analysis.skipped),
+    )
+
+
+def _report_usage(llm_cases: _LLMCases | None) -> ReportUsage:
+    """Tokens and cost of the run's LLM calls; a local model costs 0."""
+    if llm_cases is None:
+        return ReportUsage()
+    tokens = llm_cases.generation.usage
+    cost = llm_cases.generation.cost_usd if tokens.calls else 0.0
+    return ReportUsage(
+        tokens.calls,
+        tokens.input_tokens,
+        tokens.output_tokens,
+        tokens.reasoning_tokens,
+        0.0 if llm_cases.local else cost,
+        llm_cases.local,
+    )
+
+
 def _build_report(
     config: Config,
     base_sha: str,
@@ -599,28 +632,6 @@ def _build_report(
     llm_cases: _LLMCases | None,
 ) -> Report:
     generation = llm_cases.generation if llm_cases else None
-    skipped = [
-        *(SkippedItem(f.path, f.reason) for f in detection.skipped_files),
-        *(SkippedItem(f.report_name, f.skip_reason or "") for f in detection.skipped),
-        *(SkippedItem(f.report_name, "limit") for f in detection.limited),
-        *(
-            SkippedItem(f.report_name, f.skip_reason or "")
-            for f in (generation.skipped if generation else ())
-        ),
-        *(SkippedItem(f.report_name, f.skip_reason or "") for f in analysis.skipped),
-    ]
-    usage = ReportUsage()
-    if generation is not None:
-        tokens = generation.usage
-        cost = generation.cost_usd if tokens.calls else 0.0
-        usage = ReportUsage(
-            tokens.calls,
-            tokens.input_tokens,
-            tokens.output_tokens,
-            tokens.reasoning_tokens,
-            0.0 if llm_cases and llm_cases.local else cost,
-            bool(llm_cases and llm_cases.local),
-        )
     return Report(
         version=__version__,
         base_ref=config.base,
@@ -632,14 +643,13 @@ def _build_report(
         flaky_dropped=analysis.flaky_dropped,
         invalid_cases_dropped=generation.invalid_cases_dropped if generation else 0,
         type_mismatch_dropped=analysis.type_mismatch_dropped,
-        skipped=tuple(skipped),
+        skipped=_skipped_items(detection, generation, analysis),
         removed=detection.removed,
-        usage=usage,
+        usage=_report_usage(llm_cases),
         refined=llm_cases.refined if llm_cases else 0,
         refinement_cases=llm_cases.refinement_cases if llm_cases else 0,
         refinement_skipped=tuple(
-            SkippedItem(f.report_name, f.skip_reason or "")
-            for f in (llm_cases.refinement_skipped if llm_cases else ())
+            _skipped(llm_cases.refinement_skipped if llm_cases else ())
         ),
     )
 
@@ -679,90 +689,131 @@ def _intent(config: Config, root: Path, base_sha: str) -> str | None:
     return intent_text(config.intent, commit_messages(root, base_sha))
 
 
-def _run_check(arguments: argparse.Namespace) -> int:
+@dataclass(frozen=True)
+class _Run:
+    """What a check run knows before any function is executed.
+
+    Attributes:
+        config: The effective configuration.
+        root: Repository root.
+        base_sha: Base commit.
+        files: Changed, deleted and excluded Python files.
+        detection: Changed functions, selected and skipped.
+        cases: Cases from ``--cases-file``, or None for the LLM.
+    """
+
+    config: Config
+    root: Path
+    base_sha: str
+    files: ChangedFiles
+    detection: Detection
+    cases: Mapping[str, tuple[Case, ...]] | None
+
+
+def _prepare(arguments: argparse.Namespace) -> _Run:
+    """Load the configuration, the base, the changed files and functions.
+
+    Raises:
+        GitError, ConfigError, OSError: Setup problems (exit 2).
+    """
     cli_values = {
         key: getattr(arguments, key) for key in CONFIG_KEYS if hasattr(arguments, key)
     }
-    try:
-        working_directory = Path.cwd()
-        config = load_config(cli_values, working_directory)
-        cases = (
-            load_cases_file(working_directory / arguments.cases_file)
-            if arguments.cases_file
-            else None
-        )
-        root = repository_root(working_directory)
-        base_sha = resolve_base(root, config.base)
-        files = changed_python_files(root, base_sha, config.exclude)
-        sources = load_source_files(root, base_sha, files)
-    except (GitError, ConfigError, OSError) as error:
-        print(f"didibreak: error: {error}", file=sys.stderr)
-        return EXIT_ERROR
+    working_directory = Path.cwd()
+    config = load_config(cli_values, working_directory)
+    cases = (
+        load_cases_file(working_directory / arguments.cases_file)
+        if arguments.cases_file
+        else None
+    )
+    root = repository_root(working_directory)
+    base_sha = resolve_base(root, config.base)
+    files = changed_python_files(root, base_sha, config.exclude)
+    sources = load_source_files(root, base_sha, files)
     detection = detect_changed_functions(sources, config.max_functions)
-    text = config.format == "text"
-    if text:
-        header = header_lines(
-            __version__,
-            config.base,
-            base_sha,
-            files.excluded,
-            detection,
-            config.max_functions,
-            arguments.verbose,
-        )
-        print("\n".join(header), flush=True)
-    empty = Analysis((), (), (), 0, 0, 0)
-    if not detection.functions:
-        if text and not detection.skipped:
-            print(
-                "Nothing to check: no changed Python functions compared with "
-                f"{config.base}"
-            )
-        report = _build_report(config, base_sha, None, detection, empty, None)
-        _print_report(report, config, llm=False)
-        return EXIT_OK
-    llm_cases: _LLMCases | None = None
-    functions = detection.functions
+    return _Run(config, root, base_sha, files, detection, cases)
 
-    def run(
+
+def _print_header(run: _Run, verbose: bool) -> None:
+    header = header_lines(
+        __version__,
+        run.config.base,
+        run.base_sha,
+        run.files.excluded,
+        run.detection,
+        run.config.max_functions,
+        verbose,
+    )
+    print("\n".join(header), flush=True)
+
+
+_EMPTY = Analysis((), (), (), 0, 0, 0)
+
+
+def _report_nothing_to_check(run: _Run) -> int:
+    """No function was selected: say so and print the (empty) report."""
+    if run.config.format == "text" and not run.detection.skipped:
+        print(
+            "Nothing to check: no changed Python functions compared with "
+            f"{run.config.base}"
+        )
+    report = _build_report(run.config, run.base_sha, None, run.detection, _EMPTY, None)
+    _print_report(report, run.config, llm=False)
+    return EXIT_OK
+
+
+def _run_cases_function(run: _Run) -> _RunCases:
+    def run_cases(
         selected: Sequence[ChangedFunction], chosen: Mapping[str, Sequence[Case]]
     ) -> Analysis:
-        return _analyze(config, root, base_sha, files, selected, chosen)
+        return _analyze(run.config, run.root, run.base_sha, run.files, selected, chosen)
 
-    intent = _intent(config, root, base_sha)
-    try:
-        if cases is not None:
-            analysis = run(functions, cases)
-            reason = CASES_FILE_REASON if intent else NO_INTENT_REASON
-            unclear = mark_unclear(analysis.findings, reason)
-            analysis = replace(analysis, findings=unclear)
-        else:
-            functions, unimportable = _importable(
-                config, root, base_sha, files, functions
+    return run_cases
+
+
+def _analyse_cases_file(
+    run: _Run, cases: Mapping[str, Sequence[Case]], intent: str | None
+) -> Analysis:
+    """Run the --cases-file cases; findings stay unclear (no LLM labels)."""
+    analysis = _run_cases_function(run)(run.detection.functions, cases)
+    reason = CASES_FILE_REASON if intent else NO_INTENT_REASON
+    return replace(analysis, findings=mark_unclear(analysis.findings, reason))
+
+
+def _analyse_with_llm(
+    run: _Run, arguments: argparse.Namespace, intent: str | None
+) -> tuple[Analysis, _LLMCases | None] | None:
+    """Import check, LLM cases, comparison, labels; None when cancelled."""
+    config, root, base_sha, files = run.config, run.root, run.base_sha, run.files
+    functions, unimportable = _importable(
+        config, root, base_sha, files, run.detection.functions
+    )
+    analysis, llm_cases = _EMPTY, None
+    if functions:
+        session = _start_llm(config, functions, arguments, intent)
+        if session is None:
+            return None
+        with session:
+            analysis, llm_cases = _check_with_llm(
+                session, functions, _run_cases_function(run), intent
             )
-            analysis = empty
-            if functions:
-                session = _start_llm(config, functions, arguments, intent)
-                if session is None:
-                    print("Cancelled: no LLM request was sent.", file=sys.stderr)
-                    return EXIT_OK
-                with session:
-                    analysis, llm_cases = _check_with_llm(
-                        session, functions, run, intent
-                    )
-            analysis = replace(analysis, skipped=(*unimportable, *analysis.skipped))
-    except (ConfigError, LLMAuthError, LLMModelError, GitError, OSError) as error:
-        print(f"didibreak: error: {error}", file=sys.stderr)
-        return EXIT_ERROR
-    tests = _write_tests(config, root, base_sha, analysis.findings)
+    return replace(analysis, skipped=(*unimportable, *analysis.skipped)), llm_cases
+
+
+def _finish(
+    run: _Run, intent: str | None, analysis: Analysis, llm_cases: _LLMCases | None
+) -> int:
+    """Write the reproducing tests, print the report, return the exit code."""
+    config = run.config
+    tests = _write_tests(config, run.root, run.base_sha, analysis.findings)
     analysis = replace(analysis, findings=tests.findings)
     report = replace(
-        _build_report(config, base_sha, intent, detection, analysis, llm_cases),
+        _build_report(config, run.base_sha, intent, run.detection, analysis, llm_cases),
         test_files=tests.files,
         no_tests=tuple(SkippedItem(call, reason) for call, reason in tests.not_written),
     )
     _print_report(report, config, llm=llm_cases is not None)
-    problem = nothing_checked_error(report, detection.functions)
+    problem = nothing_checked_error(report, run.detection.functions)
     if problem is not None:
         print(f"didibreak: error: {problem}", file=sys.stderr)
         return EXIT_ERROR
@@ -770,6 +821,32 @@ def _run_check(arguments: argparse.Namespace) -> int:
         [finding.label for finding in analysis.findings if finding.label],
         config.fail_on,
     )
+
+
+def _run_check(arguments: argparse.Namespace) -> int:
+    try:
+        run = _prepare(arguments)
+    except (GitError, ConfigError, OSError) as error:
+        print(f"didibreak: error: {error}", file=sys.stderr)
+        return EXIT_ERROR
+    if run.config.format == "text":
+        _print_header(run, arguments.verbose)
+    if not run.detection.functions:
+        return _report_nothing_to_check(run)
+    intent = _intent(run.config, run.root, run.base_sha)
+    result: tuple[Analysis, _LLMCases | None] | None
+    try:
+        if run.cases is not None:
+            result = _analyse_cases_file(run, run.cases, intent), None
+        else:
+            result = _analyse_with_llm(run, arguments, intent)
+    except (ConfigError, LLMAuthError, LLMModelError, GitError, OSError) as error:
+        print(f"didibreak: error: {error}", file=sys.stderr)
+        return EXIT_ERROR
+    if result is None:
+        print("Cancelled: no LLM request was sent.", file=sys.stderr)
+        return EXIT_OK
+    return _finish(run, intent, *result)
 
 
 def is_supported_platform(platform: str) -> bool:
