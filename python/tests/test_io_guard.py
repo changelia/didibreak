@@ -125,7 +125,9 @@ def run_guarded(code: str, scratch: Path, cwd: Path) -> str:
         """
     ) + textwrap.dedent(code)
     done = subprocess.run(
-        [sys.executable, "-c", script],
+        # -B as in the harness: writing __pycache__ outside the scratch folder
+        # would be blocked (seen on a fresh CI runner without cached bytecode).
+        [sys.executable, "-B", "-c", script],
         cwd=cwd,
         capture_output=True,
         text=True,
