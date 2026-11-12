@@ -1,8 +1,9 @@
 """Child process of the execution harness: run cases against one function.
 
 didibreak.harness starts this file as a script with the user's interpreter.
-It uses only the standard library and nothing from didibreak, because that
-interpreter may not have didibreak installed.
+It uses only the standard library and the runtime I/O guard next to it
+(_io_guard.py, loaded by its path), because that interpreter may not have
+didibreak installed.
 
 Results cross the process boundary as JSON, never pickle. Return values are
 normalized here (Detailed Design section 4) because the objects themselves
@@ -12,6 +13,7 @@ cannot leave the process.
 import ast
 import enum
 import importlib
+import importlib.util
 import json
 import os
 import random
@@ -256,19 +258,47 @@ def _write(results: TextIO, record: dict[str, Any]) -> None:
     results.flush()
 
 
+def install_guard(scratch: str) -> Callable[[], str | None]:
+    """Install the runtime I/O guard (_io_guard.py, next to this file).
+
+    Loaded by its path: this script runs with ``-P``, so its folder is not
+    on ``sys.path``, and didibreak may not be installed for this
+    interpreter.
+
+    Returns:
+        A function that names the first blocked event, or returns None.
+    """
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_io_guard.py")
+    spec = importlib.util.spec_from_file_location("_didibreak_io_guard", path)
+    assert spec is not None and spec.loader is not None
+    guard = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(guard)
+    blocked: Callable[[], str | None] = guard.install(scratch)
+    return blocked
+
+
+def _blocked_record(blocked: Callable[[], str | None]) -> dict[str, Any] | None:
+    event = blocked()
+    return None if event is None else {"skip_reason": f"blocked: {event}"}
+
+
 def main(arguments: list[str]) -> None:
     """Run the request file's cases and append records to the results file.
 
     The first record is ``{"ready": true}`` or ``{"skip_reason": ...}``; then
-    one outcome per case, in order.
+    one outcome per case, in order. A case that tries a blocked operation
+    ends the run with a ``{"skip_reason": "blocked: <event>"}`` record.
     """
     request_path, results_path = arguments
     with open(request_path, encoding="utf-8") as file:
         request = json.load(file)
     with open(results_path, "w", encoding="utf-8") as results:
+        # Before the import: a module's top-level code is guarded too.
+        blocked = install_guard(request["scratch"])
         function = _load_function(request)
-        if isinstance(function, str):
-            _write(results, {"skip_reason": function})
+        stop = _blocked_record(blocked)
+        if stop is not None or isinstance(function, str):
+            _write(results, stop or {"skip_reason": function})
             return
         _write(results, {"ready": True})
         signal.signal(signal.SIGALRM, _on_alarm)
@@ -277,7 +307,10 @@ def main(arguments: list[str]) -> None:
                 outcome = run_case(function, case, request["timeout"])
             except CaseTimeout:  # the alarm fired while cancelling the timer
                 outcome = timeout_outcome(request["timeout"])
-            _write(results, outcome)
+            stop = _blocked_record(blocked)
+            _write(results, stop or outcome)
+            if stop is not None:
+                return
 
 
 if __name__ == "__main__":

@@ -21,8 +21,9 @@ FAIL_ON = ("unclear", "unexpected")
 # client: a base URL and a key variable (task 34; llm.DEFAULT_BASE_URLS).
 PROVIDERS = ("openai", "anthropic", "openrouter", "ollama", "lmstudio")
 PRESETS = ("openrouter", "ollama", "lmstudio")
-# What a preset fills in; values from a lower-precedence level are dropped.
-PRESET_KEYS = ("base_url", "api_key_env")
+# Settings that belong to one provider: a different --provider drops them
+# from pyproject.toml (pre-launch review, finding 6).
+PROVIDER_KEYS = ("base_url", "api_key_env")
 
 # None: the local server needs no key (Ollama ignores one, LM Studio needs
 # none unless authentication is switched on).
@@ -336,14 +337,14 @@ def read_config_table(pyproject: Path) -> dict[str, object]:
         raise ConfigError(f"[tool.didibreak] in {pyproject}: {error}") from error
 
 
-def _below_preset(
+def _below_cli_provider(
     file_values: Mapping[str, object], cli_values: Mapping[str, object]
 ) -> dict[str, object]:
-    """The file values, without the preset keys a CLI preset replaces."""
+    """The file values, without the provider keys a CLI provider replaces."""
     provider = cli_values.get("provider")
-    if provider not in PRESETS or file_values.get("provider") == provider:
+    if provider is None or file_values.get("provider") == provider:
         return dict(file_values)
-    return {k: v for k, v in file_values.items() if k not in PRESET_KEYS}
+    return {k: v for k, v in file_values.items() if k not in PROVIDER_KEYS}
 
 
 def build_config(
@@ -351,11 +352,11 @@ def build_config(
 ) -> Config:
     """Combine validated values: CLI flags override the file, which overrides defaults.
 
-    A preset provider (``openrouter``, ``ollama``, ``lmstudio``) given as a
-    flag also drops ``base_url`` and ``api_key_env`` from the file, so that
-    the preset's own values apply; flags still override the preset (owner
-    decision 2026-11-11, task 34 review). The file's values are kept when
-    the file names the same preset.
+    A provider given as a flag also drops ``base_url`` and ``api_key_env``
+    from the file, so that a key is never sent to the URL of another
+    provider; flags still set them (task 34 review for presets, pre-launch
+    review finding 6 for every provider). The file's values are kept when
+    the file names the same provider.
 
     Args:
         file_values: Validated values from ``[tool.didibreak]``.
@@ -364,7 +365,10 @@ def build_config(
     Returns:
         The effective configuration.
     """
-    merged: dict[str, Any] = {**_below_preset(file_values, cli_values), **cli_values}
+    merged: dict[str, Any] = {
+        **_below_cli_provider(file_values, cli_values),
+        **cli_values,
+    }
     return Config(**merged)
 
 

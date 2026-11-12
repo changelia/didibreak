@@ -22,7 +22,10 @@ One `didibreak check` run:
    ([Case generation](#case-generation)). Cases are cached per function.
 5. **Run both versions.** Every case runs on the base version and on the
    current version, twice each, in separate processes from temporary copies
-   of the tree ([safety.md](safety.md#how-a-function-is-run)).
+   of the tree ([safety.md](safety.md#how-a-function-is-run)). A runtime
+   I/O guard in each process stops commands, network access and file
+   changes; a function that tries one is skipped
+   ([safety.md](safety.md#the-runtime-io-guard)).
 6. **Compare outcomes** with the [comparison rules](#comparison-rules).
    If no case differs, one refinement round asks for new cases.
 7. **Label findings** against the intent: `expected`, `unexpected` or

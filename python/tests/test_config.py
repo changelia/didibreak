@@ -208,10 +208,11 @@ def test_cli_values_still_override_a_cli_preset() -> None:
     [
         ("ollama", {"provider": "ollama"}),  # the file names the same preset
         ("ollama", {}),  # preset and URL at the same level
-        (None, {"provider": "openai"}),  # not a preset
+        ("openai", {"provider": "openai"}),  # the same provider, not a preset
+        (None, {}),
     ],
 )
-def test_file_url_is_kept_unless_a_higher_level_chooses_another_preset(
+def test_file_url_is_kept_unless_a_flag_chooses_another_provider(
     file_provider: str | None, cli: dict[str, object]
 ) -> None:
     file_values = dict(FILE_WITH_URL)
@@ -222,6 +223,30 @@ def test_file_url_is_kept_unless_a_higher_level_chooses_another_preset(
 
     assert config.base_url == "https://openrouter.ai/api/v1"
     assert config.api_key_env == "OPENROUTER_API_KEY"
+
+
+@pytest.mark.parametrize(
+    ("file_provider", "cli_provider"),
+    [
+        (None, "openai"),
+        ("ollama", "openai"),
+        (None, "anthropic"),
+        ("openai", "anthropic"),
+        ("openrouter", "anthropic"),
+    ],
+)
+def test_any_other_cli_provider_drops_the_file_url_and_key_variable(
+    file_provider: str | None, cli_provider: str
+) -> None:
+    # Pre-launch review, finding 6: --provider openai kept a pyproject
+    # base_url, so the OpenAI key was sent to that host.
+    file_values = dict(FILE_WITH_URL)
+    if file_provider:
+        file_values["provider"] = file_provider
+
+    config = build_config(file_values, {"provider": cli_provider})
+
+    assert (config.base_url, config.api_key_env) == (None, None)
 
 
 # Audit 35a, finding 2: nan and inf switched limits off without a message.

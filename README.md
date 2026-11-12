@@ -90,6 +90,8 @@ libraries are the sweet spot.
   `@classmethod` are checked);
 - generators;
 - functions with obvious I/O: files, network, subprocesses, databases;
+- functions that try to run commands, reach the network or change files
+  outside a temporary folder while they run (a runtime guard stops them);
 - typical FastAPI and Django handlers: async endpoints are skipped, and
   views that take request objects or query the database get no useful
   literal inputs.

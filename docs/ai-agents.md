@@ -59,7 +59,7 @@ $0.50) still limits each run.
    - `0`: no unexpected or unclear findings. Done. `new_function`
      findings never change the exit code; they are still in the report.
      If `summary.functions_checked` is `0`, every changed function was
-     skipped by design (async, instance method, obvious I/O, ...; the
+     skipped by design (async, instance method, obvious I/O, blocked I/O, ...; the
      reasons are in `summary.skipped`): tell the user that nothing was
      checked and why.
    - `1`: there are findings; handle them by label (below).

@@ -32,14 +32,16 @@ _INTERPRETER_FLAGS = ("-s", "-P", "-B")
 # names ending with one of the suffixes or containing one of the words.
 # Broader than Detailed Design section 4 (*_API_KEY, *_TOKEN, *_SECRET), so
 # that names such as AWS_SECRET_ACCESS_KEY are covered too.
-# _PWD covers MYSQL_PWD; PASSWORD covers PGPASSWORD. _CREDENTIALS values are
-# credentials or the path of a credentials file (audit 35a, finding 6).
-SECRET_SUFFIXES = ("_KEY", "_PWD", "_CREDENTIALS")
-SECRET_WORDS = ("TOKEN", "SECRET", "PASSWORD")
-# Connection strings are removed only when they carry a password
-# (``postgres://user:pass@host/db``); a plain DATABASE_URL stays, because the
-# code under test may need it without credentials.
-URL_SUFFIXES = ("_URL", "_URI", "_DSN")
+# _PWD covers MYSQL_PWD; PASS covers PGPASSWORD, DB_PASS and SMTP_PASSWD;
+# _PAT covers personal access tokens such as GH_PAT. _CREDENTIALS values are
+# credentials or the path of a credentials file (audit 35a, finding 6;
+# pre-launch review, finding 5).
+SECRET_SUFFIXES = ("_KEY", "_PWD", "_PAT", "_CREDENTIALS")
+SECRET_WORDS = ("PASS", "TOKEN", "SECRET", "APIKEY", "API_KEY")
+# Connection strings and proxy settings are removed only when they carry a
+# password (``postgres://user:pass@host/db``, ``http://user:pass@proxy:8080``);
+# a plain DATABASE_URL stays, because the code under test may need it.
+URL_SUFFIXES = ("_URL", "_URI", "_DSN", "_PROXY")
 # Extra time for interpreter start and import before the child is killed.
 _KILL_GRACE_SECONDS = 5.0
 PROCESS_EXITED_TYPE = "didibreak.ProcessExited"
@@ -138,8 +140,9 @@ def is_secret_variable(name: str, value: str = "") -> bool:
 
     Args:
         name: Variable name, matched ignoring case.
-        value: Its value; needed for ``*_URL``, ``*_URI`` and ``*_DSN`` names,
-            which count only when the URL carries a password.
+        value: Its value; needed for ``*_URL``, ``*_URI``, ``*_DSN`` and
+            ``*_PROXY`` names, which count only when the URL carries a
+            password.
 
     Returns:
         True when the variable should not reach the user's code.
@@ -217,10 +220,11 @@ class _ChildRun:
 
 
 def _write_request(
-    path: Path, target: Target, cases: Sequence[Case], timeout: float
+    path: Path, target: Target, cases: Sequence[Case], timeout: float, scratch: Path
 ) -> None:
     """The JSON file the child reads: where the function is and the cases."""
     request = {
+        "scratch": str(scratch),
         "tree": str(target.tree),
         "import_root": str(target.import_root),
         "module": target.module,
@@ -250,7 +254,12 @@ def _spawn(
             str(results),
         ],
         cwd=working_directory,
-        env=child_environment(environment, settings.api_key_env),
+        # The working directory is the scratch folder of the I/O guard, and
+        # also the temporary folder (tempfile) of the code under test.
+        env={
+            **child_environment(environment, settings.api_key_env),
+            "TMPDIR": str(working_directory),
+        },
         stdin=subprocess.DEVNULL,
         # The user's prints must not reach didibreak's output.
         stdout=subprocess.DEVNULL,
@@ -285,9 +294,9 @@ def _start_child(
     request = folder / "request.json"
     results = folder / "results.jsonl"
     results.unlink(missing_ok=True)
-    _write_request(request, target, cases, settings.timeout)
     working_directory = folder / "cwd"
     working_directory.mkdir(exist_ok=True)
+    _write_request(request, target, cases, settings.timeout, working_directory)
     process = _spawn(settings, environment, request, results, working_directory)
     # An import check runs no case but still gets one timeout to import.
     limit = settings.timeout * max(len(cases), 1) + _KILL_GRACE_SECONDS
@@ -326,6 +335,8 @@ def _run_once(
             header, *records = run.records
             if "skip_reason" in header:
                 return HarnessResult((), header["skip_reason"])
+            if records and "skip_reason" in records[-1]:  # a blocked case
+                return HarnessResult((), records[-1]["skip_reason"])
             outcomes.extend(_outcome(record) for record in records)
             if len(records) == len(remaining):
                 break
@@ -396,7 +407,8 @@ def run_cases(
     Returns:
         One outcome per case, or a skip reason (``import failed: <Type>``,
         ``import resolved outside tree``, ``import timed out``, ``function not
-        found after import``).
+        found after import``, or ``blocked: <event>`` when the import or a
+        case tried an operation the runtime I/O guard stops).
 
     Raises:
         ValueError: If a case argument is not a Python literal.
