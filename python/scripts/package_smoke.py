@@ -89,7 +89,11 @@ def make_repository(path: Path) -> Path:
     _git(path, "config", "user.name", "Smoke")
     _git(path, "config", "user.email", "smoke@example.com")
     _git(path, "config", "commit.gpgsign", "false")
-    (path / "pyproject.toml").write_text('[tool.didibreak]\napi_key_env = ""\n')
+    # provider names the same provider as --provider, so api_key_env = ""
+    # (no key) is kept; a key from the environment is never sent.
+    (path / "pyproject.toml").write_text(
+        '[tool.didibreak]\nprovider = "openai"\napi_key_env = ""\n'
+    )
     (path / "calc.py").write_text(BASE_SOURCE)
     _git(path, "add", ".")
     _git(path, "commit", "-q", "-m", "Add clamp_percent")
