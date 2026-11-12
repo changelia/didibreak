@@ -41,6 +41,7 @@ function; see [safety.md](safety.md).
 | `instance method` | A method without `@staticmethod` or `@classmethod`; it needs an instance. |
 | `generator` | The function itself contains `yield` or `yield from`. |
 | `obvious I/O: <name>` | The body (including helpers defined inside it) uses one of the I/O names below. |
+| `blocked: <event>` | While it ran, the function (or its module's import) tried an operation the runtime I/O guard stops: a command, a process, network access, native code, or a file change outside its temporary folder ([safety.md](safety.md#the-runtime-io-guard)). |
 
 Obvious I/O. Names are resolved through the module's imports and aliases, so
 `from subprocess import run` and `import shutil as sh` are recognized:
@@ -72,12 +73,17 @@ Obvious I/O. Names are resolved through the module's imports and aliases, so
   `delete`, `execute`, `executemany`, `flush`, `merge`, `query`, `refresh`,
   `rollback` or `scalars` (for example `session.commit()`).
 
-The check is a heuristic: a scan of names in the source, not a sandbox. It
-misses I/O that is not on this list, I/O hidden behind a helper function in
-another module, and I/O reached through `getattr`, `eval` or plugins. It can
-also skip a function that only looks like I/O (for example a DataFrame's
-`rename`). A container is the real isolation; see [safety.md](safety.md). Rules are
-checked in the order of the table; the first match is the reason.
+The check is a heuristic: a scan of names in the source, used as a fast
+first filter. It misses I/O that is not on this list, I/O hidden behind a
+helper function in another module, a class or a decorator, and I/O reached
+through `getattr`, `eval` or plugins. Such I/O is stopped while the
+function runs by the runtime I/O guard, which skips the function with
+`blocked: <event>`. The guard is defence in depth, not a sandbox: a C
+extension with its own I/O is not stopped
+([safety.md](safety.md#what-is-not-covered)). The check can also skip a
+function that only looks like I/O (for example a DataFrame's `rename`). A
+container is the real isolation. Rules are checked in the order of the
+table; the first match is the reason.
 
 ## Inputs from the LLM
 

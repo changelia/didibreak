@@ -9,7 +9,27 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
-Nothing yet.
+Safety fixes from the pre-launch review (`evaluation/review-prelaunch.md`,
+findings 1, 2, 5, 6 and 7). The JSON report keeps `schema_version: 1`.
+
+#### Added
+
+- A runtime I/O guard in every process that runs your code: an audit hook
+  (PEP 578), installed before your module is imported, stops commands and
+  processes, network access, loading native code, and file changes outside
+  the process's temporary folder. A function that tries one is skipped with
+  `blocked: <event>` (for example `blocked: os.system`), never reported as
+  a finding, and gets no reproducing test. It covers what the static I/O
+  rules cannot see: `eval`, `exec`, `pickle.loads`, renamed functions,
+  classes, decorators and other modules. It is defence in depth, not a
+  sandbox: C extensions with their own I/O are not stopped
+  (`docs/safety.md`).
+
+#### Changed
+
+- The code under test gets its temporary folder as `TMPDIR` too.
+- A module that writes a file outside that folder while it is imported is
+  skipped with `blocked: open` instead of being run.
 
 ### 0.1.5
 

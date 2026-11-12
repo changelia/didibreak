@@ -226,7 +226,7 @@ is strict. From the first release on, a new key needs a new `schema_version`.
 | `summary.type_mismatch_dropped` | Findings dropped because an input contradicts the function's type annotations (for example `bytes` for a `str` parameter). Only simple annotations are checked: builtin types, `None`, `Optional`/`Union`, and `list`, `dict`, `tuple`, `set` of these. |
 | `summary.skipped` | Functions not checked. Files that could not be read appear with their path; functions cut by `max_functions` have the reason `limit`. |
 | `summary.skipped[].function` | `path::qualname`, or a file path. |
-| `summary.skipped[].reason` | Why it was skipped, for example `obvious I/O: session.commit`, `cost limit` or `token limit`. |
+| `summary.skipped[].reason` | Why it was skipped, for example `obvious I/O: session.commit`, `blocked: os.system`, `cost limit` or `token limit`. |
 | `summary.removed` | Functions removed since the base. |
 | `summary.removed[].function` | `path::qualname` on the base. |
 | `usage` | LLM use of the run; all zero for `--cases-file` runs. |
@@ -324,5 +324,5 @@ How the base outcome is asserted:
 | --- | --- |
 | `0` | No failing findings. |
 | `1` | Failing findings: `unexpected` or `unclear` with the default `--fail-on unclear`; only `unexpected` with `--fail-on unexpected`. `new_function` findings never fail the run. |
-| `2` | Tool or configuration error: not a git repository, git missing, invalid flag or config value, missing API key. Also when changed functions were selected but none could be checked because of an error (`llm unavailable`, `invalid llm response`, `llm request rejected`, `cost limit`, `token limit`, or an import failure); the report is still printed. Functions skipped by design (async, instance methods, generators, obvious I/O) do not count: if every changed function is skipped by design, the code is `0`, `summary.functions_checked` is `0` and the text report says "No function was checked". |
+| `2` | Tool or configuration error: not a git repository, git missing, invalid flag or config value, missing API key. Also when changed functions were selected but none could be checked because of an error (`llm unavailable`, `invalid llm response`, `llm request rejected`, `cost limit`, `token limit`, or an import failure); the report is still printed. Functions skipped by design (async, instance methods, generators, obvious I/O, `blocked: <event>`) do not count: if every changed function is skipped by design, the code is `0`, `summary.functions_checked` is `0` and the text report says "No function was checked". |
 | `130` | Interrupted with Ctrl-C; temporary worktrees, copies and processes are removed first. |
