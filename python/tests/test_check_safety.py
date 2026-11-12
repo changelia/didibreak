@@ -90,3 +90,58 @@ def test_non_finite_limits_in_pyproject_exit_2_before_any_work(
 
     assert "must be a finite number greater than 0" in capsys.readouterr().err
     assert not (git_repository.path / ".didibreak").exists()
+
+
+RUNNER = """import os
+
+
+class Runner:
+    def __init__(self, command):
+        self.command = command
+
+    def go(self):
+        return os.system(self.command)
+
+
+def notify(name):
+    Runner("touch " + os.environ["MARK_DIR"] + "/ran_" + name).go()
+    return {result}
+"""
+
+
+@pytest.mark.parametrize("report_format", ["text", "json"])
+def test_a_blocked_function_is_skipped_not_reported_and_gets_no_test(
+    git_repository: GitRepository,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    report_format: str,
+) -> None:
+    # Pre-launch review, finding 2: the static rules miss os.system behind a
+    # class, so the function used to run; the runtime guard stops it.
+    marks = tmp_path / "marks"
+    marks.mkdir()
+    monkeypatch.setenv("MARK_DIR", str(marks))
+    changed_repository(git_repository, RUNNER.format(result=1), RUNNER.format(result=2))
+    cases = write_cases(git_repository, "app/run.py::notify", "'x'")
+    monkeypatch.chdir(git_repository.path)
+
+    code = main(["check", "--cases-file", cases, "--format", report_format])
+
+    out = capsys.readouterr().out
+    assert code == EXIT_OK  # skipped by design, like obvious I/O
+    assert list(marks.iterdir()) == []
+    assert not (git_repository.path / ".didibreak" / "tests").exists()
+    if report_format == "json":
+        summary = json.loads(out)["summary"]
+        assert json.loads(out)["findings"] == []
+        assert summary["functions_checked"] == 0
+        assert summary["skipped"] == [
+            {
+                "function": "app/run.py::notify",
+                "reason": "blocked: os.system (base version)",
+            }
+        ]
+    else:
+        assert "skipped: app/run.py::notify (blocked: os.system (base version))" in out
+        assert "behavior changes" in out and "UNCLEAR" not in out
