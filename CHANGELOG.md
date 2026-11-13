@@ -68,6 +68,11 @@ Safety and robustness fixes from the pre-launch review
   with terminal escape codes could clear the screen or change the
   terminal's title through the exit-2 line and the "model not found"
   message.
+- An unexpected exception inside didibreak ends with exit code 2 and one
+  line, `didibreak: error: internal error (...)`, that asks for a bug
+  report (`-v` adds the traceback). Before, it left with a traceback and
+  exit code 1, the code that means "findings". A `Retry-After: nan`
+  header from a provider was one way to get there; it is now ignored.
 
 ### 0.1.5
 

@@ -8,6 +8,7 @@ that has a config key is validated by ``config.validate`` so the CLI and
 import argparse
 import os
 import sys
+import traceback
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -43,7 +44,7 @@ from didibreak.gitdiff import (
     repository_root,
     resolve_base,
 )
-from didibreak.harness import Case, HarnessSettings
+from didibreak.harness import Case, HarnessSettings, is_secret_variable
 from didibreak.intent import NO_INTENT_REASON, intent_text, mark_unclear
 from didibreak.llm import create_client
 from didibreak.llm.common import LLMAuthError, LLMModelError
@@ -876,6 +877,58 @@ def _run_check(arguments: argparse.Namespace) -> int:
     return _finish(run, intent, *result)
 
 
+ISSUES_URL = "https://github.com/changelia/didibreak/issues"
+_INTERNAL_ERROR_LIMIT = 300
+# Shorter values are too common as ordinary text to be replaced.
+_SHORTEST_SECRET = 8
+
+
+def without_secrets(text: str, environment: Mapping[str, str]) -> str:
+    """``text`` without the values of credential-like environment variables.
+
+    An unexpected exception can quote anything, so its text is cleaned with
+    the rule that keeps credentials away from the code under test
+    (harness.is_secret_variable): API keys never reach an error message.
+    """
+    for name, value in environment.items():
+        if len(value) >= _SHORTEST_SECRET and is_secret_variable(name, value):
+            text = text.replace(value, "[redacted]")
+    return text
+
+
+def internal_error_message(error: BaseException, environment: Mapping[str, str]) -> str:
+    """The exit-2 line for an exception didibreak did not expect.
+
+    Args:
+        error: The exception.
+        environment: Environment variables, for without_secrets().
+
+    Returns:
+        One line that names the exception and asks for a bug report.
+    """
+    detail = without_secrets(f"{type(error).__name__}: {error}", environment)
+    return (
+        f"internal error ({detail[:_INTERNAL_ERROR_LIMIT]}). This is a bug in "
+        "didibreak, not a finding in your code: nothing can be concluded from "
+        f"this run. Please report it at {ISSUES_URL} with the command you ran "
+        "and this message (run again with -v for the traceback)"
+    )
+
+
+def _report_internal_error(error: BaseException, verbose: bool) -> int:
+    """Print the internal-error line (and the traceback with -v); exit code 2.
+
+    Exit code 1 means "findings" to the agents that read it, so a crash must
+    never leave with it (pre-launch review, finding 9).
+    """
+    if verbose:
+        lines = "".join(traceback.format_exception(error)).splitlines()
+        for line in lines:
+            print(printable(without_secrets(line, os.environ)), file=sys.stderr)
+    _print_problem("error", internal_error_message(error, os.environ))
+    return EXIT_ERROR
+
+
 def is_supported_platform(platform: str) -> bool:
     """Whether didibreak runs on this platform (``sys.platform`` value).
 
@@ -897,7 +950,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     Returns:
         The process exit code: 0 no failing findings, 1 failing findings,
         2 tool or configuration error (also for a command on Windows,
-        before any work), 130 interrupted (Ctrl-C).
+        before any work, and for an unexpected exception: "internal
+        error"), 130 interrupted (Ctrl-C).
     """
     parser = build_parser()
     # --help and --version end inside parse_args and run no user code, so
@@ -914,6 +968,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             # context managers and finally blocks on the way out.
             print("didibreak: interrupted", file=sys.stderr)
             return EXIT_INTERRUPTED
+        except Exception as error:
+            return _report_internal_error(error, arguments.verbose)
     if arguments.command == "init-agents":
         print(AGENT_SNIPPET, end="")
         return EXIT_OK

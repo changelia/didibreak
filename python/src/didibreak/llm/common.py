@@ -362,9 +362,13 @@ def _backoff_seconds(attempt: int, response: httpx.Response | None) -> float:
     retry_after = None if response is None else response.headers.get("retry-after")
     if retry_after is not None:
         try:
-            return min(max(float(retry_after), 0.0), MAX_BACKOFF_SECONDS)
+            seconds = float(retry_after)
         except ValueError:
-            pass  # an HTTP date: use the exponential backoff
+            seconds = math.nan  # an HTTP date: use the exponential backoff
+        # "nan" and "inf" are numbers to float(), but time.sleep(nan) raises
+        # (pre-launch review, finding 9).
+        if math.isfinite(seconds):
+            return min(max(seconds, 0.0), MAX_BACKOFF_SECONDS)
     return float(min(BACKOFF_SECONDS * 2**attempt, MAX_BACKOFF_SECONDS))
 
 

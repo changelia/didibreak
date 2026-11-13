@@ -140,6 +140,22 @@ def test_retry_after_is_capped() -> None:
     assert waits == [MAX_BACKOFF_SECONDS]
 
 
+@pytest.mark.parametrize(
+    "value", ["nan", "inf", "-inf", "Fri, 13 Nov 2026 08:00:00 GMT"]
+)
+def test_a_retry_after_that_is_not_a_finite_number_is_ignored(value: str) -> None:
+    # Pre-launch review, finding 9: "nan" reached time.sleep, which raised
+    # ValueError and ended the run with a traceback.
+    waits: list[float] = []
+
+    post(
+        [httpx.Response(429, headers={"retry-after": value}), httpx.Response(200)],
+        waits.append,
+    )
+
+    assert waits == [1.0]  # the exponential backoff of the first retry
+
+
 def test_network_errors_are_retried() -> None:
     error = httpx.ConnectError("connection refused")
 

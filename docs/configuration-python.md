@@ -70,7 +70,7 @@ in snake_case.
 | `--output-dir PATH` | `output_dir` | path | `.didibreak` | Folder for reports, reproducing tests and the cache. |
 | `--no-cache` | `no_cache` | true / false | `false` | Ignore and do not write the case cache. |
 | `--yes` | — | flag | off | Skip the cost confirmation. Implied by `--format json` and when stdin is not a terminal. |
-| `-v` / `-q` | — | flag | off | Verbose progress / errors only. Cannot be combined. |
+| `-v` / `-q` | — | flag | off | Verbose progress / errors only. Cannot be combined. `-v` also prints the traceback of an internal error. |
 
 `check` also has a hidden `--cases-file` option for developers and tests; it
 is not a user feature and is described in `CONTRIBUTING.md`.
