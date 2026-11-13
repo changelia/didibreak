@@ -214,3 +214,57 @@ def test_temporary_files_still_work(tmp_path: Path) -> None:
 
     assert result.skip_reason is None
     assert result.outcomes[0].repr == "'ABC'"
+
+
+CACHE_AT_IMPORT = """
+    import os
+
+    folder = os.path.join(
+        os.environ.get("{variable}", os.path.expanduser("~/.cache/fake")), "mylib"
+    )
+    os.makedirs(folder, exist_ok=True)
+    with open(os.path.join(folder, "index"), "w") as file:
+        file.write("built at import")
+
+    def f(x):
+        with open(os.path.join(folder, "index")) as file:
+            return file.read() + str(x)
+    """
+
+
+@pytest.mark.parametrize(
+    "variable", ["XDG_CACHE_HOME", "MPLCONFIGDIR", "NUMBA_CACHE_DIR"]
+)
+def test_a_module_that_writes_a_cache_at_import_is_run(
+    tmp_path: Path, variable: str
+) -> None:
+    # Task 36 review: such a module was skipped with "blocked: os.mkdir",
+    # because its cache folder is outside the scratch folder.
+    home = tmp_path / "home"
+    home.mkdir()
+    old_cache = home / "old-cache"
+    tree = tmp_path / "tree"
+    tree.mkdir()
+    target = write_tree(tree, {"mod.py": CACHE_AT_IMPORT.format(variable=variable)})
+    environment = {"HOME": str(home), "PATH": "/usr/bin:/bin", variable: str(old_cache)}
+
+    assert check_import(target, SETTINGS, environment) is None
+    result = run_cases(target, [Case(("1",))], SETTINGS, environment)
+
+    assert result.skip_reason is None
+    assert result.outcomes[0].repr == "'built at import1'"
+    assert list(home.iterdir()) == []  # nothing written to the user's folders
+
+
+def test_a_cache_in_the_home_folder_is_still_blocked(tmp_path: Path) -> None:
+    # HOME is not redirected: a library that ignores the cache variables
+    # and writes under the home folder is skipped, as before.
+    home = tmp_path / "home"
+    home.mkdir()
+    tree = tmp_path / "tree"
+    tree.mkdir()
+    target = write_tree(tree, {"mod.py": CACHE_AT_IMPORT.format(variable="UNSET_X")})
+    environment = {"HOME": str(home), "PATH": "/usr/bin:/bin"}
+
+    assert check_import(target, SETTINGS, environment) == "blocked: os.mkdir"
+    assert list(home.iterdir()) == []

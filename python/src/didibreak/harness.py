@@ -42,6 +42,13 @@ SECRET_WORDS = ("PASS", "TOKEN", "SECRET", "APIKEY", "API_KEY")
 # password (``postgres://user:pass@host/db``, ``http://user:pass@proxy:8080``);
 # a plain DATABASE_URL stays, because the code under test may need it.
 URL_SUFFIXES = ("_URL", "_URI", "_DSN", "_PROXY")
+# Variables that tell libraries where to keep their caches, pointed at the
+# child's scratch folder: a module that writes a cache while it is imported
+# would otherwise be skipped as ``blocked: open`` (task 36 review). Names
+# from each project's documentation: the XDG base directory specification,
+# Matplotlib (MPLCONFIGDIR) and Numba (NUMBA_CACHE_DIR). HOME stays as it
+# is: code reads far more than caches from it.
+CACHE_VARIABLES = ("XDG_CACHE_HOME", "MPLCONFIGDIR", "NUMBA_CACHE_DIR")
 # Extra time for interpreter start and import before the child is killed.
 _KILL_GRACE_SECONDS = 5.0
 PROCESS_EXITED_TYPE = "didibreak.ProcessExited"
@@ -237,6 +244,25 @@ def _write_request(
     path.write_text(json.dumps(request), encoding="utf-8")
 
 
+def scratch_environment(scratch: Path) -> dict[str, str]:
+    """Variables that send temporary files and caches into the scratch folder.
+
+    Args:
+        scratch: The child's working directory, where the runtime I/O guard
+            allows changes.
+
+    Returns:
+        ``TMPDIR`` (the folder itself, for ``tempfile``) and one existing
+        subfolder per name in CACHE_VARIABLES.
+    """
+    variables = {"TMPDIR": str(scratch)}
+    for name in CACHE_VARIABLES:
+        folder = scratch / ".didibreak-caches" / name.lower()
+        folder.mkdir(parents=True, exist_ok=True)
+        variables[name] = str(folder)
+    return variables
+
+
 def _spawn(
     settings: HarnessSettings,
     environment: Mapping[str, str],
@@ -255,10 +281,10 @@ def _spawn(
         ],
         cwd=working_directory,
         # The working directory is the scratch folder of the I/O guard, and
-        # also the temporary folder (tempfile) of the code under test.
+        # also the temporary and cache folder of the code under test.
         env={
             **child_environment(environment, settings.api_key_env),
-            "TMPDIR": str(working_directory),
+            **scratch_environment(working_directory),
         },
         stdin=subprocess.DEVNULL,
         # The user's prints must not reach didibreak's output.

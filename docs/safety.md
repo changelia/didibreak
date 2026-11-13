@@ -43,8 +43,13 @@ is imported. While your module is imported and while a case runs, it stops:
 - writing, creating, deleting, renaming or changing the permissions of
   files and folders outside the process's own temporary folder. That folder
   is the process's working directory and `TMPDIR`, so relative paths and
-  the `tempfile` module still work; it is removed afterwards. An SQLite
-  database in memory (`:memory:`) is allowed.
+  the `tempfile` module still work; it is removed afterwards. The cache
+  variables `XDG_CACHE_HOME`, `MPLCONFIGDIR` and `NUMBA_CACHE_DIR` point
+  into it too, so a library that writes a cache while it is imported
+  (Matplotlib's font cache, for example) still runs; it starts with an
+  empty cache each time. `HOME` is not changed: a module that writes
+  under your home folder without these variables is skipped with
+  `blocked: <event>`. An SQLite database in memory (`:memory:`) is allowed.
 
 Reading files is allowed. The full list of audit events is
 `BLOCKED_EVENTS` in

@@ -31,6 +31,10 @@ Safety and robustness fixes from the pre-launch review
 - The code under test gets its temporary folder as `TMPDIR` too.
 - A module that writes a file outside that folder while it is imported is
   skipped with `blocked: open` instead of being run.
+- `XDG_CACHE_HOME`, `MPLCONFIGDIR` and `NUMBA_CACHE_DIR` point into that
+  temporary folder for the code under test, so a library that writes its
+  cache while it is imported is run instead of skipped. `HOME` is not
+  changed.
 
 #### Fixed
 
