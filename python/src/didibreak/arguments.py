@@ -3,9 +3,10 @@
 Cases reach the harness from LLM replies, the case cache, the hidden
 ``--cases-file`` option and the harness's own check. All of them use
 case_problem(), so "the LLM supplies data, never code" (Spec, Safety) is
-the same rule everywhere (audit 35a, finding 11), and all reports print a
-call with format_call(). Standard library only: no didibreak imports, so
-any module can use it without an import cycle.
+the same rule everywhere (audit 35a, finding 11). An accepted case is stored
+in its normal form (normalized_case), and all reports print a call with
+format_call(). Standard library only: no didibreak imports, so any module
+can use it without an import cycle.
 """
 
 import ast
@@ -18,6 +19,29 @@ from typing import Any
 MAX_ARGUMENT_LENGTH = 2000
 
 
+def normal_form(text: str) -> str:
+    """One spelling of a literal: no comment, standard spacing and quotes.
+
+    ``ast.literal_eval`` ignores a comment and extra white space, so
+    ``2  # the smallest even prime`` is a valid argument; pasted into a
+    call it swallowed the rest of the line and broke the generated test
+    file (pre-launch review, finding 12). The normal form is what
+    ``ast.unparse`` prints for the parsed expression, e.g. ``2``.
+
+    Args:
+        text: Argument source text that ``ast.literal_eval`` accepts.
+
+    Returns:
+        Source text with the same value that is safe inside a call.
+
+    Raises:
+        SyntaxError, ValueError, RecursionError, MemoryError: The text is
+            not an expression.
+    """
+    # ast.literal_eval also skips leading spaces and tabs.
+    return ast.unparse(ast.parse(text.lstrip(" \t"), mode="eval"))
+
+
 def literal_problem(text: object) -> str | None:
     """Why ``text`` is not an acceptable argument, or None when it is.
 
@@ -25,8 +49,9 @@ def literal_problem(text: object) -> str | None:
         text: Proposed argument source text.
 
     Returns:
-        A short reason: not a string, too long, or not a Python literal
-        (``ast.literal_eval`` fails); None for a valid argument.
+        A short reason: not a string, too long (as written or in its normal
+        form), or not a Python literal (``ast.literal_eval`` fails); None
+        for a valid argument.
     """
     if not isinstance(text, str):
         return f"not a string: {text!r}"
@@ -34,8 +59,12 @@ def literal_problem(text: object) -> str | None:
         return f"longer than {MAX_ARGUMENT_LENGTH} characters"
     try:
         ast.literal_eval(text)
+        normal = normal_form(text)
+        ast.literal_eval(normal)
     except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
         return f"not a Python literal: {text!r}"
+    if len(normal) > MAX_ARGUMENT_LENGTH:
+        return f"longer than {MAX_ARGUMENT_LENGTH} characters"
     return None
 
 
@@ -72,7 +101,40 @@ def case_problem(args: Sequence[object], kwargs: Mapping[Any, object]) -> str | 
     return None
 
 
+def normalized_case(
+    args: Sequence[str], kwargs: Mapping[str, str]
+) -> tuple[tuple[str, ...], dict[str, str]]:
+    """The arguments of an accepted case in their normal form.
+
+    Every entry point stores this form, so reports, reproducing tests, the
+    cache and prompts all show the same safe text.
+
+    Args:
+        args: Positional argument source texts that passed case_problem().
+        kwargs: Keyword argument source texts that passed case_problem().
+
+    Returns:
+        The positional and keyword arguments after normal_form().
+    """
+    return (
+        tuple(normal_form(text) for text in args),
+        {name: normal_form(text) for name, text in kwargs.items()},
+    )
+
+
+def _call_argument(text: str) -> str:
+    # Defensive: a case built without the entry points is still printed as
+    # one expression; text that is no expression at all is shown as it is.
+    try:
+        return normal_form(text)
+    except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
+        return text
+
+
 def format_call(name: str, args: Sequence[str], kwargs: Mapping[str, str]) -> str:
-    """``name(arg, key=value)`` with the arguments as written in the case."""
-    arguments = [*args, *(f"{key}={value}" for key, value in kwargs.items())]
+    """``name(arg, key=value)`` with every argument in its normal form."""
+    arguments = [
+        *(_call_argument(text) for text in args),
+        *(f"{key}={_call_argument(value)}" for key, value in kwargs.items()),
+    ]
     return f"{name}({', '.join(arguments)})"

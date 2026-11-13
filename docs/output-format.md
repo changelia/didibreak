@@ -206,7 +206,7 @@ is strict. From the first release on, a new key needs a new `schema_version`.
 | `findings[].label` | `expected`, `unexpected`, `unclear` or `new_function`. |
 | `findings[].reason` | Why the label was chosen; empty for new functions. |
 | `findings[].confidence` | `high` when both outcomes were compared by value, `low` when only by type. |
-| `findings[].args` | Positional arguments as Python literals. |
+| `findings[].args` | Positional arguments as Python literals, in their normal form (no comments, standard spacing and quotes). |
 | `findings[].kwargs` | Keyword arguments as Python literals. |
 | `findings[].before` | Outcome on the base, or `null` for a new function. |
 | `findings[].after` | Outcome on the working tree. |

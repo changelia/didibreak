@@ -75,6 +75,10 @@ only; it never predicts results and never decides what changed.
   `False`, `None`, and lists, tuples, dicts and sets of these. A case with
   anything else (a call, a name, an operator, an f-string) or an argument
   longer than 2,000 characters is dropped and counted as an invalid case.
+  An accepted argument is stored in a normal form: comments and extra
+  spacing are removed and quotes are written one way (`2  # a prime`
+  becomes `2`, `"a"` becomes `'a'`). Reports, reproducing tests and the
+  cache show that form.
 - For annotated parameters the LLM is asked for values of the annotated
   type only. If a finding's input still contradicts a simple annotation
   (builtin types, `None`, `Optional`/`Union`, `list`/`dict`/`tuple`/`set`

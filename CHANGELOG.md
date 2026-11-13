@@ -73,6 +73,12 @@ Safety and robustness fixes from the pre-launch review
   report (`-v` adds the traceback). Before, it left with a traceback and
   exit code 1, the code that means "findings". A `Retry-After: nan`
   header from a provider was one way to get there; it is now ignored.
+- An argument with a comment (`2  # the smallest even prime`) is a valid
+  literal, but pasted into the reproducing test it swallowed the rest of
+  the line: the file had a syntax error and the tests of the other
+  findings were lost with it. Accepted arguments are now stored in a
+  normal form (no comments, standard spacing and quotes), which reports,
+  reproducing tests and the cache all use.
 
 ### 0.1.5
 

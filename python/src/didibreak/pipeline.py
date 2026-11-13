@@ -13,7 +13,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
-from didibreak.arguments import case_problem
+from didibreak.arguments import case_problem, normalized_case
 from didibreak.cases import (
     CASES_SCHEMA,
     CASES_SCHEMA_NAME,
@@ -81,7 +81,7 @@ def _case(item: object, number: int) -> tuple[str, Case]:
     problem = case_problem(args, kwargs)
     if problem is not None:
         raise ValueError(f"{where}: {problem}")
-    return function, Case(tuple(args), dict(kwargs), rationale)
+    return function, Case(*normalized_case(args, kwargs), rationale)
 
 
 def load_cases_file(path: Path) -> Mapping[str, tuple[Case, ...]]:
