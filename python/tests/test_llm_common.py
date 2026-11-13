@@ -164,6 +164,22 @@ def test_network_errors_are_retried() -> None:
     )
 
 
+def test_a_request_that_cannot_be_sent_is_not_retried_and_hides_the_key() -> None:
+    # Pre-launch review, finding 14: httpx quotes the header as bytes, a
+    # form redact() does not match, so the key was in the error text.
+    error = httpx.LocalProtocolError(f"Illegal header value b'Bearer {KEY}\\n'")
+    http, seen = client([error, httpx.Response(200)])
+
+    with pytest.raises(LLMUnavailableError) as info:
+        post_with_retries(http, "https://llm.test/v1/x", {}, {}, SETTINGS)
+
+    message = str(info.value)
+    assert len(seen) == 1
+    assert KEY not in message and "sk-secret" not in message
+    assert "check that MY_KEY holds only the API key" in message
+    assert info.value.__cause__ is None and info.value.__suppress_context__
+
+
 def test_unavailable_after_all_retries() -> None:
     responses: list[httpx.Response | Exception] = [httpx.Response(500)] * 3
 

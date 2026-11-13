@@ -181,6 +181,21 @@ def test_missing_api_key_names_the_variable() -> None:
         read_api_key(Config(provider="openai"), {"OPENAI_API_KEY": ""})
 
 
+# Pre-launch review, findings 9 and 14: such a key crashed the request or
+# was quoted in the transport error.
+@pytest.mark.parametrize(
+    "key",
+    ["sk-FAKE-0123\n", " sk-FAKE-0123", "sk-FAKE 0123", "sk-FAKE-0123é", "sk\x1b"],
+)
+def test_a_value_that_cannot_be_a_key_is_rejected_without_showing_it(key: str) -> None:
+    with pytest.raises(ConfigError) as info:
+        read_api_key(Config(provider="openai"), {"OPENAI_API_KEY": key})
+
+    message = str(info.value)
+    assert "OPENAI_API_KEY must hold only the API key" in message
+    assert "FAKE" not in message and "sk" not in message
+
+
 FILE_WITH_URL = {
     "model": "m",
     "base_url": "https://openrouter.ai/api/v1",

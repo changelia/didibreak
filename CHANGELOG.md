@@ -84,6 +84,11 @@ Safety and robustness fixes from the pre-launch review
   of being stored, and a value with more than 1,000,000 characters of
   text in total is compared by type only. Before, one 40 MB return value
   cost the didibreak process about 230 MB of memory.
+- An API key variable whose value has a space, a line break or a
+  character outside printable ASCII is rejected before any request, with
+  exit 2 and a message that names the variable and never shows the
+  value. Before, a key with a trailing line break gave `llm unavailable`
+  after three attempts, and the internal error text quoted the key.
 
 ### 0.1.5
 

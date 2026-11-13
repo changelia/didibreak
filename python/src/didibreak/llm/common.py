@@ -372,6 +372,23 @@ def _backoff_seconds(attempt: int, response: httpx.Response | None) -> float:
     return float(min(BACKOFF_SECONDS * 2**attempt, MAX_BACKOFF_SECONDS))
 
 
+def _unsendable_error(
+    error: httpx.LocalProtocolError, settings: ClientSettings
+) -> LLMUnavailableError:
+    """The error for a request httpx refused to send (a header it rejects).
+
+    Its text quotes the header as Python bytes, key included, in a form
+    redact() does not match, so none of it is shown; and since nothing was
+    sent, a retry cannot help (pre-launch review, finding 14).
+    """
+    where = settings.api_key_variable or "the variable named by api_key_env"
+    return LLMUnavailableError(
+        f"the request to the LLM provider could not be sent "
+        f"({type(error).__name__}: a request header is not valid); check "
+        f"that {where} holds only the API key"
+    )
+
+
 def post_with_retries(
     http: httpx.Client,
     url: str,
@@ -398,13 +415,15 @@ def post_with_retries(
         LLMModelError: HTTP 404.
         LLMRequestError: Any other non-retryable 4xx.
         LLMUnavailableError: Still failing after ``settings.max_retries``
-            retries.
+            retries, or the request could not be sent at all.
     """
     failure = ""
     for attempt in range(settings.max_retries + 1):
         response: httpx.Response | None = None
         try:
             response = http.post(url, headers=dict(headers), json=payload)
+        except httpx.LocalProtocolError as error:
+            raise _unsendable_error(error, settings) from None
         except httpx.TransportError as error:  # includes timeouts
             failure = f"{type(error).__name__}: {error}"
         else:

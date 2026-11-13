@@ -417,7 +417,9 @@ def read_api_key(config: Config, environment: Mapping[str, str]) -> str | None:
         The key, or None when no key is needed.
 
     Raises:
-        ConfigError: If a key is needed but the variable is missing or empty.
+        ConfigError: If a key is needed but the variable is missing or
+            empty, or its value cannot be a key (see _is_key_text). The
+            message names the variable and never shows the value.
     """
     variable = api_key_variable(config)
     if variable is None:
@@ -428,4 +430,23 @@ def read_api_key(config: Config, environment: Mapping[str, str]) -> str | None:
             f"missing API key: set the environment variable {variable}, "
             'or set api_key_env = "" for a local server that needs no key'
         )
+    if not _is_key_text(key):
+        raise ConfigError(
+            f"the environment variable {variable} must hold only the API key, "
+            "but its value contains a space, a line break or another "
+            "character that is not printable ASCII; set it again without "
+            "quotes, spaces or line breaks"
+        )
     return key
+
+
+def _is_key_text(key: str) -> bool:
+    """Whether a value can be sent as an API key: printable ASCII, no spaces.
+
+    Anything else cannot go into an HTTP header. A key that ends with a line
+    break made every request fail before it was sent ("llm unavailable"
+    after three attempts), with the key quoted in the transport error; a
+    non-ASCII character raised UnicodeEncodeError (pre-launch review,
+    findings 9 and 14).
+    """
+    return all(0x21 <= ord(character) <= 0x7E for character in key)
