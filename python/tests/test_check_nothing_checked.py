@@ -167,3 +167,53 @@ def test_nothing_to_check_at_all_exits_0(
     out = capsys.readouterr().out
     assert "Nothing to check" in out
     assert NOTHING_CHECKED not in out
+
+
+HOSTILE = "bad \x1b[2J\x1b]0;pwned\x07 request"
+
+
+def hostile_provider(monkeypatch: pytest.MonkeyPatch, status: int) -> None:
+    """Every request gets ``status`` with terminal escape codes in the message."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(status, json={"error": {"message": HOSTILE}})
+
+    def create(config: Config, environment: Mapping[str, str]) -> object:
+        settings = client_settings(config, environment)
+        transport = httpx.MockTransport(handler)
+        return OpenAICompatibleClient(settings, transport, sleep=lambda _: None)
+
+    monkeypatch.setattr(cli, "create_client", create)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-fake")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+
+@pytest.mark.parametrize(
+    ("status", "shown"),
+    [
+        (
+            400,
+            "(llm request rejected: HTTP 400: bad \\x1b[2J\\x1b]0;pwned\\x07 request)",
+        ),
+        (404, "(HTTP 404: bad \\x1b[2J\\x1b]0;pwned\\x07 request)"),
+    ],
+)
+def test_provider_text_in_the_error_line_cannot_control_the_terminal(
+    git_repository: GitRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    status: int,
+    shown: str,
+) -> None:
+    # Pre-launch review, finding 11: the exit-2 line and the 404 message
+    # printed the provider's escape codes as they were.
+    change(git_repository, "def f(x):\n    return 1\n", "def f(x):\n    return 2\n")
+    hostile_provider(monkeypatch, status)
+    monkeypatch.chdir(git_repository.path)
+
+    assert main(["check", "--format", "json"]) == EXIT_ERROR
+
+    err = capsys.readouterr().err
+    assert "\x1b" not in err and "\x07" not in err
+    assert shown in err
+    assert err.count("\n") == err.count("didibreak: ") + err.count("Estimated: ")

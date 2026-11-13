@@ -66,6 +66,7 @@ from didibreak.report import Report, ReportUsage, SkippedItem
 from didibreak.report.json import render_json
 from didibreak.report.pytest_writer import WrittenTests, write_tests
 from didibreak.report.text import counted, header_lines, results_text
+from didibreak.terminal import printable
 
 EXIT_OK = 0
 EXIT_FINDINGS = 1
@@ -93,6 +94,16 @@ cost or token limit): report the error to the user.
 If summary.functions_checked is 0, tell the user that nothing was checked and why.
 Stop after 3 check rounds and report what is left.
 """
+
+
+def _print_problem(kind: str, message: object) -> None:
+    """Print ``didibreak: <kind>: <message>`` on stderr, safe for a terminal.
+
+    The message can quote the provider, a file name or an exception, so
+    control characters are escaped like in the text report (pre-launch
+    review, finding 11).
+    """
+    print(f"didibreak: {kind}: {printable(str(message))}", file=sys.stderr, flush=True)
 
 
 def exit_code_for(labels: Iterable[str], fail_on: str) -> int:
@@ -439,7 +450,7 @@ def _start_llm(
     if session.unpriced:
         # Printed even with -q: a cost limit the user may rely on is off.
         warning = unknown_price_warning(session.settings.model, config.max_tokens)
-        print(warning, file=sys.stderr, flush=True)
+        print(printable(warning), file=sys.stderr, flush=True)
     if not arguments.quiet:
         # Part of the text report; in JSON mode stdout holds only the report.
         stream = sys.stdout if config.format == "text" else sys.stderr
@@ -663,10 +674,7 @@ def _write_tests(
             root, Path(config.output_dir), findings, __version__, base_sha
         )
     except OSError as error:
-        print(
-            f"didibreak: warning: could not write the reproducing tests: {error}",
-            file=sys.stderr,
-        )
+        _print_problem("warning", f"could not write the reproducing tests: {error}")
         return WrittenTests(tuple(findings), (), ())
 
 
@@ -834,7 +842,7 @@ def _finish(
     _warn_about_estimated_usage(llm_cases)
     problem = nothing_checked_error(report, run.detection.functions)
     if problem is not None:
-        print(f"didibreak: error: {problem}", file=sys.stderr)
+        _print_problem("error", problem)
         return EXIT_ERROR
     return exit_code_for(
         [finding.label for finding in analysis.findings if finding.label],
@@ -846,7 +854,7 @@ def _run_check(arguments: argparse.Namespace) -> int:
     try:
         run = _prepare(arguments)
     except (GitError, ConfigError, OSError) as error:
-        print(f"didibreak: error: {error}", file=sys.stderr)
+        _print_problem("error", error)
         return EXIT_ERROR
     if run.config.format == "text":
         _print_header(run, arguments.verbose)
@@ -860,7 +868,7 @@ def _run_check(arguments: argparse.Namespace) -> int:
         else:
             result = _analyse_with_llm(run, arguments, intent)
     except (ConfigError, LLMAuthError, LLMModelError, GitError, OSError) as error:
-        print(f"didibreak: error: {error}", file=sys.stderr)
+        _print_problem("error", error)
         return EXIT_ERROR
     if result is None:
         print("Cancelled: no LLM request was sent.", file=sys.stderr)

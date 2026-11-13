@@ -63,6 +63,11 @@ Safety and robustness fixes from the pre-launch review
   and come back to the repository was copied into the temporary copy, so
   code run from the copy could reach the real files through it. Such
   links are now left out, like absolute links into the repository.
+- The `didibreak: error:` and `didibreak: warning:` lines on stderr escape
+  control characters like the text report does. A provider error message
+  with terminal escape codes could clear the screen or change the
+  terminal's title through the exit-2 line and the "model not found"
+  message.
 
 ### 0.1.5
 
