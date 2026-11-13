@@ -12,6 +12,7 @@ cannot leave the process.
 
 import ast
 import enum
+import hashlib
 import importlib
 import importlib.util
 import json
@@ -30,6 +31,14 @@ _MAX_NODES = 10_000
 _MAX_DEPTH = 100
 # Decimal conversion of larger ints raises ValueError (int max_str_digits).
 _MAX_INT_BITS = 13_000
+# A longer str or bytes value is not stored: its length and SHA-256 digest
+# stand for it, so two such values are still compared exactly. The parent
+# needed about 5 bytes of memory per returned character (pre-launch review,
+# finding 13: 232 MB for one 40 MB string).
+MAX_TEXT_LENGTH = 100_000
+# All stored str and bytes of one value together; a value with more text is
+# compared by type only, like one with too many elements.
+_MAX_TOTAL_TEXT = 1_000_000
 
 
 class CaseTimeout(BaseException):
@@ -46,10 +55,16 @@ class _Unrepresentable(Exception):
 class _Budget:
     def __init__(self) -> None:
         self.nodes_left = _MAX_NODES
+        self.text_left = _MAX_TOTAL_TEXT
 
     def take(self, depth: int) -> None:
         self.nodes_left -= 1
         if self.nodes_left < 0 or depth > _MAX_DEPTH:
+            raise _Unrepresentable
+
+    def take_text(self, length: int) -> None:
+        self.text_left -= length
+        if self.text_left < 0:
             raise _Unrepresentable
 
 
@@ -68,7 +83,19 @@ def _base_type(value: object) -> type | None:
     return None
 
 
-def _scalar(base: type, value: Any) -> dict[str, Any]:
+def _text(kind: str, length: int, budget: _Budget, value: Any) -> dict[str, Any]:
+    """A str or bytes node: the content, or length and digest when too long."""
+    if length > MAX_TEXT_LENGTH:
+        # The base type's own data, so that overrides cannot change it.
+        data = value if kind == "bytes" else str.encode(value, "utf-8", "surrogatepass")
+        digest = hashlib.sha256(data).hexdigest()
+        return {"type": kind, "length": length, "digest": digest}
+    budget.take_text(length)
+    content = bytes.hex(value) if kind == "bytes" else str.__str__(value)
+    return {"type": kind, "value": content}
+
+
+def _scalar(base: type, value: Any, budget: _Budget) -> dict[str, Any]:
     if base is bool:
         return {"type": "bool", "value": bool(value)}
     if base is int:
@@ -80,8 +107,8 @@ def _scalar(base: type, value: Any) -> dict[str, Any]:
         # repr round-trips exactly and also covers nan and inf.
         return {"type": "float", "value": float.__repr__(value)}
     if base is str:
-        return {"type": "str", "value": str.__str__(value)}
-    return {"type": "bytes", "value": bytes.hex(value)}
+        return _text("str", str.__len__(value), budget, value)
+    return _text("bytes", bytes.__len__(value), budget, value)
 
 
 def _container(
@@ -115,7 +142,7 @@ def _normalize(value: object, budget: _Budget, depth: int) -> dict[str, Any]:
     if base in _CONTAINER_BASES:
         node = _container(base, value, budget, depth)
     else:
-        node = _scalar(base, value)
+        node = _scalar(base, value, budget)
     if type(value) is not base:
         # The real class stays part of the value: Point(1, 2) and (1, 2)
         # are not the same result.
@@ -131,9 +158,11 @@ def normalize(value: object) -> dict[str, Any] | None:
 
     Returns:
         ``{"type": ..., "value": ...}`` for scalars (bytes as hex, floats as
-        their repr), ``{"type": ..., "items": [...]}`` for containers (sets
-        sorted by repr, dicts as key-value pairs sorted by the key's repr), or
-        None for anything else, including very large or deeply nested values
+        their repr; a str or bytes longer than MAX_TEXT_LENGTH as
+        ``{"type": ..., "length": ..., "digest": ...}``),
+        ``{"type": ..., "items": [...]}`` for containers (sets sorted by
+        repr, dicts as key-value pairs sorted by the key's repr), or None
+        for anything else, including very large or deeply nested values
         and values whose dict keys or set elements raise in ``__repr__``
         (sorting calls it). Subclasses of these types are normalized through
         their builtin base and carry their qualified type name under

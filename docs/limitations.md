@@ -131,9 +131,15 @@ table; the first match is the reason.
   an `OrderedDict` and the `default_factory` of a `defaultdict` are not
   compared.
 - Other `Enum` members are compared by their class and member name.
+- A returned `str` or `bytes` value longer than 100,000 characters is not
+  stored: it is compared by its length and its SHA-256 digest, so a change
+  in it is still found, with `high` confidence. The report shows the first
+  2,000 characters of its `repr`, as for every value.
 - Anything else, including dataclasses and other objects, and values with
-  more than 10,000 elements or nested more than 100 levels deep, is compared
-  by type only.
+  more than 10,000 elements, nested more than 100 levels deep, or holding
+  more than 1,000,000 characters of text in total, is compared by type only.
+- There is no memory limit for the code under test: a function that builds
+  a very large value can still use a lot of memory in its own process.
 - Environment variables that look like credentials are removed before your
   code runs; see [safety.md](safety.md#environment-variables-that-are-removed).
 

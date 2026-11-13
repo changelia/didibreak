@@ -79,6 +79,11 @@ Safety and robustness fixes from the pre-launch review
   findings were lost with it. Accepted arguments are now stored in a
   normal form (no comments, standard spacing and quotes), which reports,
   reproducing tests and the cache all use.
+- Returned strings and bytes have a size limit. A value longer than
+  100,000 characters is compared by its length and SHA-256 digest instead
+  of being stored, and a value with more than 1,000,000 characters of
+  text in total is compared by type only. Before, one 40 MB return value
+  cost the didibreak process about 230 MB of memory.
 
 ### 0.1.5
 

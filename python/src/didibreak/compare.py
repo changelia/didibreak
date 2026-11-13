@@ -110,7 +110,8 @@ def values_equal(before: Mapping[str, Any], after: Mapping[str, Any]) -> bool:
     Returns:
         True when type tag, class and content match; floats are compared
         with floats_close(), containers element by element in order (sets
-        and dict keys arrive sorted by repr).
+        and dict keys arrive sorted by repr), and long str or bytes values
+        by their length and digest.
     """
     if before["type"] != after["type"] or before.get("class") != after.get("class"):
         return False
@@ -121,7 +122,9 @@ def values_equal(before: Mapping[str, Any], after: Mapping[str, Any]) -> bool:
         return len(left) == len(right) and all(
             _items_equal(x, y) for x, y in zip(left, right, strict=True)
         )
-    scalar_keys = ("value", "name")  # "name" identifies enum members
+    # "name" identifies enum members; "length" and "digest" stand for a str
+    # or bytes value too long to store.
+    scalar_keys = ("value", "name", "length", "digest")
     return all(before.get(key) == after.get(key) for key in scalar_keys)
 
 
