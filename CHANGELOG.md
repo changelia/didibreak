@@ -9,8 +9,9 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
-Safety fixes from the pre-launch review (`evaluation/review-prelaunch.md`,
-findings 1, 2, 5, 6 and 7). The JSON report keeps `schema_version: 1`.
+Safety and robustness fixes from the pre-launch review
+(`evaluation/review-prelaunch.md`, findings 1 to 14). The JSON report keeps
+`schema_version: 1`.
 
 #### Added
 
@@ -45,6 +46,10 @@ findings 1, 2, 5, 6 and 7). The JSON report keeps `schema_version: 1`.
   provider, so the API key was sent to that host. Any `--provider` that
   differs from the file's `provider` now discards both, as presets
   already did; `--base-url` on the command line still applies.
+- `timeout` has a maximum of 3600 seconds. A larger value (`--timeout 1e9`)
+  overflowed the timer: every case ended the process in both versions, no
+  change was found and the run passed with exit 0. It is now rejected with
+  exit 2.
 
 ### 0.1.5
 

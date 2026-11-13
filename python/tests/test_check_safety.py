@@ -60,6 +60,33 @@ def limited_repository(git_repository: GitRepository) -> str:
     return write_cases(git_repository, "app/run.py::f", "1")
 
 
+@pytest.mark.parametrize("value", ["1e9", "1e19"])
+def test_a_timeout_that_overflows_the_timer_exits_2(
+    git_repository: GitRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    value: str,
+) -> None:
+    # Pre-launch review, finding 3: --timeout 1e19 hid a real change (exit 0).
+    cases = limited_repository(git_repository)
+    monkeypatch.chdir(git_repository.path)
+
+    with pytest.raises(SystemExit) as exit_info:
+        main(["check", "--cases-file", cases, "--timeout", value])
+
+    assert exit_info.value.code == EXIT_ERROR
+    assert "timeout must be at most 3600 seconds" in capsys.readouterr().err
+
+
+def test_the_largest_timeout_still_finds_the_change(
+    git_repository: GitRepository, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cases = limited_repository(git_repository)
+    monkeypatch.chdir(git_repository.path)
+
+    assert main(["check", "--cases-file", cases, "--timeout", "3600"]) == EXIT_FINDINGS
+
+
 @pytest.mark.parametrize("flags", [["--timeout", "nan"], ["--max-cost", "inf"]])
 def test_non_finite_limit_flags_exit_2_before_any_work(
     git_repository: GitRepository,

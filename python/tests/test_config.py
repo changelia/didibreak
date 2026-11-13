@@ -257,6 +257,22 @@ def test_limits_must_be_finite_and_positive(key: str, value: float) -> None:
         validate(key, value)
 
 
+# Pre-launch review, finding 3: a timeout of 1e9 s overflowed the timer.
+@pytest.mark.parametrize("value", [3600.5, 1e9, 1e19])
+def test_timeout_above_one_hour_is_rejected(value: float) -> None:
+    with pytest.raises(ConfigError, match="timeout must be at most 3600 seconds"):
+        validate("timeout", value)
+
+
+@pytest.mark.parametrize("value", [0.5, 10, 3600])
+def test_timeout_up_to_one_hour_is_accepted(value: float) -> None:
+    assert validate("timeout", value) == float(value)
+
+
+def test_max_cost_has_no_upper_bound() -> None:
+    assert validate("max_cost", 1e9) == 1e9
+
+
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), 0, -5])
 def test_max_tokens_must_be_a_positive_integer(value: float) -> None:
     with pytest.raises(ConfigError, match="max_tokens must be"):
