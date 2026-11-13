@@ -96,3 +96,23 @@ def test_an_absolute_link_into_the_repository_through_another_path_is_found(
 
     assert points_into(link, git_repository.path)
     assert not points_into(real, git_repository.path)  # not a link
+
+
+def test_a_looping_absolute_link_is_left_out_of_the_copy(
+    git_repository: GitRepository,
+) -> None:
+    # Pre-launch review, finding 8 (35c regression): resolving the loop
+    # raised RuntimeError and ended the run with a traceback.
+    git_repository.write("app/core.py", "VALUE = 1\n")
+    loop = git_repository.path / "loop"
+    os.symlink(loop, loop)
+    first, second = git_repository.path / "first", git_repository.path / "second"
+    os.symlink(second, first)
+    os.symlink(first, second)
+
+    assert points_into(loop, git_repository.path)
+    with working_tree_copy(git_repository.path) as tree:
+        assert (tree / "app/core.py").read_text() == "VALUE = 1\n"
+        assert not (tree / "loop").is_symlink()
+        assert not (tree / "first").is_symlink()
+        assert not (tree / "second").is_symlink()

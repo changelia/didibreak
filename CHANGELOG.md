@@ -55,6 +55,10 @@ Safety and robustness fixes from the pre-launch review
   counted as 0 tokens, so the limits never applied and the report showed
   0 tokens. They now count an estimate from the size of the request and
   the reply, and a warning on stderr says so.
+- A repository with an absolute symbolic link that loops (points to itself
+  or forms a cycle) ended the run with a traceback and exit code 1 since
+  0.1.5. Such a link is now left out of the temporary copy, like other
+  absolute links into the repository.
 
 ### 0.1.5
 

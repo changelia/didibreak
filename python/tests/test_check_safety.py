@@ -1,6 +1,7 @@
 """check end to end: the safety cases of the 35a audit (no LLM, --cases-file)."""
 
 import json
+import os
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -236,3 +237,20 @@ def test_a_password_variable_reaches_no_report_test_or_request(
     assert FAKE_SECRET not in out
     assert all(FAKE_SECRET not in body for body in bodies)
     assert FAKE_SECRET not in tests[0].read_text()
+
+
+def test_a_repository_with_a_looping_link_is_still_checked(
+    git_repository: GitRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Pre-launch review, finding 8: this run ended with a RuntimeError
+    # traceback and exit code 1; 0.1.4 handled the same repository.
+    cases = limited_repository(git_repository)
+    loop = git_repository.path / "loop"
+    os.symlink(loop, loop)
+    monkeypatch.chdir(git_repository.path)
+
+    assert main(["check", "--cases-file", cases]) == EXIT_FINDINGS
+
+    assert "1 cases · 1 behavior changes" in capsys.readouterr().out

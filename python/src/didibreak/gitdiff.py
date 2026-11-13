@@ -395,14 +395,22 @@ def points_into(path: Path, root: Path) -> bool:
         root: Repository root.
 
     Returns:
-        True for an absolute link whose target resolves inside ``root``.
+        True for an absolute link whose target resolves inside ``root``,
+        and for an absolute link that cannot be resolved (a loop): where it
+        ends is unknown, so it is left out of the copy as well.
     """
     if not path.is_symlink():
         return False
     target = Path(os.readlink(path))
     if not target.is_absolute():
         return False
-    return target.resolve().is_relative_to(root.resolve())
+    try:
+        resolved = target.resolve()
+    except (OSError, RuntimeError):
+        # Up to Python 3.12, resolve() raises RuntimeError for a link loop
+        # (pre-launch review, finding 8: the run ended with a traceback).
+        return True
+    return resolved.is_relative_to(root.resolve())
 
 
 @contextmanager
