@@ -59,6 +59,10 @@ Safety and robustness fixes from the pre-launch review
   or forms a cycle) ended the run with a traceback and exit code 1 since
   0.1.5. Such a link is now left out of the temporary copy, like other
   absolute links into the repository.
+- A relative symbolic link with enough `../` to reach the file-system root
+  and come back to the repository was copied into the temporary copy, so
+  code run from the copy could reach the real files through it. Such
+  links are now left out, like absolute links into the repository.
 
 ### 0.1.5
 

@@ -385,25 +385,28 @@ def visible_files(root: Path) -> list[str]:
     )
 
 
-def points_into(path: Path, root: Path) -> bool:
-    """Whether ``path`` is an absolute symbolic link to a place inside ``root``.
+def points_into(path: Path, root: Path, copied_to: Path) -> bool:
+    """Whether a symbolic link, once copied, still points into ``root``.
 
-    Relative links are not: copied as they are, they point into the copy.
+    An absolute link into the repository does, and so does a relative link
+    with enough ``../`` to reach the file-system root and come back to the
+    repository (pre-launch review, finding 10). An ordinary relative link
+    does not: from its place in the copy it points into the copy.
 
     Args:
         path: A file in the working tree.
         root: Repository root.
+        copied_to: Where the file will be in the temporary copy.
 
     Returns:
-        True for an absolute link whose target resolves inside ``root``,
-        and for an absolute link that cannot be resolved (a loop): where it
+        True for a link whose target, resolved from ``copied_to``, is inside
+        ``root``, and for a link that cannot be resolved (a loop): where it
         ends is unknown, so it is left out of the copy as well.
     """
     if not path.is_symlink():
         return False
-    target = Path(os.readlink(path))
-    if not target.is_absolute():
-        return False
+    # Joining with an absolute target gives that target.
+    target = copied_to.parent / os.readlink(path)
     try:
         resolved = target.resolve()
     except (OSError, RuntimeError):
@@ -420,10 +423,10 @@ def working_tree_copy(root: Path, skip: Sequence[str] = ()) -> Iterator[Path]:
     The current version runs from this copy, never from the user's working
     tree. Only files git sees are copied (visible_files), so ``.git``,
     ignored files and virtual environments stay out. Symbolic links are
-    copied as links, except absolute links into the repository itself
-    (points_into): through them, code run "from the copy" would read and
-    write the user's real files (audit 35a, finding 7). The copy is removed
-    on success, on error and on Ctrl-C.
+    copied as links, except links that would lead from the copy into the
+    repository itself (points_into): through them, code run "from the copy"
+    would read and write the user's real files (audit 35a, finding 7). The
+    copy is removed on success, on error and on Ctrl-C.
 
     Args:
         root: Repository root.
@@ -441,9 +444,9 @@ def working_tree_copy(root: Path, skip: Sequence[str] = ()) -> Iterator[Path]:
     try:
         prefixes = tuple(f"{folder.rstrip('/')}/" for folder in skip)
         for path in visible_files(root):
-            if path.startswith(prefixes) or points_into(root / path, root):
-                continue
             destination = tree / path
+            if path.startswith(prefixes) or points_into(root / path, root, destination):
+                continue
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(root / path, destination, follow_symlinks=False)
         tree.mkdir(exist_ok=True)

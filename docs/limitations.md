@@ -113,10 +113,12 @@ table; the first match is the reason.
   packages that read their own version with `importlib.metadata` fail with
   `import failed: PackageNotFoundError` unless they are installed in the
   `--python` environment.
-- Absolute symbolic links that point into the repository are left out of
-  that copy (see [safety.md](safety.md#how-a-function-is-run)): code that
-  imports or opens a file through such a link fails or behaves
-  differently. Use relative links if the checked code needs them.
+- Symbolic links that would lead from that copy into the repository are
+  left out of it: absolute links, relative links that climb out of the
+  copy and back into the repository, and links that loop (see
+  [safety.md](safety.md#how-a-function-is-run)). Code that imports or
+  opens a file through such a link fails or behaves differently. Use
+  ordinary relative links if the checked code needs them.
 - The working tree is copied for every run. Measured: under 0.1 s for
   libraries of up to about 150 files, 2.1 s for a 7,000-file repository
   (Django, macOS, 2026-11-09).

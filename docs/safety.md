@@ -109,10 +109,13 @@ changes), but not the evaluation itself.
   temporary git worktree of the base commit. The current version runs from a
   temporary copy of your working tree that holds the files git sees: tracked
   and untracked files, without ignored files, `.git` and the output folder.
-  Symbolic links are copied as links, except absolute links that point
-  into your repository (`data -> /home/me/project/data`): through them,
-  code run from the copy would read and write your real files, so they
-  are left out. Relative links point into the copy and are kept. Absolute
+  Symbolic links are copied as links, except links that would lead from
+  the copy into your repository: absolute links
+  (`data -> /home/me/project/data`), relative links with enough `../` to
+  climb to the file-system root and come back to the repository, and
+  links that loop. Through them, code run from the copy would read and
+  write your real files, so they are left out. Ordinary relative links
+  point into the copy and are kept. Absolute
   links outside the repository are kept; writes through them are stopped
   by the runtime I/O guard, like any write outside the process's
   temporary folder. Both trees are removed afterwards, also after an
