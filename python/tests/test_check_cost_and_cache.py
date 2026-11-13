@@ -329,3 +329,42 @@ def test_quiet_mode_prints_no_estimate(
 
     assert events == ["request"]
     assert "Estimated" not in "".join(capsys.readouterr())
+
+
+@pytest.fixture
+def silent_provider(monkeypatch: pytest.MonkeyPatch, repo: FixtureRepository) -> None:
+    """A fake provider whose replies carry no ``usage`` object."""
+    items = repo.expected["findings"] + repo.expected["same_behavior"]
+    cases = [{"args": i["args"], "kwargs": [], "rationale": "r"} for i in items]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        choice = {"message": {"content": json.dumps({"cases": cases})}}
+        return httpx.Response(200, json={"choices": [choice]})
+
+    def create(config: Config, environment: Mapping[str, str]) -> object:
+        return llm.create_client(config, environment, httpx.MockTransport(handler))
+
+    monkeypatch.setattr(cli, "create_client", create)
+
+
+def test_missing_usage_is_estimated_and_the_user_is_told(
+    silent_provider: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # Pre-launch review, finding 4: the report showed 0 tokens and cost $0.
+    code = main(["check", "--format", "json"])
+
+    out, err = capsys.readouterr()
+    usage = json.loads(out)["usage"]
+    assert code == EXIT_FINDINGS
+    assert usage["input_tokens"] > 0 and usage["output_tokens"] > 0
+    assert usage["cost_usd"] > 0
+    assert "the provider reported no token usage for 1 of 1 LLM call;" in err
+    assert "max_tokens and max_cost still apply" in err
+
+
+def test_reported_usage_gives_no_estimate_warning(
+    events: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    main(["check"])
+
+    assert "reported no token usage" not in "".join(capsys.readouterr())

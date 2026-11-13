@@ -28,15 +28,13 @@ from didibreak.llm.common import (
     complete_with_one_retry,
     http_client,
     post_with_retries,
+    token_count,
+    with_counted_usage,
 )
 
 # Words in a 400 error that mean the endpoint does not take a JSON schema;
 # the owner-approved fallback (2026-11-06) is then JSON mode + a client check.
 _SCHEMA_UNSUPPORTED_HINTS = ("response_format", "json_schema", "structured output")
-
-
-def _int(value: object) -> int:
-    return value if isinstance(value, int) else 0
 
 
 def parse_usage(body: Mapping[str, Any]) -> TokenUsage:
@@ -50,10 +48,10 @@ def parse_usage(body: Mapping[str, Any]) -> TokenUsage:
         completion.get("reasoning_tokens") if isinstance(completion, dict) else None
     )
     return TokenUsage(
-        input_tokens=_int(usage.get("prompt_tokens")),
-        output_tokens=_int(usage.get("completion_tokens")),
+        input_tokens=token_count(usage.get("prompt_tokens")),
+        output_tokens=token_count(usage.get("completion_tokens")),
         reasoning_tokens=reasoning if isinstance(reasoning, int) else None,
-        cached_input_tokens=_int(prompt.get("cached_tokens"))
+        cached_input_tokens=token_count(prompt.get("cached_tokens"))
         if isinstance(prompt, dict)
         else 0,
         calls=1,
@@ -236,4 +234,5 @@ class OpenAICompatibleClient:
             body = response.json()
         except ValueError:
             body = None
-        return parse_reply(body, self.settings.model)
+        raw = parse_reply(body, self.settings.model)
+        return with_counted_usage(raw, payload, response)

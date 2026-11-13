@@ -25,10 +25,12 @@ def fake_llm(monkeypatch: pytest.MonkeyPatch) -> list[str]:
             body = {
                 "content": [{"type": "text", "text": text}],
                 "stop_reason": "end_turn",
+                "usage": {"input_tokens": 100, "output_tokens": 10},
             }
         else:
             body = {
-                "choices": [{"message": {"content": text}, "finish_reason": "stop"}]
+                "choices": [{"message": {"content": text}, "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 100, "completion_tokens": 10},
             }
         return httpx.Response(200, json=body)
 

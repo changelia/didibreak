@@ -245,3 +245,32 @@ def test_output_cap_uses_only_the_configured_field(
     fields = {"max_completion_tokens", "max_tokens"} & set(body)
     assert fields == (set() if parameter is None else {parameter})
     assert body.get(parameter or "", None) == expected
+
+
+def test_a_reply_without_usage_counts_an_estimate() -> None:
+    # Pre-launch review, finding 4: such a call used to count as 0 tokens.
+    body = completion('{"labels": ["a"]}')
+    del body["usage"]
+    response = httpx.Response(200, json=body)
+    client, sent = make_client([response])
+
+    reply = client.complete_json(MESSAGES, SCHEMA, "labels")
+
+    request_characters = len(json.dumps(sent[0]["body"]))
+    assert reply.usage == TokenUsage(
+        input_tokens=-(-request_characters // 3),
+        output_tokens=-(-len(response.text) // 3),
+        calls=1,
+        estimated_calls=1,
+    )
+
+
+def test_an_unusable_reply_without_usage_is_counted_too() -> None:
+    body = {"choices": [{"message": {"content": ""}, "finish_reason": "length"}]}
+    client, _ = make_client([httpx.Response(200, json=body)] * 2)
+
+    with pytest.raises(LLMInvalidResponseError) as info:
+        client.complete_json(MESSAGES, SCHEMA, "labels")
+
+    assert info.value.usage.estimated_calls == 2
+    assert info.value.usage.input_tokens > 0

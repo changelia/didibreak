@@ -165,3 +165,26 @@ def test_overloaded_is_retried_then_reported_unavailable() -> None:
         client.complete_json(MESSAGES, SCHEMA, "labels")
 
     assert len(sent) == 3
+
+
+@pytest.mark.parametrize(
+    "usage", [None, {"input_tokens": 0, "output_tokens": 0}, {"input_tokens": -5}]
+)
+def test_a_reply_without_usage_counts_an_estimate(usage: object) -> None:
+    # Pre-launch review, finding 4.
+    body = message('{"labels": ["a"]}')
+    del body["usage"]
+    if usage is not None:
+        body["usage"] = usage
+    response = httpx.Response(200, json=body)
+    client, sent = make_client([response])
+
+    reply = client.complete_json(MESSAGES, SCHEMA, "labels")
+
+    request_characters = len(json.dumps(sent[0]["body"]))
+    assert reply.usage == TokenUsage(
+        input_tokens=-(-request_characters // 3),
+        output_tokens=-(-len(response.text) // 3),
+        calls=1,
+        estimated_calls=1,
+    )

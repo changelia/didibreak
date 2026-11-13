@@ -15,9 +15,11 @@ from didibreak.llm.common import (
     RawReply,
     TokenUsage,
     complete_with_one_retry,
+    estimated_usage,
     http_client,
     post_with_retries,
     schema_errors,
+    token_count,
 )
 
 KEY = "sk-secret-key-0123456789"
@@ -314,3 +316,25 @@ def test_retry_is_sent_when_the_run_limit_allows_it() -> None:
     )
 
     assert reply.usage.calls == 2
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [(12, 12), (0, 0), (-100000, 0), (None, 0), ("12", 0), (1.5, 0), (True, 0)],
+)
+def test_token_count_accepts_only_non_negative_integers(
+    value: object, expected: int
+) -> None:
+    assert token_count(value) == expected
+
+
+def test_estimated_usage_rounds_up_and_marks_the_call() -> None:
+    assert estimated_usage(10, 1) == TokenUsage(
+        input_tokens=4, output_tokens=1, calls=1, estimated_calls=1
+    )
+
+
+def test_estimated_calls_add_up() -> None:
+    total = estimated_usage(3, 3) + TokenUsage(5, 5, None, 0, 1) + estimated_usage(3, 3)
+
+    assert (total.calls, total.estimated_calls) == (3, 2)

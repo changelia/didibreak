@@ -50,6 +50,11 @@ Safety and robustness fixes from the pre-launch review
   overflowed the timer: every case ended the process in both versions, no
   change was found and the run passed with exit 0. It is now rejected with
   exit 2.
+- `max_tokens` and `max_cost` also stop a run when the server reports no
+  token usage (no `usage` object, zeros or negative numbers). Such calls
+  counted as 0 tokens, so the limits never applied and the report showed
+  0 tokens. They now count an estimate from the size of the request and
+  the reply, and a warning on stderr says so.
 
 ### 0.1.5
 

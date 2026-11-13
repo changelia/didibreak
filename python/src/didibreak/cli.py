@@ -800,6 +800,24 @@ def _analyse_with_llm(
     return replace(analysis, skipped=(*unimportable, *analysis.skipped)), llm_cases
 
 
+def estimated_usage_warning(estimated: int, calls: int) -> str:
+    """The warning for LLM calls whose usage the provider did not report."""
+    return (
+        f"didibreak: warning: the provider reported no token usage for "
+        f"{estimated} of {counted(calls, 'LLM call')}; their tokens are "
+        "estimated from the size of the request and the reply, so max_tokens "
+        "and max_cost still apply, and the token and cost figures are "
+        "approximate"
+    )
+
+
+def _warn_about_estimated_usage(llm_cases: _LLMCases | None) -> None:
+    usage = llm_cases.generation.usage if llm_cases else None
+    if usage is not None and usage.estimated_calls:
+        warning = estimated_usage_warning(usage.estimated_calls, usage.calls)
+        print(warning, file=sys.stderr)
+
+
 def _finish(
     run: _Run, intent: str | None, analysis: Analysis, llm_cases: _LLMCases | None
 ) -> int:
@@ -813,6 +831,7 @@ def _finish(
         no_tests=tuple(SkippedItem(call, reason) for call, reason in tests.not_written),
     )
     _print_report(report, config, llm=llm_cases is not None)
+    _warn_about_estimated_usage(llm_cases)
     problem = nothing_checked_error(report, run.detection.functions)
     if problem is not None:
         print(f"didibreak: error: {problem}", file=sys.stderr)
