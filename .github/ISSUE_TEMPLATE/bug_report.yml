@@ -13,7 +13,7 @@ body:
     attributes:
       label: didibreak version
       description: Output of `didibreak --version`.
-      placeholder: didibreak 0.1.5
+      placeholder: didibreak 0.2.0
     validations:
       required: true
   - type: input
