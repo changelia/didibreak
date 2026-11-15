@@ -70,6 +70,14 @@ LLM: 0 calls · 0 input tokens · 0 output tokens · cost $0.0000
   OpenAI-compatible servers get no such field, since an unknown field may
   be rejected; there one reply is limited only by the model. A reply cut
   off at the limit is an unusable reply (`invalid llm response`).
+- Both limits count the tokens the server reports. Some OpenAI-compatible
+  servers and proxies report none (no `usage` object, zeros or negative
+  numbers). For such a reply didibreak counts an estimate instead: the size
+  of the request and of the reply, at 3 characters per token. The limits
+  then still stop the run, and a warning on stderr says how many calls
+  were estimated:
+  `didibreak: warning: the provider reported no token usage for 1 of 1 LLM call; ...`.
+  The estimate cannot see reasoning tokens that are not part of the reply.
 - After the run, the actual tokens and cost are shown, for example (from a
   test run with a fake provider):
   `LLM: 1 call · 1000 input tokens · 600 output tokens (400 reasoning) · cost $0.0004`.

@@ -1,6 +1,7 @@
 """check end to end: the safety cases of the 35a audit (no LLM, --cases-file)."""
 
 import json
+import os
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -58,6 +59,33 @@ def limited_repository(git_repository: GitRepository) -> str:
         git_repository, "def f(x):\n    return 1\n", "def f(x):\n    return 2\n"
     )
     return write_cases(git_repository, "app/run.py::f", "1")
+
+
+@pytest.mark.parametrize("value", ["1e9", "1e19"])
+def test_a_timeout_that_overflows_the_timer_exits_2(
+    git_repository: GitRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    value: str,
+) -> None:
+    # Pre-launch review, finding 3: --timeout 1e19 hid a real change (exit 0).
+    cases = limited_repository(git_repository)
+    monkeypatch.chdir(git_repository.path)
+
+    with pytest.raises(SystemExit) as exit_info:
+        main(["check", "--cases-file", cases, "--timeout", value])
+
+    assert exit_info.value.code == EXIT_ERROR
+    assert "timeout must be at most 3600 seconds" in capsys.readouterr().err
+
+
+def test_the_largest_timeout_still_finds_the_change(
+    git_repository: GitRepository, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cases = limited_repository(git_repository)
+    monkeypatch.chdir(git_repository.path)
+
+    assert main(["check", "--cases-file", cases, "--timeout", "3600"]) == EXIT_FINDINGS
 
 
 @pytest.mark.parametrize("flags", [["--timeout", "nan"], ["--max-cost", "inf"]])
@@ -209,3 +237,20 @@ def test_a_password_variable_reaches_no_report_test_or_request(
     assert FAKE_SECRET not in out
     assert all(FAKE_SECRET not in body for body in bodies)
     assert FAKE_SECRET not in tests[0].read_text()
+
+
+def test_a_repository_with_a_looping_link_is_still_checked(
+    git_repository: GitRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Pre-launch review, finding 8: this run ended with a RuntimeError
+    # traceback and exit code 1; 0.1.4 handled the same repository.
+    cases = limited_repository(git_repository)
+    loop = git_repository.path / "loop"
+    os.symlink(loop, loop)
+    monkeypatch.chdir(git_repository.path)
+
+    assert main(["check", "--cases-file", cases]) == EXIT_FINDINGS
+
+    assert "1 cases · 1 behavior changes" in capsys.readouterr().out

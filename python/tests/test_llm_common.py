@@ -15,9 +15,11 @@ from didibreak.llm.common import (
     RawReply,
     TokenUsage,
     complete_with_one_retry,
+    estimated_usage,
     http_client,
     post_with_retries,
     schema_errors,
+    token_count,
 )
 
 KEY = "sk-secret-key-0123456789"
@@ -138,12 +140,44 @@ def test_retry_after_is_capped() -> None:
     assert waits == [MAX_BACKOFF_SECONDS]
 
 
+@pytest.mark.parametrize(
+    "value", ["nan", "inf", "-inf", "Fri, 13 Nov 2026 08:00:00 GMT"]
+)
+def test_a_retry_after_that_is_not_a_finite_number_is_ignored(value: str) -> None:
+    # Pre-launch review, finding 9: "nan" reached time.sleep, which raised
+    # ValueError and ended the run with a traceback.
+    waits: list[float] = []
+
+    post(
+        [httpx.Response(429, headers={"retry-after": value}), httpx.Response(200)],
+        waits.append,
+    )
+
+    assert waits == [1.0]  # the exponential backoff of the first retry
+
+
 def test_network_errors_are_retried() -> None:
     error = httpx.ConnectError("connection refused")
 
     assert (
         post([error, httpx.ReadTimeout("slow"), httpx.Response(200)]).status_code == 200
     )
+
+
+def test_a_request_that_cannot_be_sent_is_not_retried_and_hides_the_key() -> None:
+    # Pre-launch review, finding 14: httpx quotes the header as bytes, a
+    # form redact() does not match, so the key was in the error text.
+    error = httpx.LocalProtocolError(f"Illegal header value b'Bearer {KEY}\\n'")
+    http, seen = client([error, httpx.Response(200)])
+
+    with pytest.raises(LLMUnavailableError) as info:
+        post_with_retries(http, "https://llm.test/v1/x", {}, {}, SETTINGS)
+
+    message = str(info.value)
+    assert len(seen) == 1
+    assert KEY not in message and "sk-secret" not in message
+    assert "check that MY_KEY holds only the API key" in message
+    assert info.value.__cause__ is None and info.value.__suppress_context__
 
 
 def test_unavailable_after_all_retries() -> None:
@@ -314,3 +348,25 @@ def test_retry_is_sent_when_the_run_limit_allows_it() -> None:
     )
 
     assert reply.usage.calls == 2
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [(12, 12), (0, 0), (-100000, 0), (None, 0), ("12", 0), (1.5, 0), (True, 0)],
+)
+def test_token_count_accepts_only_non_negative_integers(
+    value: object, expected: int
+) -> None:
+    assert token_count(value) == expected
+
+
+def test_estimated_usage_rounds_up_and_marks_the_call() -> None:
+    assert estimated_usage(10, 1) == TokenUsage(
+        input_tokens=4, output_tokens=1, calls=1, estimated_calls=1
+    )
+
+
+def test_estimated_calls_add_up() -> None:
+    total = estimated_usage(3, 3) + TokenUsage(5, 5, None, 0, 1) + estimated_usage(3, 3)
+
+    assert (total.calls, total.estimated_calls) == (3, 2)

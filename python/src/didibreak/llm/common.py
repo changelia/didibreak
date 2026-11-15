@@ -6,6 +6,7 @@ removed (redact), so it cannot reach logs, reports or the cache.
 """
 
 import json
+import math
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -29,6 +30,8 @@ SHORT_MESSAGE_LIMIT = 120
 # Anthropic client always sent. Sent only where the server documents the
 # parameter (ClientSettings.output_limit_parameter).
 MAX_OUTPUT_TOKENS = 16000
+# Characters per token for estimates: 3 is on the safe side for code (task 15).
+CHARS_PER_TOKEN = 3
 
 
 @dataclass(frozen=True)
@@ -51,6 +54,8 @@ class TokenUsage:
             provider reports them; None otherwise.
         cached_input_tokens: Input tokens read from the provider's cache.
         calls: Number of requests the usage covers.
+        estimated_calls: How many of those calls the provider reported no
+            usage for; their tokens are an estimate (estimated_usage).
     """
 
     input_tokens: int = 0
@@ -58,6 +63,7 @@ class TokenUsage:
     reasoning_tokens: int | None = None
     cached_input_tokens: int = 0
     calls: int = 0
+    estimated_calls: int = 0
 
     def __add__(self, other: "TokenUsage") -> "TokenUsage":
         """Sum two usages; reasoning stays None only if both are None."""
@@ -72,6 +78,7 @@ class TokenUsage:
             reasoning_tokens=reasoning,
             cached_input_tokens=self.cached_input_tokens + other.cached_input_tokens,
             calls=self.calls + other.calls,
+            estimated_calls=self.estimated_calls + other.estimated_calls,
         )
 
 
@@ -191,6 +198,63 @@ class LLMClient(Protocol):
         ...
 
 
+def token_count(value: object) -> int:
+    """A token number from a provider's ``usage`` object; 0 when unusable.
+
+    A missing value, a value that is not an integer and a negative number
+    all count as not reported (pre-launch review, finding 4: a negative
+    number lowered the run's total).
+    """
+    if isinstance(value, bool) or not isinstance(value, int):
+        return 0
+    return max(value, 0)
+
+
+def estimated_usage(request_characters: int, reply_characters: int) -> TokenUsage:
+    """Tokens of one call, estimated from the size of its request and reply.
+
+    Args:
+        request_characters: Length of the JSON request body.
+        reply_characters: Length of the response body.
+
+    Returns:
+        One call with ``estimated_calls`` 1; CHARS_PER_TOKEN characters
+        count as one token. Reasoning tokens that are not in the reply
+        cannot be seen and are not counted.
+    """
+    return TokenUsage(
+        input_tokens=math.ceil(request_characters / CHARS_PER_TOKEN),
+        output_tokens=math.ceil(reply_characters / CHARS_PER_TOKEN),
+        calls=1,
+        estimated_calls=1,
+    )
+
+
+def with_counted_usage(
+    raw: RawReply, payload: Mapping[str, Any], response: httpx.Response
+) -> RawReply:
+    """The reply, with estimated usage when the provider reported none.
+
+    A server or proxy that sends no ``usage`` (or zeros) would otherwise
+    cost nothing in the run's accounting, and ``max_tokens`` and
+    ``max_cost`` would never stop the run (pre-launch review, finding 4).
+    Every request has input tokens, so a reply without any counts as "not
+    reported".
+
+    Args:
+        raw: The parsed reply.
+        payload: The JSON body that was sent.
+        response: The provider's response.
+
+    Returns:
+        ``raw`` unchanged when it has input tokens, else with the estimate.
+    """
+    if raw.usage.input_tokens > 0:
+        return raw
+    estimate = estimated_usage(len(json.dumps(payload)), len(response.text))
+    return RawReply(raw.text, estimate, raw.model, raw.problem)
+
+
 def redact(text: str, secret: str | None) -> str:
     """Remove a secret from text."""
     return text.replace(secret, "[redacted]") if secret else text
@@ -298,10 +362,31 @@ def _backoff_seconds(attempt: int, response: httpx.Response | None) -> float:
     retry_after = None if response is None else response.headers.get("retry-after")
     if retry_after is not None:
         try:
-            return min(max(float(retry_after), 0.0), MAX_BACKOFF_SECONDS)
+            seconds = float(retry_after)
         except ValueError:
-            pass  # an HTTP date: use the exponential backoff
+            seconds = math.nan  # an HTTP date: use the exponential backoff
+        # "nan" and "inf" are numbers to float(), but time.sleep(nan) raises
+        # (pre-launch review, finding 9).
+        if math.isfinite(seconds):
+            return min(max(seconds, 0.0), MAX_BACKOFF_SECONDS)
     return float(min(BACKOFF_SECONDS * 2**attempt, MAX_BACKOFF_SECONDS))
+
+
+def _unsendable_error(
+    error: httpx.LocalProtocolError, settings: ClientSettings
+) -> LLMUnavailableError:
+    """The error for a request httpx refused to send (a header it rejects).
+
+    Its text quotes the header as Python bytes, key included, in a form
+    redact() does not match, so none of it is shown; and since nothing was
+    sent, a retry cannot help (pre-launch review, finding 14).
+    """
+    where = settings.api_key_variable or "the variable named by api_key_env"
+    return LLMUnavailableError(
+        f"the request to the LLM provider could not be sent "
+        f"({type(error).__name__}: a request header is not valid); check "
+        f"that {where} holds only the API key"
+    )
 
 
 def post_with_retries(
@@ -330,13 +415,15 @@ def post_with_retries(
         LLMModelError: HTTP 404.
         LLMRequestError: Any other non-retryable 4xx.
         LLMUnavailableError: Still failing after ``settings.max_retries``
-            retries.
+            retries, or the request could not be sent at all.
     """
     failure = ""
     for attempt in range(settings.max_retries + 1):
         response: httpx.Response | None = None
         try:
             response = http.post(url, headers=dict(headers), json=payload)
+        except httpx.LocalProtocolError as error:
+            raise _unsendable_error(error, settings) from None
         except httpx.TransportError as error:  # includes timeouts
             failure = f"{type(error).__name__}: {error}"
         else:

@@ -14,7 +14,7 @@ from importlib import resources
 from string import Template
 from typing import Any
 
-from didibreak.arguments import case_problem, format_call
+from didibreak.arguments import case_problem, format_call, normalized_case
 from didibreak.compare import finding_id
 from didibreak.functions import ChangedFunction
 from didibreak.harness import Case, Outcome
@@ -273,11 +273,10 @@ def _case(item: object) -> Case | None:
     if case_problem(args, kwargs) is not None:
         return None
     rationale = item.get("rationale")
-    return Case(
-        tuple(str(a) for a in args),
-        {name: str(value) for name, value in kwargs.items()},
-        rationale if isinstance(rationale, str) else "",
+    positional, keywords = normalized_case(
+        [str(a) for a in args], {name: str(value) for name, value in kwargs.items()}
     )
+    return Case(positional, keywords, rationale if isinstance(rationale, str) else "")
 
 
 def accept_cases(data: Mapping[str, Any], count: int, function: str) -> CaseBatch:

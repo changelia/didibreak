@@ -29,6 +29,8 @@ from didibreak.llm.common import (
     complete_with_one_retry,
     http_client,
     post_with_retries,
+    token_count,
+    with_counted_usage,
 )
 
 API_VERSION = "2026-10-21"
@@ -38,20 +40,16 @@ DEFAULT_BASE_URL = "https://api.anthropic.com"
 MAX_TOKENS = MAX_OUTPUT_TOKENS
 
 
-def _int(value: object) -> int:
-    return value if isinstance(value, int) else 0
-
-
 def parse_usage(body: Mapping[str, Any]) -> TokenUsage:
     """Token usage of one Messages response; cache tokens count as input."""
     usage = body.get("usage")
     if not isinstance(usage, dict):
         return TokenUsage(calls=1)
-    cache_read = _int(usage.get("cache_read_input_tokens"))
-    cache_write = _int(usage.get("cache_creation_input_tokens"))
+    cache_read = token_count(usage.get("cache_read_input_tokens"))
+    cache_write = token_count(usage.get("cache_creation_input_tokens"))
     return TokenUsage(
-        input_tokens=_int(usage.get("input_tokens")) + cache_read + cache_write,
-        output_tokens=_int(usage.get("output_tokens")),
+        input_tokens=token_count(usage.get("input_tokens")) + cache_read + cache_write,
+        output_tokens=token_count(usage.get("output_tokens")),
         reasoning_tokens=None,  # not reported separately by the Messages API
         cached_input_tokens=cache_read,
         calls=1,
@@ -182,4 +180,5 @@ class AnthropicClient:
             body = response.json()
         except ValueError:
             body = None
-        return parse_reply(body, self.settings.model)
+        raw = parse_reply(body, self.settings.model)
+        return with_counted_usage(raw, payload, response)

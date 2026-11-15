@@ -13,7 +13,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
-from didibreak.arguments import case_problem
+from didibreak.arguments import case_problem, normalized_case
 from didibreak.cases import (
     CASES_SCHEMA,
     CASES_SCHEMA_NAME,
@@ -37,6 +37,7 @@ from didibreak.harness import (
     run_cases,
 )
 from didibreak.llm.common import (
+    CHARS_PER_TOKEN,
     LLMClient,
     LLMInvalidResponseError,
     LLMReply,
@@ -80,7 +81,7 @@ def _case(item: object, number: int) -> tuple[str, Case]:
     problem = case_problem(args, kwargs)
     if problem is not None:
         raise ValueError(f"{where}: {problem}")
-    return function, Case(tuple(args), dict(kwargs), rationale)
+    return function, Case(*normalized_case(args, kwargs), rationale)
 
 
 def load_cases_file(path: Path) -> Mapping[str, tuple[Case, ...]]:
@@ -335,11 +336,10 @@ def check_imports(
     return tuple(importable), tuple(skipped)
 
 
-# Cost estimate (task 15). Prompts are measured exactly; 3 characters per
-# token is on the safe side for code. Output starts from the task 12 live
-# run (537 completion tokens, 399 of them reasoning, for 3 cases) and then
-# follows the completion tokens actually observed in this run.
-CHARS_PER_TOKEN = 3
+# Cost estimate (task 15). Prompts are measured exactly, at CHARS_PER_TOKEN
+# characters per token. Output starts from the task 12 live run (537
+# completion tokens, 399 of them reasoning, for 3 cases) and then follows
+# the completion tokens actually observed in this run.
 OUTPUT_TOKENS_PER_CASE = 180
 COST_LIMIT_REASON = "cost limit"
 TOKEN_LIMIT_REASON = "token limit"
@@ -619,4 +619,5 @@ def _usage_since(total: TokenUsage, before: TokenUsage) -> TokenUsage:
         reasoning_tokens=difference(total.reasoning_tokens, before.reasoning_tokens),
         cached_input_tokens=total.cached_input_tokens - before.cached_input_tokens,
         calls=total.calls - before.calls,
+        estimated_calls=total.estimated_calls - before.estimated_calls,
     )

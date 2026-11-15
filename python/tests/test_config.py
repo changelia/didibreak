@@ -181,6 +181,21 @@ def test_missing_api_key_names_the_variable() -> None:
         read_api_key(Config(provider="openai"), {"OPENAI_API_KEY": ""})
 
 
+# Pre-launch review, findings 9 and 14: such a key crashed the request or
+# was quoted in the transport error.
+@pytest.mark.parametrize(
+    "key",
+    ["sk-FAKE-0123\n", " sk-FAKE-0123", "sk-FAKE 0123", "sk-FAKE-0123é", "sk\x1b"],
+)
+def test_a_value_that_cannot_be_a_key_is_rejected_without_showing_it(key: str) -> None:
+    with pytest.raises(ConfigError) as info:
+        read_api_key(Config(provider="openai"), {"OPENAI_API_KEY": key})
+
+    message = str(info.value)
+    assert "OPENAI_API_KEY must hold only the API key" in message
+    assert "FAKE" not in message and "sk" not in message
+
+
 FILE_WITH_URL = {
     "model": "m",
     "base_url": "https://openrouter.ai/api/v1",
@@ -255,6 +270,22 @@ def test_any_other_cli_provider_drops_the_file_url_and_key_variable(
 def test_limits_must_be_finite_and_positive(key: str, value: float) -> None:
     with pytest.raises(ConfigError, match=f"{key} must be a finite number greater"):
         validate(key, value)
+
+
+# Pre-launch review, finding 3: a timeout of 1e9 s overflowed the timer.
+@pytest.mark.parametrize("value", [3600.5, 1e9, 1e19])
+def test_timeout_above_one_hour_is_rejected(value: float) -> None:
+    with pytest.raises(ConfigError, match="timeout must be at most 3600 seconds"):
+        validate("timeout", value)
+
+
+@pytest.mark.parametrize("value", [0.5, 10, 3600])
+def test_timeout_up_to_one_hour_is_accepted(value: float) -> None:
+    assert validate("timeout", value) == float(value)
+
+
+def test_max_cost_has_no_upper_bound() -> None:
+    assert validate("max_cost", 1e9) == 1e9
 
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf"), 0, -5])

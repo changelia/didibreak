@@ -62,7 +62,7 @@ in snake_case.
 | `--refine-rounds N` | `refine_rounds` | integer 0–3 | `1` | Extra LLM rounds for a function whose cases found no difference; each round sends the cases already tried with their results. `0` turns refinement off. |
 | `--max-cost USD` | `max_cost` | finite number > 0 | `0.50` | Hard LLM cost limit per run, in US dollars. |
 | `--max-tokens N` | `max_tokens` | integer ≥ 1 | `200000` | Hard limit on input + output tokens per run, for every provider and model, priced or not. Checked before each request and retry, so a single request can go past the limit by the size of its own reply (at most 16,000 output tokens on servers with a known output cap); functions after the limit are skipped (`token limit`). See [providers-and-costs.md](providers-and-costs.md#cost-control). |
-| `--timeout SECONDS` | `timeout` | finite number > 0 | `10` | Timeout per executed case. |
+| `--timeout SECONDS` | `timeout` | number > 0, at most 3600 | `10` | Timeout per executed case, in seconds. One hour is the maximum: a larger value would overflow the timer, so it is rejected (exit 2). |
 | `--provider` | `provider` | `openai`, `anthropic`, `openrouter`, `ollama` or `lmstudio` | from the API key | LLM provider (`openai` means any OpenAI-compatible API). `openrouter`, `ollama` and `lmstudio` are presets that fill in `base_url` and `api_key_env` and need `model`. If not set: `openai` when only `OPENAI_API_KEY` is set, `anthropic` when only `ANTHROPIC_API_KEY` is set; otherwise set it. See [providers-and-costs.md](providers-and-costs.md#setting-up-a-provider). |
 | `--model NAME` | `model` | string | none | Model name. The default per provider is listed in [providers-and-costs.md](providers-and-costs.md#default-models). |
 | `--base-url URL` | `base_url` | http(s) URL | provider default | OpenAI-compatible endpoint, e.g. OpenRouter, Ollama, LM Studio. Replaces the URL of a preset set at the same level or lower (see the top of this page). |
@@ -70,7 +70,7 @@ in snake_case.
 | `--output-dir PATH` | `output_dir` | path | `.didibreak` | Folder for reports, reproducing tests and the cache. |
 | `--no-cache` | `no_cache` | true / false | `false` | Ignore and do not write the case cache. |
 | `--yes` | — | flag | off | Skip the cost confirmation. Implied by `--format json` and when stdin is not a terminal. |
-| `-v` / `-q` | — | flag | off | Verbose progress / errors only. Cannot be combined. |
+| `-v` / `-q` | — | flag | off | Verbose progress / errors only. Cannot be combined. `-v` also prints the traceback of an internal error. |
 
 `check` also has a hidden `--cases-file` option for developers and tests; it
 is not a user feature and is described in `CONTRIBUTING.md`.

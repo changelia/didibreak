@@ -81,3 +81,18 @@ def test_subclasses_and_enums_compare_class_and_value() -> None:
 @pytest.mark.parametrize("value", [[], {}, set(), (), ""])
 def test_empty_values_equal_themselves(value: object) -> None:
     assert same(value, value)
+
+
+def test_long_text_is_compared_by_length_and_digest() -> None:
+    # Pre-launch review, finding 13: such values are not stored any more.
+    size = 200_000
+    before = normalize("x" * size)
+    same = normalize("x" * size)
+    changed = normalize("x" * (size - 1) + "y")
+    shorter = normalize("x" * (size - 1))
+    assert before is not None and same is not None
+    assert changed is not None and shorter is not None
+
+    assert values_equal(before, same)
+    assert not values_equal(before, changed)
+    assert not values_equal(before, shorter)

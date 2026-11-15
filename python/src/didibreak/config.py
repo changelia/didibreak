@@ -126,6 +126,22 @@ def _positive_number(key: str, value: object) -> float:
     return float(value)
 
 
+# Seconds. A per-case timeout is a timer in the child process, and a huge
+# value overflows it: every case then ends the process in both versions and
+# no change is found (pre-launch review, finding 3; 1e9 fails on macOS).
+MAX_TIMEOUT = 3600.0
+
+
+def _timeout(key: str, value: object) -> float:
+    seconds = _positive_number(key, value)
+    if seconds > MAX_TIMEOUT:
+        raise ConfigError(
+            f"{key} must be at most {MAX_TIMEOUT:g} seconds (one hour); got "
+            f"{value}. A case that needs longer cannot be checked"
+        )
+    return seconds
+
+
 def _temperature(key: str, value: object) -> float:
     if isinstance(value, bool) or not isinstance(value, int | float):
         raise ConfigError(f"{key} must be a number, got {value!r}")
@@ -194,7 +210,7 @@ _VALIDATORS: dict[str, Callable[[str, object], object]] = {
     "refine_rounds": _integer(0, 3),
     "max_cost": _positive_number,
     "max_tokens": _integer(1, None),
-    "timeout": _positive_number,
+    "timeout": _timeout,
     "provider": _choice(PROVIDERS),
     "model": _non_empty_string,
     "base_url": _url,
@@ -401,7 +417,9 @@ def read_api_key(config: Config, environment: Mapping[str, str]) -> str | None:
         The key, or None when no key is needed.
 
     Raises:
-        ConfigError: If a key is needed but the variable is missing or empty.
+        ConfigError: If a key is needed but the variable is missing or
+            empty, or its value cannot be a key (see _is_key_text). The
+            message names the variable and never shows the value.
     """
     variable = api_key_variable(config)
     if variable is None:
@@ -412,4 +430,23 @@ def read_api_key(config: Config, environment: Mapping[str, str]) -> str | None:
             f"missing API key: set the environment variable {variable}, "
             'or set api_key_env = "" for a local server that needs no key'
         )
+    if not _is_key_text(key):
+        raise ConfigError(
+            f"the environment variable {variable} must hold only the API key, "
+            "but its value contains a space, a line break or another "
+            "character that is not printable ASCII; set it again without "
+            "quotes, spaces or line breaks"
+        )
     return key
+
+
+def _is_key_text(key: str) -> bool:
+    """Whether a value can be sent as an API key: printable ASCII, no spaces.
+
+    Anything else cannot go into an HTTP header. A key that ends with a line
+    break made every request fail before it was sent ("llm unavailable"
+    after three attempts), with the key quoted in the transport error; a
+    non-ASCII character raised UnicodeEncodeError (pre-launch review,
+    findings 9 and 14).
+    """
+    return all(0x21 <= ord(character) <= 0x7E for character in key)

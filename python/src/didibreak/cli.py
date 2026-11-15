@@ -8,6 +8,7 @@ that has a config key is validated by ``config.validate`` so the CLI and
 import argparse
 import os
 import sys
+import traceback
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -43,7 +44,7 @@ from didibreak.gitdiff import (
     repository_root,
     resolve_base,
 )
-from didibreak.harness import Case, HarnessSettings
+from didibreak.harness import Case, HarnessSettings, is_secret_variable
 from didibreak.intent import NO_INTENT_REASON, intent_text, mark_unclear
 from didibreak.llm import create_client
 from didibreak.llm.common import LLMAuthError, LLMModelError
@@ -66,6 +67,7 @@ from didibreak.report import Report, ReportUsage, SkippedItem
 from didibreak.report.json import render_json
 from didibreak.report.pytest_writer import WrittenTests, write_tests
 from didibreak.report.text import counted, header_lines, results_text
+from didibreak.terminal import printable
 
 EXIT_OK = 0
 EXIT_FINDINGS = 1
@@ -93,6 +95,16 @@ cost or token limit): report the error to the user.
 If summary.functions_checked is 0, tell the user that nothing was checked and why.
 Stop after 3 check rounds and report what is left.
 """
+
+
+def _print_problem(kind: str, message: object) -> None:
+    """Print ``didibreak: <kind>: <message>`` on stderr, safe for a terminal.
+
+    The message can quote the provider, a file name or an exception, so
+    control characters are escaped like in the text report (pre-launch
+    review, finding 11).
+    """
+    print(f"didibreak: {kind}: {printable(str(message))}", file=sys.stderr, flush=True)
 
 
 def exit_code_for(labels: Iterable[str], fail_on: str) -> int:
@@ -439,7 +451,7 @@ def _start_llm(
     if session.unpriced:
         # Printed even with -q: a cost limit the user may rely on is off.
         warning = unknown_price_warning(session.settings.model, config.max_tokens)
-        print(warning, file=sys.stderr, flush=True)
+        print(printable(warning), file=sys.stderr, flush=True)
     if not arguments.quiet:
         # Part of the text report; in JSON mode stdout holds only the report.
         stream = sys.stdout if config.format == "text" else sys.stderr
@@ -663,10 +675,7 @@ def _write_tests(
             root, Path(config.output_dir), findings, __version__, base_sha
         )
     except OSError as error:
-        print(
-            f"didibreak: warning: could not write the reproducing tests: {error}",
-            file=sys.stderr,
-        )
+        _print_problem("warning", f"could not write the reproducing tests: {error}")
         return WrittenTests(tuple(findings), (), ())
 
 
@@ -800,6 +809,24 @@ def _analyse_with_llm(
     return replace(analysis, skipped=(*unimportable, *analysis.skipped)), llm_cases
 
 
+def estimated_usage_warning(estimated: int, calls: int) -> str:
+    """The warning for LLM calls whose usage the provider did not report."""
+    return (
+        f"didibreak: warning: the provider reported no token usage for "
+        f"{estimated} of {counted(calls, 'LLM call')}; their tokens are "
+        "estimated from the size of the request and the reply, so max_tokens "
+        "and max_cost still apply, and the token and cost figures are "
+        "approximate"
+    )
+
+
+def _warn_about_estimated_usage(llm_cases: _LLMCases | None) -> None:
+    usage = llm_cases.generation.usage if llm_cases else None
+    if usage is not None and usage.estimated_calls:
+        warning = estimated_usage_warning(usage.estimated_calls, usage.calls)
+        print(warning, file=sys.stderr)
+
+
 def _finish(
     run: _Run, intent: str | None, analysis: Analysis, llm_cases: _LLMCases | None
 ) -> int:
@@ -813,9 +840,10 @@ def _finish(
         no_tests=tuple(SkippedItem(call, reason) for call, reason in tests.not_written),
     )
     _print_report(report, config, llm=llm_cases is not None)
+    _warn_about_estimated_usage(llm_cases)
     problem = nothing_checked_error(report, run.detection.functions)
     if problem is not None:
-        print(f"didibreak: error: {problem}", file=sys.stderr)
+        _print_problem("error", problem)
         return EXIT_ERROR
     return exit_code_for(
         [finding.label for finding in analysis.findings if finding.label],
@@ -827,7 +855,7 @@ def _run_check(arguments: argparse.Namespace) -> int:
     try:
         run = _prepare(arguments)
     except (GitError, ConfigError, OSError) as error:
-        print(f"didibreak: error: {error}", file=sys.stderr)
+        _print_problem("error", error)
         return EXIT_ERROR
     if run.config.format == "text":
         _print_header(run, arguments.verbose)
@@ -841,12 +869,64 @@ def _run_check(arguments: argparse.Namespace) -> int:
         else:
             result = _analyse_with_llm(run, arguments, intent)
     except (ConfigError, LLMAuthError, LLMModelError, GitError, OSError) as error:
-        print(f"didibreak: error: {error}", file=sys.stderr)
+        _print_problem("error", error)
         return EXIT_ERROR
     if result is None:
         print("Cancelled: no LLM request was sent.", file=sys.stderr)
         return EXIT_OK
     return _finish(run, intent, *result)
+
+
+ISSUES_URL = "https://github.com/changelia/didibreak/issues"
+_INTERNAL_ERROR_LIMIT = 300
+# Shorter values are too common as ordinary text to be replaced.
+_SHORTEST_SECRET = 8
+
+
+def without_secrets(text: str, environment: Mapping[str, str]) -> str:
+    """``text`` without the values of credential-like environment variables.
+
+    An unexpected exception can quote anything, so its text is cleaned with
+    the rule that keeps credentials away from the code under test
+    (harness.is_secret_variable): API keys never reach an error message.
+    """
+    for name, value in environment.items():
+        if len(value) >= _SHORTEST_SECRET and is_secret_variable(name, value):
+            text = text.replace(value, "[redacted]")
+    return text
+
+
+def internal_error_message(error: BaseException, environment: Mapping[str, str]) -> str:
+    """The exit-2 line for an exception didibreak did not expect.
+
+    Args:
+        error: The exception.
+        environment: Environment variables, for without_secrets().
+
+    Returns:
+        One line that names the exception and asks for a bug report.
+    """
+    detail = without_secrets(f"{type(error).__name__}: {error}", environment)
+    return (
+        f"internal error ({detail[:_INTERNAL_ERROR_LIMIT]}). This is a bug in "
+        "didibreak, not a finding in your code: nothing can be concluded from "
+        f"this run. Please report it at {ISSUES_URL} with the command you ran "
+        "and this message (run again with -v for the traceback)"
+    )
+
+
+def _report_internal_error(error: BaseException, verbose: bool) -> int:
+    """Print the internal-error line (and the traceback with -v); exit code 2.
+
+    Exit code 1 means "findings" to the agents that read it, so a crash must
+    never leave with it (pre-launch review, finding 9).
+    """
+    if verbose:
+        lines = "".join(traceback.format_exception(error)).splitlines()
+        for line in lines:
+            print(printable(without_secrets(line, os.environ)), file=sys.stderr)
+    _print_problem("error", internal_error_message(error, os.environ))
+    return EXIT_ERROR
 
 
 def is_supported_platform(platform: str) -> bool:
@@ -870,7 +950,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     Returns:
         The process exit code: 0 no failing findings, 1 failing findings,
         2 tool or configuration error (also for a command on Windows,
-        before any work), 130 interrupted (Ctrl-C).
+        before any work, and for an unexpected exception: "internal
+        error"), 130 interrupted (Ctrl-C).
     """
     parser = build_parser()
     # --help and --version end inside parse_args and run no user code, so
@@ -887,6 +968,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             # context managers and finally blocks on the way out.
             print("didibreak: interrupted", file=sys.stderr)
             return EXIT_INTERRUPTED
+        except Exception as error:
+            return _report_internal_error(error, arguments.verbose)
     if arguments.command == "init-agents":
         print(AGENT_SNIPPET, end="")
         return EXIT_OK

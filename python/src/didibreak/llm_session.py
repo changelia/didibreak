@@ -35,6 +35,7 @@ from didibreak.intent import (
 )
 from didibreak.llm import client_settings, resolve_provider
 from didibreak.llm.common import (
+    CHARS_PER_TOKEN,
     ClientSettings,
     LLMInvalidResponseError,
     LLMRequestError,
@@ -43,7 +44,6 @@ from didibreak.llm.common import (
 )
 from didibreak.llm.pricing import LOCAL, cost_usd, prices_from_config, run_price
 from didibreak.pipeline import (
-    CHARS_PER_TOKEN,
     Budget,
     Estimate,
     Generation,

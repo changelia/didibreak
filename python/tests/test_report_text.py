@@ -8,7 +8,8 @@ from report_samples import check_snapshot, sample_report
 from didibreak.harness import Case, Outcome
 from didibreak.report import Report, ReportUsage, SkippedItem
 from didibreak.report.json import report_json
-from didibreak.report.text import counted, printable, results_text
+from didibreak.report.text import counted, results_text
+from didibreak.terminal import printable
 
 
 def test_text_snapshot() -> None:

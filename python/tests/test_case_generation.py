@@ -420,3 +420,78 @@ def test_audit_case_stays_within_max_tokens_plus_one_reply() -> None:
     used = budget.usage.input_tokens + budget.usage.output_tokens
     assert used == one_reply  # the retry was not sent
     assert used <= 20_000 + one_reply
+
+
+def _large_reply_client(usage: object) -> tuple[OpenAICompatibleClient, list[bytes]]:
+    """A server whose every reply is about 47,000 characters of valid cases."""
+    sent: list[bytes] = []
+    reply_cases = [
+        {"args": [str(number)], "kwargs": [], "rationale": "r" * 3900}
+        for number in range(12)
+    ]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        sent.append(request.content)
+        choice = {"message": {"content": json.dumps({"cases": reply_cases})}}
+        body: dict[str, Any] = {"choices": [choice]}
+        if usage is not None:
+            body["usage"] = usage
+        return httpx.Response(200, json=body)
+
+    settings = ClientSettings(model="m", base_url="https://llm.test/v1")
+    client = OpenAICompatibleClient(
+        settings, httpx.MockTransport(handler), sleep=lambda _: None
+    )
+    return client, sent
+
+
+@pytest.mark.parametrize(
+    "usage",
+    [
+        None,
+        {"prompt_tokens": 0, "completion_tokens": 0},
+        {"prompt_tokens": -100000, "completion_tokens": 8000},
+        {"prompt_tokens": "many", "completion_tokens": None},
+    ],
+    ids=["missing", "zeros", "negative", "not numbers"],
+)
+def test_token_limit_stops_a_server_that_reports_no_usage(usage: object) -> None:
+    # Pre-launch review, finding 4: such replies counted as 0 tokens, so all
+    # ten requests were sent under a limit that stops an honest server.
+    client, sent = _large_reply_client(usage)
+    functions = [function(f"f{number}") for number in range(10)]
+    budget = Budget(None, None, 12, max_tokens=20_000)
+
+    result = generate_cases(client, functions, 12, load_template(), budget=budget)
+
+    assert len(sent) == 1
+    assert [f.skip_reason for f in result.skipped] == [TOKEN_LIMIT_REASON] * 9
+    assert result.usage.estimated_calls == 1
+    counted = result.usage.input_tokens + result.usage.output_tokens
+    assert counted >= 47_000 // 3  # the reply alone is about 15,800 tokens
+
+
+def test_cost_limit_stops_a_server_that_reports_no_usage() -> None:
+    client, sent = _large_reply_client(None)
+    functions = [function(f"f{number}") for number in range(10)]
+    budget = Budget(PRICE, 0.05, 12)
+
+    result = generate_cases(client, functions, 12, load_template(), budget=budget)
+
+    assert 0 < len(sent) < 10
+    assert result.skipped[-1].skip_reason == COST_LIMIT_REASON
+    assert budget.cost > 0
+
+
+def test_reported_usage_is_not_replaced_by_an_estimate() -> None:
+    client, sent = _large_reply_client(
+        {"prompt_tokens": 600, "completion_tokens": 8000}
+    )
+    functions = [function(f"f{number}") for number in range(10)]
+    budget = Budget(None, None, 12, max_tokens=20_000)
+
+    result = generate_cases(client, functions, 12, load_template(), budget=budget)
+
+    assert len(sent) == 2
+    assert result.usage == TokenUsage(1200, 16000, None, 0, 2)
+    assert result.usage.estimated_calls == 0

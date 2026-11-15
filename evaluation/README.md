@@ -28,6 +28,7 @@ changes (`rerun-21a/`). The task 21a results are at the end.
 | `labels.json` | Hand label of every `unexpected` finding: `real` and a note |
 | `../python/scripts/evaluate.py` | The runner and the summary |
 | `owner-spot-check.md` | 10 re-run findings (seed 22) with sources and labels, for the owner's review |
+| `rerun-37/` | Task 37 re-run after the runtime I/O guard: plan, reports and labels |
 
 ## Method
 
@@ -283,6 +284,81 @@ Task 21 saved reports $0.0486, task 21 unrecorded at most $0.1013, task 21a
 saved reports $0.0487, and $0.0023 for two task 21a runs that ran twice
 (two parallel runners overlapped; the second result was kept): **about
 $0.20 of the $5 budget**.
+
+## Task 37 re-run (2026-11-15)
+
+Run after the runtime I/O guard (task 36) and the robustness fixes
+(task 37), at commit `ba4afee` of branch `task-37-robustness`, to measure
+how many functions the guard skips as `blocked: <event>` on real projects
+and whether precision moved. Same plan, same rubric, default model
+(`gpt-6-luna`), Python 3.13, macOS; reports and labels in `rerun-37/`.
+Labels of the 25 findings with the same inputs as in task 21a were reused;
+the other 150 were labelled by the model that ran the evaluation.
+
+| Repository | Runs | Checked | Skipped | Unexpected / unclear / expected / new_function | Real / labelled unexpected | Precision | Cost |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| humanize | 8 | 6 | 2 | 40 / 2 / 3 / 0 | 40 / 40 | 100% | $0.0200 |
+| python-slugify | 2 | 2 | 0 | 12 / 0 / 0 / 0 | 12 / 12 | 100% | $0.0031 |
+| more-itertools | 6 | 6 | 0 | 36 / 0 / 0 / 5 | 28 / 36 | 78% | $0.0182 |
+| boltons | 7 | 3 | 4 | 9 / 0 / 3 / 0 | 9 / 9 | 100% | $0.0057 |
+| validators | 7 | 7 | 0 | 46 / 0 / 0 / 0 | 46 / 46 | 100% | $0.0110 |
+| packaging | 5 | 3 | 0 | 20 / 0 / 3 / 0 | 20 / 20 | 100% | $0.0044 |
+| sqlparse | 3 | 2 | 1 | 12 / 0 / 0 / 0 | 0 / 12 | 0% | $0.0026 |
+| **All** | 38 | 29 | 7 | 175 / 2 / 9 / 5 | 155 / 175 | 89% | $0.0650 |
+
+| Skip reason | Count |
+| --- | --- |
+| no valid cases | 3 |
+| generator | 2 |
+| instance method | 1 |
+| import failed | 1 |
+
+| Measure | Task 21a | Task 37 |
+| --- | --- | --- |
+| Functions skipped as `blocked: <event>` | — (no guard) | **0** |
+| Functions checked / skipped | 31 / 5 | 29 / 7 |
+| Precision (real / unexpected) | 87% (168 / 193) | **89% (155 / 175)** |
+| Replayed bug found (of 22) | 14 | 13 |
+| `new_function` findings (real bugs) | 17 (0) | 5 (0) |
+| Cost of the run | $0.0487 | $0.0650 |
+
+What the numbers say:
+
+- **The guard skipped nothing.** No function in the 38 runs was skipped
+  with `blocked:`; there is no event to list. These libraries do no I/O in
+  the changed functions or at import, so this says little about
+  application code (see the scope note at the top).
+- **Two fewer functions were checked, and none of that is the guard.**
+  Three runs ended with `no valid cases` (every proposed case was an
+  invalid literal): boltons `singularize` (replay `1e61524`), boltons
+  `ellipsize` (forward `673e010`) and humanize `metric` (replay
+  `e46732e`); all three were checked in task 21a. The validators `cron`
+  replay, which had `no valid cases` in task 21a, was checked this time.
+  To tell a regression from model variance, the boltons `singularize`
+  scenario was run 10 more times at `ba4afee` and 10 times at `main`
+  (`45d0814`), without the cache: 1 of 10 had `no valid cases` on each
+  side. So this is run-to-run variance of the model, at a rate of about
+  1 run in 10 for this function, not a change in this branch. A retry
+  when every case is invalid would remove most of it (not done here).
+- **Precision did not drop:** 89% against the 87% baseline, inside the
+  run-to-run noise. All 20 false alarms are again *out of contract* and
+  in unannotated functions: sqlparse `remove_quotes` 12 (bytes, lists,
+  tuples, dicts for a string), more-itertools `exactly_n` 4 (float count)
+  and `nth_permutation` 4 (float size, `None` index). Seven `exactly_n`
+  findings with a negative integer count are labelled real (the type is
+  accepted and the result changed from `False` to `ValueError`); they are
+  borderline, and with them as false alarms precision is 85% (148 / 175).
+- Recall: 13 of 22 replays. Lost to `no valid cases`: boltons `1e61524`
+  and humanize `e46732e`; gained: validators `cron` (`aa5d83b`).
+- The humanize forward run now exits 2 instead of 0: its only function
+  cannot be imported, and since task 35b a run where nothing could be
+  checked for an error reason exits 2.
+- 62 LLM calls, 76,442 input and 114,994 output tokens; a run that
+  checked a function took 24.6 s median and 151.7 s at most.
+
+Spend: $0.0650 in the saved reports, plus about $0.02 not in any report
+(the 20 variance runs and one debugging run). Total for all evaluation
+work so far: about $0.29 of the $5 budget.
 
 ## Reproduce
 

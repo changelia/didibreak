@@ -8,6 +8,7 @@ from collections.abc import Iterator
 import pytest
 
 from didibreak._harness_child import (
+    MAX_TEXT_LENGTH,
     MESSAGE_LIMIT,
     REPR_LIMIT,
     exception_outcome,
@@ -223,3 +224,60 @@ def test_a_raising_repr_inside_a_value_is_a_normal_return(value: object) -> None
     assert outcome["type_name"] == type_name(value)
     assert outcome["repr"] == "<repr failed: RuntimeError>"
     assert "value" not in outcome
+
+
+# Pre-launch review, finding 13: returned text had no size limit.
+@pytest.mark.parametrize("value", ["x" * (MAX_TEXT_LENGTH + 1), b"x" * 5_000_000])
+def test_long_text_is_a_length_and_a_digest_not_the_content(
+    value: str | bytes,
+) -> None:
+    normalized = normalize(value)
+
+    assert normalized is not None
+    assert set(normalized) == {"type", "length", "digest"}
+    assert normalized["length"] == len(value)
+    assert len(json.dumps(normalized)) < 200
+
+
+def test_text_at_the_limit_is_stored_whole() -> None:
+    assert normalize("x" * MAX_TEXT_LENGTH) == {
+        "type": "str",
+        "value": "x" * MAX_TEXT_LENGTH,
+    }
+
+
+def test_long_text_with_different_content_has_a_different_digest() -> None:
+    size = MAX_TEXT_LENGTH + 1
+
+    assert normalize("x" * size) == normalize("x" * size)
+    assert normalize("x" * size) != normalize("x" * (size - 1) + "y")
+    assert normalize("x" * size) != normalize(b"x" * size)
+    assert normalize("\ud800" * size) is not None  # lone surrogates are hashed too
+
+
+def test_long_text_inside_containers_and_subclasses_is_digested() -> None:
+    class Name(str):
+        def encode(self, *arguments: object) -> bytes:  # type: ignore[override]
+            raise AssertionError("the base method must be used")
+
+    normalized = normalize({"key": [Name("n" * (MAX_TEXT_LENGTH + 1))]})
+
+    assert normalized is not None
+    node = normalized["items"][0][1]["items"][0]
+    assert node["length"] == MAX_TEXT_LENGTH + 1
+    assert node["class"].endswith(".Name")
+
+
+def test_a_value_with_too_much_text_in_total_is_not_representable() -> None:
+    piece = "x" * MAX_TEXT_LENGTH
+
+    assert normalize([piece] * 10) is not None  # 1,000,000 characters: the limit
+    assert normalize([piece] * 10 + ["y"]) is None
+    assert normalize({str(n): b"z" * 60_000 for n in range(20)}) is None
+
+
+def test_the_outcome_of_a_huge_return_value_stays_small() -> None:
+    outcome = return_outcome("x" * 1_000_000)
+
+    assert len(outcome["repr"]) == REPR_LIMIT
+    assert len(json.dumps(outcome)) < REPR_LIMIT + 500

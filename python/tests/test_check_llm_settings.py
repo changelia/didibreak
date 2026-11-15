@@ -25,10 +25,12 @@ def fake_llm(monkeypatch: pytest.MonkeyPatch) -> list[str]:
             body = {
                 "content": [{"type": "text", "text": text}],
                 "stop_reason": "end_turn",
+                "usage": {"input_tokens": 100, "output_tokens": 10},
             }
         else:
             body = {
-                "choices": [{"message": {"content": text}, "finish_reason": "stop"}]
+                "choices": [{"message": {"content": text}, "finish_reason": "stop"}],
+                "usage": {"prompt_tokens": 100, "completion_tokens": 10},
             }
         return httpx.Response(200, json=body)
 
@@ -179,3 +181,21 @@ def test_only_skipped_functions_need_no_llm_settings(
     err = "".join(capsys.readouterr())
     assert "checked 0 functions" in err
     assert "provider" not in err
+
+
+def test_a_key_with_a_line_break_exits_2_naming_the_variable(
+    changed_function: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    fake_llm: list[str],
+) -> None:
+    # Pre-launch review, finding 14: this gave "llm unavailable" after three
+    # attempts, which points at the provider instead of the key.
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-FAKE-not-a-real-key-0123456789\n")
+
+    assert main(["check"]) == EXIT_ERROR
+
+    output = "".join(capsys.readouterr())
+    assert "OPENAI_API_KEY must hold only the API key" in output
+    assert "FAKE" not in output
+    assert fake_llm == []

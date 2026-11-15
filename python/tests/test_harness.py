@@ -425,3 +425,30 @@ def test_credential_carrying_variables_are_removed(name: str, value: str) -> Non
 def test_urls_without_credentials_are_kept(name: str, value: str) -> None:
     assert not harness.is_secret_variable(name, value)
     assert harness.child_environment({name: value})[name] == value
+
+
+def test_a_huge_return_value_is_compared_without_being_stored(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Pre-launch review, finding 13: the whole 1,000,000-character string
+    # crossed the process boundary (about 5 bytes per character in the parent).
+    tree = make_tree(
+        tmp_path, {"mod.py": "def f(text, width):\n    return text.ljust(width)\n"}
+    )
+    sizes: list[int] = []
+    read_records = harness._read_records
+
+    def measuring(path: Path) -> list[dict[str, object]]:
+        sizes.append(path.stat().st_size)
+        return read_records(path)
+
+    monkeypatch.setattr(harness, "_read_records", measuring)
+
+    result = run_cases(target(tree), [Case(("'ab'", "1_000_000"))], SETTINGS)
+
+    (outcome,) = result.outcomes
+    assert outcome.kind == "return" and outcome.stable
+    assert outcome.value is not None
+    assert outcome.value["length"] == 1_000_000
+    assert "value" not in outcome.value
+    assert max(sizes) < 10_000

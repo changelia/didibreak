@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from didibreak.arguments import case_problem
+from didibreak.arguments import case_problem, normalized_case
 from didibreak.functions import ChangedFunction
 from didibreak.harness import Case
 
@@ -137,8 +137,9 @@ def _case_from_json(item: Any) -> Case | None:
         return None
     if case_problem(args, kwargs) is not None:
         return None
+    # Files written before the normal form existed may hold comments.
     return Case(
-        tuple(args), dict(kwargs), rationale if isinstance(rationale, str) else ""
+        *normalized_case(args, kwargs), rationale if isinstance(rationale, str) else ""
     )
 
 

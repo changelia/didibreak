@@ -43,7 +43,18 @@ is imported. While your module is imported and while a case runs, it stops:
 - writing, creating, deleting, renaming or changing the permissions of
   files and folders outside the process's own temporary folder. That folder
   is the process's working directory and `TMPDIR`, so relative paths and
-  the `tempfile` module still work; it is removed afterwards. An SQLite
+  the `tempfile` module still work; it is removed afterwards. The cache
+  variables `XDG_CACHE_HOME`, `MPLCONFIGDIR` and `NUMBA_CACHE_DIR` point
+  into it too, so a library that writes a cache while it is imported
+  still runs; it starts with an empty cache each time. One exception:
+  your existing Matplotlib font lists (`fontlist-*.json`) are copied into
+  that `MPLCONFIGDIR`, because with an empty one `matplotlib.pyplot` lists
+  the system fonts with a command, which the guard stops. If you have
+  never imported `matplotlib.pyplot` with that Matplotlib version, a
+  module that imports it is skipped with `blocked: subprocess.Popen`;
+  import it once yourself and run again. Your `matplotlibrc` is not used.
+  `HOME` is not changed: a module that writes under your home folder
+  without these variables is skipped with `blocked: <event>`. An SQLite
   database in memory (`:memory:`) is allowed.
 
 Reading files is allowed. The full list of audit events is
@@ -109,10 +120,13 @@ changes), but not the evaluation itself.
   temporary git worktree of the base commit. The current version runs from a
   temporary copy of your working tree that holds the files git sees: tracked
   and untracked files, without ignored files, `.git` and the output folder.
-  Symbolic links are copied as links, except absolute links that point
-  into your repository (`data -> /home/me/project/data`): through them,
-  code run from the copy would read and write your real files, so they
-  are left out. Relative links point into the copy and are kept. Absolute
+  Symbolic links are copied as links, except links that would lead from
+  the copy into your repository: absolute links
+  (`data -> /home/me/project/data`), relative links with enough `../` to
+  climb to the file-system root and come back to the repository, and
+  links that loop. Through them, code run from the copy would read and
+  write your real files, so they are left out. Ordinary relative links
+  point into the copy and are kept. Absolute
   links outside the repository are kept; writes through them are stopped
   by the runtime I/O guard, like any write outside the process's
   temporary folder. Both trees are removed afterwards, also after an

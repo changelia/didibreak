@@ -15,36 +15,10 @@ from didibreak.compare import Finding
 from didibreak.functions import Detection
 from didibreak.harness import Outcome
 from didibreak.report import Report, SkippedItem
+from didibreak.terminal import printable
 
 _COLORS = {"unexpected": "31", "unclear": "33", "expected": "32", "new_function": "36"}
 _INDENT = 13
-_SPACE_CONTROLS = "\t\n\r"
-
-
-def printable(text: str) -> str:
-    r"""Text safe for a terminal: no control characters (audit 35a, finding 8).
-
-    LLM replies and the user's ``repr`` can contain escape sequences that
-    move the cursor or change the terminal. Tabs and line breaks become
-    spaces; any other C0 or C1 control character is shown as ``\xNN``.
-    The JSON report keeps the text unchanged.
-
-    Args:
-        text: Text from the LLM or from the code under test.
-
-    Returns:
-        The text with control characters replaced.
-    """
-    return "".join(_printable_character(character) for character in text)
-
-
-def _printable_character(character: str) -> str:
-    code = ord(character)
-    if character in _SPACE_CONTROLS:
-        return " "
-    if code < 0x20 or 0x7F <= code < 0xA0:
-        return f"\\x{code:02x}"
-    return character
 
 
 def counted(count: int, noun: str) -> str:

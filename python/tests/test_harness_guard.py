@@ -14,7 +14,14 @@ from pathlib import Path
 
 import pytest
 
-from didibreak.harness import Case, HarnessSettings, Target, check_import, run_cases
+from didibreak.harness import (
+    Case,
+    HarnessSettings,
+    Target,
+    check_import,
+    matplotlib_cache_folder,
+    run_cases,
+)
 
 SETTINGS = HarnessSettings(python=sys.executable, timeout=5.0)
 
@@ -214,3 +221,131 @@ def test_temporary_files_still_work(tmp_path: Path) -> None:
 
     assert result.skip_reason is None
     assert result.outcomes[0].repr == "'ABC'"
+
+
+CACHE_AT_IMPORT = """
+    import os
+
+    folder = os.path.join(
+        os.environ.get("{variable}", os.path.expanduser("~/.cache/fake")), "mylib"
+    )
+    os.makedirs(folder, exist_ok=True)
+    with open(os.path.join(folder, "index"), "w") as file:
+        file.write("built at import")
+
+    def f(x):
+        with open(os.path.join(folder, "index")) as file:
+            return file.read() + str(x)
+    """
+
+
+@pytest.mark.parametrize(
+    "variable", ["XDG_CACHE_HOME", "MPLCONFIGDIR", "NUMBA_CACHE_DIR"]
+)
+def test_a_module_that_writes_a_cache_at_import_is_run(
+    tmp_path: Path, variable: str
+) -> None:
+    # Task 36 review: such a module was skipped with "blocked: os.mkdir",
+    # because its cache folder is outside the scratch folder.
+    home = tmp_path / "home"
+    home.mkdir()
+    old_cache = home / "old-cache"
+    tree = tmp_path / "tree"
+    tree.mkdir()
+    target = write_tree(tree, {"mod.py": CACHE_AT_IMPORT.format(variable=variable)})
+    environment = {"HOME": str(home), "PATH": "/usr/bin:/bin", variable: str(old_cache)}
+
+    assert check_import(target, SETTINGS, environment) is None
+    result = run_cases(target, [Case(("1",))], SETTINGS, environment)
+
+    assert result.skip_reason is None
+    assert result.outcomes[0].repr == "'built at import1'"
+    assert list(home.iterdir()) == []  # nothing written to the user's folders
+
+
+def test_a_cache_in_the_home_folder_is_still_blocked(tmp_path: Path) -> None:
+    # HOME is not redirected: a library that ignores the cache variables
+    # and writes under the home folder is skipped, as before.
+    home = tmp_path / "home"
+    home.mkdir()
+    tree = tmp_path / "tree"
+    tree.mkdir()
+    target = write_tree(tree, {"mod.py": CACHE_AT_IMPORT.format(variable="UNSET_X")})
+    environment = {"HOME": str(home), "PATH": "/usr/bin:/bin"}
+
+    assert check_import(target, SETTINGS, environment) == "blocked: os.mkdir"
+    assert list(home.iterdir()) == []
+
+
+FONT_LIST_AT_IMPORT = """
+    import os
+
+    folder = os.environ["MPLCONFIGDIR"]
+    names = sorted(os.listdir(folder))
+
+    def f(x):
+        texts = [open(os.path.join(folder, name)).read() for name in names]
+        return names, texts
+    """
+
+
+def test_the_users_matplotlib_font_lists_are_copied_into_the_scratch_cache(
+    tmp_path: Path,
+) -> None:
+    # Task 37 smoke check: with an empty MPLCONFIGDIR, importing
+    # matplotlib.pyplot lists the fonts with a command and the module was
+    # skipped with "blocked: subprocess.Popen".
+    user_folder = tmp_path / "mpl"
+    user_folder.mkdir()
+    (user_folder / "fontlist-v390.json").write_text("fonts")
+    (user_folder / "matplotlibrc").write_text("backend: Agg")
+    tree = tmp_path / "tree"
+    tree.mkdir()
+    target = write_tree(tree, {"mod.py": FONT_LIST_AT_IMPORT})
+    environment = {"PATH": "/usr/bin:/bin", "MPLCONFIGDIR": str(user_folder)}
+
+    result = run_cases(target, [Case(("1",))], SETTINGS, environment)
+
+    assert result.skip_reason is None
+    assert result.outcomes[0].repr == "(['fontlist-v390.json'], ['fonts'])"
+    assert sorted(path.name for path in user_folder.iterdir()) == [
+        "fontlist-v390.json",
+        "matplotlibrc",
+    ]
+
+
+def test_without_font_lists_the_scratch_cache_starts_empty(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    home.mkdir()
+    tree = tmp_path / "tree"
+    tree.mkdir()
+    target = write_tree(tree, {"mod.py": FONT_LIST_AT_IMPORT})
+    environment = {"HOME": str(home), "PATH": "/usr/bin:/bin"}
+
+    result = run_cases(target, [Case(("1",))], SETTINGS, environment)
+
+    assert result.skip_reason is None
+    assert result.outcomes[0].repr == "([], [])"
+    assert list(home.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    ("platform", "environment", "expected"),
+    [
+        ("darwin", {"MPLCONFIGDIR": "/m", "HOME": "/h"}, Path("/m")),
+        ("darwin", {"HOME": "/h", "XDG_CACHE_HOME": "/x"}, Path("/h/.matplotlib")),
+        ("linux", {"HOME": "/h", "XDG_CACHE_HOME": "/x"}, Path("/x/matplotlib")),
+        ("linux", {"HOME": "/h"}, Path("/h/.cache/matplotlib")),
+        ("linux", {}, None),
+        ("darwin", {}, None),
+    ],
+)
+def test_matplotlib_cache_folder_follows_matplotlibs_rule(
+    monkeypatch: pytest.MonkeyPatch,
+    platform: str,
+    environment: dict[str, str],
+    expected: Path | None,
+) -> None:
+    monkeypatch.setattr(sys, "platform", platform)
+
+    assert matplotlib_cache_folder(environment) == expected

@@ -9,8 +9,9 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
-Safety fixes from the pre-launch review (`evaluation/review-prelaunch.md`,
-findings 1, 2, 5, 6 and 7). The JSON report keeps `schema_version: 1`.
+Safety and robustness fixes from the pre-launch review
+(`evaluation/review-prelaunch.md`, findings 1 to 14). The JSON report keeps
+`schema_version: 1`.
 
 #### Added
 
@@ -30,6 +31,15 @@ findings 1, 2, 5, 6 and 7). The JSON report keeps `schema_version: 1`.
 - The code under test gets its temporary folder as `TMPDIR` too.
 - A module that writes a file outside that folder while it is imported is
   skipped with `blocked: open` instead of being run.
+- `XDG_CACHE_HOME`, `MPLCONFIGDIR` and `NUMBA_CACHE_DIR` point into that
+  temporary folder for the code under test, so a library that writes its
+  cache while it is imported is run instead of skipped. `HOME` is not
+  changed.
+- Your existing Matplotlib font lists (`fontlist-*.json`) are copied into
+  that `MPLCONFIGDIR`, so a module that imports `matplotlib.pyplot` is run
+  instead of skipped with `blocked: subprocess.Popen`. Without a font list
+  for the installed Matplotlib version it is still skipped
+  (`docs/safety.md`).
 
 #### Fixed
 
@@ -45,6 +55,49 @@ findings 1, 2, 5, 6 and 7). The JSON report keeps `schema_version: 1`.
   provider, so the API key was sent to that host. Any `--provider` that
   differs from the file's `provider` now discards both, as presets
   already did; `--base-url` on the command line still applies.
+- `timeout` has a maximum of 3600 seconds. A larger value (`--timeout 1e9`)
+  overflowed the timer: every case ended the process in both versions, no
+  change was found and the run passed with exit 0. It is now rejected with
+  exit 2.
+- `max_tokens` and `max_cost` also stop a run when the server reports no
+  token usage (no `usage` object, zeros or negative numbers). Such calls
+  counted as 0 tokens, so the limits never applied and the report showed
+  0 tokens. They now count an estimate from the size of the request and
+  the reply, and a warning on stderr says so.
+- A repository with an absolute symbolic link that loops (points to itself
+  or forms a cycle) ended the run with a traceback and exit code 1 since
+  0.1.5. Such a link is now left out of the temporary copy, like other
+  absolute links into the repository.
+- A relative symbolic link with enough `../` to reach the file-system root
+  and come back to the repository was copied into the temporary copy, so
+  code run from the copy could reach the real files through it. Such
+  links are now left out, like absolute links into the repository.
+- The `didibreak: error:` and `didibreak: warning:` lines on stderr escape
+  control characters like the text report does. A provider error message
+  with terminal escape codes could clear the screen or change the
+  terminal's title through the exit-2 line and the "model not found"
+  message.
+- An unexpected exception inside didibreak ends with exit code 2 and one
+  line, `didibreak: error: internal error (...)`, that asks for a bug
+  report (`-v` adds the traceback). Before, it left with a traceback and
+  exit code 1, the code that means "findings". A `Retry-After: nan`
+  header from a provider was one way to get there; it is now ignored.
+- An argument with a comment (`2  # the smallest even prime`) is a valid
+  literal, but pasted into the reproducing test it swallowed the rest of
+  the line: the file had a syntax error and the tests of the other
+  findings were lost with it. Accepted arguments are now stored in a
+  normal form (no comments, standard spacing and quotes), which reports,
+  reproducing tests and the cache all use.
+- Returned strings and bytes have a size limit. A value longer than
+  100,000 characters is compared by its length and SHA-256 digest instead
+  of being stored, and a value with more than 1,000,000 characters of
+  text in total is compared by type only. Before, one 40 MB return value
+  cost the didibreak process about 230 MB of memory.
+- An API key variable whose value has a space, a line break or a
+  character outside printable ASCII is rejected before any request, with
+  exit 2 and a message that names the variable and never shows the
+  value. Before, a key with a trailing line break gave `llm unavailable`
+  after three attempts, and the internal error text quoted the key.
 
 ### 0.1.5
 
