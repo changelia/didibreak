@@ -9,9 +9,42 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
-Safety and robustness fixes from the pre-launch review
+### 0.2.0 - 2026-11-15
+
+The cleanup from the code audit (`evaluation/audit-35a.md`, findings 7 and
+9–12; prepared as 0.1.5, which was never tagged) and the safety and
+robustness fixes from the pre-launch review
 (`evaluation/review-prelaunch.md`, findings 1 to 14). The JSON report keeps
 `schema_version: 1`.
+
+#### Upgrading from 0.1.x
+
+- **Runtime I/O guard.** A function that runs a command, reaches the
+  network, loads native code or changes files outside its temporary folder
+  while it runs, or while its module is imported, is now skipped with
+  `blocked: <event>` (for example `blocked: os.system`) instead of being
+  run. Such skips are by design: a run where every function is blocked
+  exits 0 with "No function was checked" and `functions_checked: 0`
+  (`docs/safety.md`).
+- **Exit code 2 when nothing could be checked.** When functions were
+  selected but none could be checked because of an error (provider
+  unreachable, invalid replies, a cost or token limit, an import failure),
+  `check` exits 2 (since 0.1.4; before, 0). An unexpected error inside
+  didibreak now also exits 2 with an `internal error` line, not 1, so exit
+  1 always means findings.
+- **Stricter config validation**, with exit 2 before any request:
+  `timeout` above 3600 seconds; `nan` or `inf` for `timeout`, `max_cost`
+  and `prices` (since 0.1.4); an API key variable whose value is more than
+  the key (a space, a line break, a non-printable character). A
+  `--provider` flag that differs from the file's `provider` now discards
+  the file's `base_url` and `api_key_env`; a file that sets them without
+  `provider` counts as another provider, so add `provider` to it.
+- **Environment scrub.** More credentials are removed from the environment
+  of the code under test: names containing `PASS`, `APIKEY` or `API_KEY`,
+  names ending in `_PAT`, `_PWD` or `_CREDENTIALS`, and URL or proxy
+  variables that carry a password. Code that reads such a variable sees it
+  missing. `TMPDIR`, `XDG_CACHE_HOME`, `MPLCONFIGDIR` and
+  `NUMBA_CACHE_DIR` point into the temporary folder.
 
 #### Added
 
@@ -25,6 +58,9 @@ Safety and robustness fixes from the pre-launch review
   classes, decorators and other modules. It is defence in depth, not a
   sandbox: C extensions with their own I/O are not stopped
   (`docs/safety.md`).
+- GitHub issue templates: a bug report that asks for the didibreak and
+  Python versions, the OS, the exact command and the output (with API keys
+  removed), a feature request, and links to the docs.
 
 #### Changed
 
@@ -40,6 +76,17 @@ Safety and robustness fixes from the pre-launch review
   instead of skipped with `blocked: subprocess.Popen`. Without a font list
   for the installed Matplotlib version it is still skipped
   (`docs/safety.md`).
+- One rule checks case arguments everywhere (LLM replies, the case cache,
+  the developer option `--cases-file` and the harness): Python literals of
+  at most 2,000 characters, with usable keyword names. `--cases-file` now
+  also rejects longer arguments and keyword names such as `class`, as LLM
+  replies always did.
+- Internal cleanup with no change to the output: dead code removed, stale
+  comments rewritten, and the longest functions (`check`, the harness
+  child start, the git change list, the report builder) split into named
+  steps.
+- AGENTS.md and CONTRIBUTING: never pipe a check through a command that
+  hides its exit code (`| tail`); use `set -o pipefail`.
 
 #### Fixed
 
@@ -64,14 +111,13 @@ Safety and robustness fixes from the pre-launch review
   counted as 0 tokens, so the limits never applied and the report showed
   0 tokens. They now count an estimate from the size of the request and
   the reply, and a warning on stderr says so.
-- A repository with an absolute symbolic link that loops (points to itself
-  or forms a cycle) ended the run with a traceback and exit code 1 since
-  0.1.5. Such a link is now left out of the temporary copy, like other
-  absolute links into the repository.
-- A relative symbolic link with enough `../` to reach the file-system root
-  and come back to the repository was copied into the temporary copy, so
-  code run from the copy could reach the real files through it. Such
-  links are now left out, like absolute links into the repository.
+- Symbolic links that lead into the repository are no longer copied into
+  the temporary copy the current version runs from, so code run from the
+  copy cannot write the real files through them: absolute links into the
+  repository, and relative links with enough `../` to reach the
+  file-system root and come back. An absolute link that loops (points to
+  itself or forms a cycle) is left out too. Other relative links and links
+  outside the repository are still copied.
 - The `didibreak: error:` and `didibreak: warning:` lines on stderr escape
   control characters like the text report does. A provider error message
   with terminal escape codes could clear the screen or change the
@@ -98,39 +144,6 @@ Safety and robustness fixes from the pre-launch review
   exit 2 and a message that names the variable and never shows the
   value. Before, a key with a trailing line break gave `llm unavailable`
   after three attempts, and the internal error text quoted the key.
-
-### 0.1.5
-
-Released when the tag `py-v0.1.5` is pushed. Cleanup and contributor
-readiness from the code audit (`evaluation/audit-35a.md`, findings 7 and
-9–12). The JSON report keeps `schema_version: 1`.
-
-#### Added
-
-- GitHub issue templates: a bug report that asks for the didibreak and
-  Python versions, the OS, the exact command and the output (with API keys
-  removed), a feature request, and links to the docs.
-
-#### Fixed
-
-- Absolute symbolic links that point into the repository are no longer
-  copied into the temporary copy the current version runs from, so code
-  run from the copy cannot write the real files through them. Relative
-  links and links outside the repository are still copied.
-
-#### Changed
-
-- One rule checks case arguments everywhere (LLM replies, the case cache,
-  the developer option `--cases-file` and the harness): Python literals of
-  at most 2,000 characters, with usable keyword names. `--cases-file` now
-  also rejects longer arguments and keyword names such as `class`, as LLM
-  replies always did.
-- Internal cleanup with no change to the output: dead code removed, stale
-  comments rewritten, and the longest functions (`check`, the harness
-  child start, the git change list, the report builder) split into named
-  steps.
-- AGENTS.md and CONTRIBUTING: never pipe a check through a command that
-  hides its exit code (`| tail`); use `set -o pipefail`.
 
 ### 0.1.4
 
