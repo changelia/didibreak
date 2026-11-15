@@ -10,8 +10,10 @@ outlives all of them.
 import contextlib
 import json
 import os
+import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field, replace
@@ -49,6 +51,8 @@ URL_SUFFIXES = ("_URL", "_URI", "_DSN", "_PROXY")
 # Matplotlib (MPLCONFIGDIR) and Numba (NUMBA_CACHE_DIR). HOME stays as it
 # is: code reads far more than caches from it.
 CACHE_VARIABLES = ("XDG_CACHE_HOME", "MPLCONFIGDIR", "NUMBA_CACHE_DIR")
+# Matplotlib's cached list of the system fonts, one file per cache version.
+MATPLOTLIB_FONT_LISTS = "fontlist-*.json"
 # Extra time for interpreter start and import before the child is killed.
 _KILL_GRACE_SECONDS = 5.0
 PROCESS_EXITED_TYPE = "didibreak.ProcessExited"
@@ -244,22 +248,71 @@ def _write_request(
     path.write_text(json.dumps(request), encoding="utf-8")
 
 
-def scratch_environment(scratch: Path) -> dict[str, str]:
+def matplotlib_cache_folder(environment: Mapping[str, str]) -> Path | None:
+    """Folder where Matplotlib keeps its font list for this user.
+
+    Follows Matplotlib's documented rule: ``MPLCONFIGDIR`` when set;
+    otherwise ``$XDG_CACHE_HOME/matplotlib`` (``~/.cache/matplotlib``) on
+    Linux and FreeBSD, and ``~/.matplotlib`` elsewhere.
+
+    Args:
+        environment: The parent's environment variables.
+
+    Returns:
+        The folder, which may not exist, or None when it cannot be known.
+    """
+    configured = environment.get("MPLCONFIGDIR")
+    if configured:
+        return Path(configured)
+    home = environment.get("HOME")
+    if sys.platform.startswith(("linux", "freebsd")):
+        cache = environment.get("XDG_CACHE_HOME")
+        if cache:
+            return Path(cache, "matplotlib")
+        return Path(home, ".cache", "matplotlib") if home else None
+    return Path(home, ".matplotlib") if home else None
+
+
+def _copy_matplotlib_font_lists(
+    environment: Mapping[str, str], destination: Path
+) -> None:
+    # With an empty MPLCONFIGDIR, importing matplotlib.pyplot lists the
+    # system fonts with a command (fc-list, system_profiler), which the I/O
+    # guard blocks. The user's existing font lists make that unnecessary.
+    # Best effort: without them the module is skipped as before.
+    source = matplotlib_cache_folder(environment)
+    if source is None:
+        return
+    try:
+        for font_list in source.glob(MATPLOTLIB_FONT_LISTS):
+            if font_list.is_file():
+                shutil.copy(font_list, destination / font_list.name)
+    except OSError:
+        return
+
+
+def scratch_environment(
+    scratch: Path, environment: Mapping[str, str]
+) -> dict[str, str]:
     """Variables that send temporary files and caches into the scratch folder.
 
     Args:
         scratch: The child's working directory, where the runtime I/O guard
             allows changes.
+        environment: The parent's environment variables, used to find the
+            user's Matplotlib font lists.
 
     Returns:
         ``TMPDIR`` (the folder itself, for ``tempfile``) and one existing
-        subfolder per name in CACHE_VARIABLES.
+        subfolder per name in CACHE_VARIABLES. The ``MPLCONFIGDIR`` folder
+        starts with a copy of the user's Matplotlib font lists, if any.
     """
     variables = {"TMPDIR": str(scratch)}
     for name in CACHE_VARIABLES:
         folder = scratch / ".didibreak-caches" / name.lower()
         folder.mkdir(parents=True, exist_ok=True)
         variables[name] = str(folder)
+    _copy_matplotlib_font_lists(environment, Path(variables["MPLCONFIGDIR"]))
     return variables
 
 
@@ -284,7 +337,7 @@ def _spawn(
         # also the temporary and cache folder of the code under test.
         env={
             **child_environment(environment, settings.api_key_env),
-            **scratch_environment(working_directory),
+            **scratch_environment(working_directory, environment),
         },
         stdin=subprocess.DEVNULL,
         # The user's prints must not reach didibreak's output.

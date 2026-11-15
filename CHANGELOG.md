@@ -35,6 +35,11 @@ Safety and robustness fixes from the pre-launch review
   temporary folder for the code under test, so a library that writes its
   cache while it is imported is run instead of skipped. `HOME` is not
   changed.
+- Your existing Matplotlib font lists (`fontlist-*.json`) are copied into
+  that `MPLCONFIGDIR`, so a module that imports `matplotlib.pyplot` is run
+  instead of skipped with `blocked: subprocess.Popen`. Without a font list
+  for the installed Matplotlib version it is still skipped
+  (`docs/safety.md`).
 
 #### Fixed
 

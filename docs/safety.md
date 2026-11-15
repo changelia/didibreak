@@ -46,10 +46,16 @@ is imported. While your module is imported and while a case runs, it stops:
   the `tempfile` module still work; it is removed afterwards. The cache
   variables `XDG_CACHE_HOME`, `MPLCONFIGDIR` and `NUMBA_CACHE_DIR` point
   into it too, so a library that writes a cache while it is imported
-  (Matplotlib's font cache, for example) still runs; it starts with an
-  empty cache each time. `HOME` is not changed: a module that writes
-  under your home folder without these variables is skipped with
-  `blocked: <event>`. An SQLite database in memory (`:memory:`) is allowed.
+  still runs; it starts with an empty cache each time. One exception:
+  your existing Matplotlib font lists (`fontlist-*.json`) are copied into
+  that `MPLCONFIGDIR`, because with an empty one `matplotlib.pyplot` lists
+  the system fonts with a command, which the guard stops. If you have
+  never imported `matplotlib.pyplot` with that Matplotlib version, a
+  module that imports it is skipped with `blocked: subprocess.Popen`;
+  import it once yourself and run again. Your `matplotlibrc` is not used.
+  `HOME` is not changed: a module that writes under your home folder
+  without these variables is skipped with `blocked: <event>`. An SQLite
+  database in memory (`:memory:`) is allowed.
 
 Reading files is allowed. The full list of audit events is
 `BLOCKED_EVENTS` in
