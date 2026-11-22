@@ -1,0 +1,118 @@
+{
+ "asyncstdlib-replay-3879b3d/4b7303aa70d2": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "asyncstdlib-replay-3879b3d/b0745c4e536b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "asyncstdlib-replay-3879b3d/de3e385dcfbc": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "asyncstdlib-replay-3879b3d/84e1e7468f5a": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "asyncstdlib-replay-3879b3d/3b23e5b5dac4": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "asyncstdlib-replay-3879b3d/314b54e344e1": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "asyncstdlib-replay-3879b3d/e4fc455677c2": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "asyncstdlib-replay-3879b3d/9d64267ab607": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "asyncstdlib-replay-3879b3d/2dae83c83d96": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "asyncstdlib-replay-3879b3d/df3de271a85d": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "asyncstdlib-replay-3879b3d/c00fe6f34db5": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "asyncstdlib-replay-3879b3d/c1267a3f74fd": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "asyncstdlib-seeded-feature-dict/afd24c927844": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "asyncstdlib-seeded-feature-dict/83cd5bd36666": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "asyncstdlib-seeded-feature-dict/80cb47fa6940": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "asyncstdlib-seeded-feature-dict/7af54e2d22d7": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "asyncstdlib-seeded-feature-dict/113727da426d": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "asyncstdlib-seeded-feature-dict/286afd5f8a03": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "asyncstdlib-seeded-feature-sorted/0a549ff92cba": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "asyncstdlib-seeded-feature-sorted/159ad296a8ff": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "asyncstdlib-seeded-feature-sorted/ae9a2005c885": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "asyncstdlib-seeded-feature-sorted/67a3030990d5": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (borderline: with reverse=True, None comes first although the intent says None last)"
+ },
+ "asyncstdlib-seeded-feature-sorted/8d9fcf26b129": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "asyncstdlib-seeded-feature-sorted/f1cc1de218a7": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "asyncstdlib-seeded-feature-sorted/c22e5f1a67c9": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "asyncstdlib-seeded-feature-sorted/81eb72d81a21": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "asyncstdlib-seeded-feature-sorted/7f31dcc36a56": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "asyncstdlib-seeded-feature-sorted/e79ad1bdf4a5": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "asyncstdlib-seeded-feature-sorted/e581030dac35": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ }
+}

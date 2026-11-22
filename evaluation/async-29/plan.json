@@ -1,0 +1,88 @@
+{
+  "budget": 5.0,
+  "max_cost_per_run": 0.1,
+  "extra_spent": 0.0,
+  "extra_spent_note": "Task 29 async measurement: a separate budget from the task 21 evaluation.",
+  "repos": {
+    "asyncstdlib": {
+      "url": "https://github.com/maxfischer2781/asyncstdlib",
+      "head": "0f01ce7"
+    }
+  },
+  "scenarios": [
+    {
+      "id": "asyncstdlib-replay-3879b3d",
+      "repo": "asyncstdlib",
+      "kind": "replay",
+      "commit": "3879b3dcdd17665b2634f77775167f9d19c0aac1",
+      "intent": "Refactor the builtins module for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-replay-fa54340",
+      "repo": "asyncstdlib",
+      "kind": "replay",
+      "commit": "fa543404c980d7928116c12ee43c9219040926b2",
+      "intent": "Refactor the builtins module for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-replay-fb1dca4",
+      "repo": "asyncstdlib",
+      "kind": "replay",
+      "commit": "fb1dca469bd8b54adf717f7756695ce9e7b7c09d",
+      "intent": "Refactor the builtins module for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-replay-730c981",
+      "repo": "asyncstdlib",
+      "kind": "replay",
+      "commit": "730c981c82590c2923fb62277ef2be39b8cbbc9e",
+      "intent": "Refactor the builtins module for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-replay-b537d07",
+      "repo": "asyncstdlib",
+      "kind": "replay",
+      "commit": "b537d076bfd10251ca8bb933e0ff5b9a4b6fbc82",
+      "intent": "Refactor the heapq module for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-replay-d5363de",
+      "repo": "asyncstdlib",
+      "kind": "replay",
+      "commit": "d5363de84d4b15633f5af05ef7517dba5e2e7fdf",
+      "intent": "Refactor the builtins module for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-seeded-refactor-sum",
+      "repo": "asyncstdlib",
+      "kind": "seeded",
+      "commit": "0f01ce79fcdeedee199971fa7dae150018766aa3",
+      "patch": "patches/asyncstdlib-seeded-refactor-sum.diff",
+      "intent": "Refactor sum() for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-seeded-refactor-all_any",
+      "repo": "asyncstdlib",
+      "kind": "seeded",
+      "commit": "0f01ce79fcdeedee199971fa7dae150018766aa3",
+      "patch": "patches/asyncstdlib-seeded-refactor-all_any.diff",
+      "intent": "Refactor all() and any() for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-seeded-feature-sorted",
+      "repo": "asyncstdlib",
+      "kind": "seeded",
+      "commit": "0f01ce79fcdeedee199971fa7dae150018766aa3",
+      "patch": "patches/asyncstdlib-seeded-feature-sorted.diff",
+      "intent": "Sort None values last in sorted()."
+    },
+    {
+      "id": "asyncstdlib-seeded-feature-dict",
+      "repo": "asyncstdlib",
+      "kind": "seeded",
+      "commit": "0f01ce79fcdeedee199971fa7dae150018766aa3",
+      "patch": "patches/asyncstdlib-seeded-feature-dict.diff",
+      "intent": "Let dict() accept a mapping as its first argument, like the builtin dict()."
+    }
+  ]
+}
