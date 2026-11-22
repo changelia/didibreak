@@ -9,6 +9,13 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
+### 0.3.0 - 2026-11-22
+
+**Highlight: `async def` functions are now checked.** Each case runs the
+coroutine with `asyncio.run`, under the same timeout, comparison rules and
+runtime I/O guard as other functions; async generators stay skipped. The
+JSON report keeps `schema_version: 1`.
+
 #### Added
 
 - `async def` functions are checked instead of skipped. Each case runs the
