@@ -40,7 +40,7 @@ agents), run didibreak inside a container or a CI job. It works best on
 functions whose inputs are Python literals; async functions, instance
 methods, generators and functions with obvious I/O are skipped ([limitations](https://github.com/changelia/didibreak/blob/main/docs/limitations.md)).
 
-Requires Python 3.11 or newer, Linux or macOS, and git. didibreak 0.2.0 is
+Requires Python 3.11 or newer, Linux or macOS, and git. didibreak is
 alpha. No telemetry: the only network requests go to the LLM
 provider you configure, with your own API key.
 

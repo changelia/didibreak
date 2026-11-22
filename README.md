@@ -26,7 +26,8 @@ old version as the reference, so it needs no hand-written expected values.
 
 ## Status
 
-0.2.0 (alpha; first release 0.1.0 on 2026-11-10): Python only, Linux and macOS. The release
+Alpha (first release 0.1.0 on 2026-11-10; current version in
+[CHANGELOG.md](CHANGELOG.md)): Python only, Linux and macOS. The release
 precision gate is met: in an evaluation on seven real libraries, 87% of `unexpected` findings
 were real behavior changes ([evaluation/README.md](evaluation/README.md)).
 The 7 libraries were chosen for literal-friendly functions, the labels are
@@ -40,8 +41,7 @@ Python 3.11+, Linux or macOS:
 pip install didibreak
 ```
 
-JavaScript / TypeScript: not available yet; coming after Python 0.1.0 as
-`npm install didibreak`.
+JavaScript / TypeScript: planned, not available yet.
 
 ## Quick start and example output
 
@@ -83,7 +83,7 @@ strings, numbers, booleans, `None`, and lists, tuples, dicts and sets of
 these. Parsers, formatters, validators, converters and small utility
 libraries are the sweet spot.
 
-**Skipped in 0.2.0**, each listed in the report with its reason:
+**Currently skipped**, each listed in the report with its reason:
 
 - `async` functions;
 - instance methods (they need an object; `@staticmethod` and

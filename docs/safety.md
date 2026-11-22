@@ -91,9 +91,9 @@ for which Python raises an audit event:
   timeout still applies), and changes to the process itself.
 - Importing your module runs its top-level code, under the guard.
 
-A container (or a CI job) is the real isolation. There is none in 0.2.0:
-for code you did not write, run didibreak inside a container or a CI job
-yourself.
+A container (or a CI job) is the real isolation, and didibreak does not
+provide one: for code you did not write, run didibreak inside a container
+or a CI job yourself.
 
 ## What didibreak writes
 
