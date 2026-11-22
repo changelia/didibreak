@@ -2,12 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/changelia/didibreak/spec/report.schema.json",
   "title": "didibreak JSON report",
-  "description": "Output of `didibreak check --format json`, schema_version 1 (Detailed Design section 6).",
+  "description": "Output of `didibreak check --format json`, schema_version 2 (Detailed Design section 6). Version 2 (task 30) adds init_args and init_kwargs to findings of instance methods, state to their outcomes, and summary.construction_dropped.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "tool", "base", "intent", "findings", "summary", "usage"],
   "properties": {
-    "schema_version": {"const": 1},
+    "schema_version": {"const": 2},
     "tool": {
       "type": "object",
       "additionalProperties": false,
@@ -65,6 +65,16 @@
           "additionalProperties": {"type": "string"},
           "description": "Argument name to Python literal expression."
         },
+        "init_args": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Constructor arguments as Python literal expressions; only for instance methods."
+        },
+        "init_kwargs": {
+          "type": "object",
+          "additionalProperties": {"type": "string"},
+          "description": "Constructor argument name to Python literal expression; only for instance methods."
+        },
         "before": {
           "oneOf": [{"$ref": "#/$defs/outcome"}, {"type": "null"}],
           "description": "Outcome on the base version; null for new functions."
@@ -88,6 +98,11 @@
           "type": "string",
           "maxLength": 500,
           "description": "Exception message; present only when kind is exception."
+        },
+        "state": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "The instance's attributes after the call, as text; only for instance methods."
         }
       }
     },
@@ -96,7 +111,8 @@
       "additionalProperties": false,
       "required": [
         "functions_checked", "cases_run", "findings", "flaky_dropped",
-        "invalid_cases_dropped", "type_mismatch_dropped", "skipped", "removed"
+        "invalid_cases_dropped", "type_mismatch_dropped", "construction_dropped",
+        "skipped", "removed"
       ],
       "properties": {
         "functions_checked": {"type": "integer", "minimum": 0},
@@ -118,6 +134,11 @@
           "type": "integer",
           "minimum": 0,
           "description": "Findings dropped because their inputs contradict the function's type annotations."
+        },
+        "construction_dropped": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Method cases dropped because the instance could not be built in one version or both."
         },
         "skipped": {
           "type": "array",

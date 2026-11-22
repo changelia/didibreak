@@ -9,6 +9,16 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
+#### Changed
+
+- The JSON report is `schema_version: 2`. It only adds keys to version 1:
+  `init_args` and `init_kwargs` on findings of instance methods, `state`
+  (the instance's attributes after the call) on their outcomes, and
+  `summary.construction_dropped`. A report without method findings has
+  the same keys as before apart from that count (`docs/output-format.md`).
+  The text report shows a `state before … → after …` line when the
+  instance changed.
+
 ### 0.3.0 - 2026-11-22
 
 **Highlight: `async def` functions are now checked.** Each case runs the

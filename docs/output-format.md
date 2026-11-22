@@ -56,10 +56,14 @@ text.
 Example (the part after the header and the estimate):
 
 ```text
-14 cases · 3 behavior changes · 1 flaky dropped
+17 cases · 4 behavior changes · 1 flaky dropped
   UNEXPECTED   app/utils/phone.py::normalize_phone('995 555 12 34 56')
                before '+995555123456' → after '+995995555123456'
                intent covers international numbers, not local numbers without plus
+  UNEXPECTED   app/bank.py::Account(100).deposit(-50)
+               before None → after None
+               state before {'balance': 100} → after {'balance': 50}
+               a negative deposit now lowers the balance
   EXPECTED     app/utils/phone.py::normalize_phone('+1 202 555 0100')
                before '+99512025550100' → after '+12025550100'
                intent covers international numbers
@@ -67,9 +71,10 @@ Example (the part after the header and the estimate):
                before (new function) → after raises builtins.ValueError
   skipped: app/db.py::save_user (obvious I/O: session.commit)
 Removed: app/old.py::legacy
-Reproducing tests: .didibreak/tests/test_normalize_phone.py
+Reproducing tests: .didibreak/tests/test_normalize_phone.py, .didibreak/tests/test_Account_deposit.py
   no test: app/utils/phone.py::normalize_phone('+1 202 555 0100') (expected change)
   no test: app/text.py::initials('', strict=True) (new function: no base behavior to assert)
+1 method cases dropped (the instance could not be built in both versions)
 3 findings dropped (inputs outside the type annotations)
 2 invalid cases dropped (not Python literals)
 Refinement: 1 function(s) got 4 more cases
@@ -79,12 +84,18 @@ LLM: 3 calls · 3400 input tokens · 810 output tokens (400 reasoning) · cost $
 ## JSON report
 
 The schema is [`spec/report.schema.json`](../spec/report.schema.json)
-(`schema_version: 1`). Keys always come in the order below, and every object
+(`schema_version: 2`). Keys always come in the order below, and every object
 is strict. From the first release on, a new key needs a new `schema_version`.
+
+Version 2 (instance methods) only adds keys to version 1: `init_args` and
+`init_kwargs` on findings of instance methods, `state` on their outcomes,
+and `summary.construction_dropped`. A report with no method finding has the
+same keys as version 1 apart from that count, so a reader of version 1
+that ignores unknown keys keeps working.
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "tool": {
     "name": "didibreak",
     "version": "0.1.0"
@@ -140,6 +151,34 @@ is strict. From the first release on, a new key needs a new `schema_version`.
       "test_file": ".didibreak/tests/test_normalize_phone.py"
     },
     {
+      "id": "7d4e1f0a9b3c",
+      "function": "app/bank.py::Account.deposit",
+      "label": "unexpected",
+      "reason": "a negative deposit now lowers the balance",
+      "confidence": "high",
+      "args": [
+        "-50"
+      ],
+      "kwargs": {},
+      "init_args": [
+        "100"
+      ],
+      "init_kwargs": {},
+      "before": {
+        "kind": "return",
+        "type_name": "builtins.NoneType",
+        "repr": "None",
+        "state": "{'balance': 100}"
+      },
+      "after": {
+        "kind": "return",
+        "type_name": "builtins.NoneType",
+        "repr": "None",
+        "state": "{'balance': 50}"
+      },
+      "test_file": ".didibreak/tests/test_Account_deposit.py"
+    },
+    {
       "id": "0a1b2c3d4e5f",
       "function": "app/text.py::initials",
       "label": "new_function",
@@ -162,17 +201,18 @@ is strict. From the first release on, a new key needs a new `schema_version`.
     }
   ],
   "summary": {
-    "functions_checked": 2,
-    "cases_run": 14,
+    "functions_checked": 3,
+    "cases_run": 17,
     "findings": {
       "expected": 1,
-      "unexpected": 1,
+      "unexpected": 2,
       "unclear": 0,
       "new_function": 1
     },
     "flaky_dropped": 1,
     "invalid_cases_dropped": 2,
     "type_mismatch_dropped": 3,
+    "construction_dropped": 1,
     "skipped": [
       {
         "function": "app/db.py::save_user",
@@ -196,7 +236,7 @@ is strict. From the first release on, a new key needs a new `schema_version`.
 
 | Key | Meaning |
 | --- | --- |
-| `schema_version` | Always `1` for this format. |
+| `schema_version` | `2` for this format (`1` before instance methods were checked). |
 | `tool` | `tool.name` is `didibreak`; `tool.version` is the installed version. |
 | `base` | `base.ref` is `--base` as given; `base.sha` is the full commit it resolved to. |
 | `intent` | The intent text used for labelling (`--intent` and the commit messages since the base), or `null`. |
@@ -208,12 +248,15 @@ is strict. From the first release on, a new key needs a new `schema_version`.
 | `findings[].confidence` | `high` when both outcomes were compared by value, `low` when only by type. |
 | `findings[].args` | Positional arguments as Python literals, in their normal form (no comments, standard spacing and quotes). |
 | `findings[].kwargs` | Keyword arguments as Python literals. |
+| `findings[].init_args` | Only for an instance method: the positional constructor arguments the instance was built with, as Python literals. The method was called on that instance with `args` and `kwargs`. |
+| `findings[].init_kwargs` | Only for an instance method: the constructor's keyword arguments. |
 | `findings[].before` | Outcome on the base, or `null` for a new function. |
 | `findings[].after` | Outcome on the working tree. |
 | `findings[].after.kind` | `return`, `exception` or `timeout` (the same keys for `before`). |
 | `findings[].after.type_name` | Qualified type of the return value or exception. |
 | `findings[].after.repr` | `repr` of the value or exception, at most 2,000 characters. |
 | `findings[].after.message` | Exception message, at most 500 characters; only for exceptions. |
+| `findings[].after.state` | Only for an instance method: the instance's attributes after the call (`__dict__` and slots), as text, at most 2,000 characters. A different state is a finding even when the result is the same. |
 | `findings[].test_file` | Reproducing pytest file, relative to the repository root (absolute when `output_dir` is outside it), or `null`: findings labelled `expected`, new functions, a base version that timed out or ended the process, or a folder that could not be written. |
 | `summary` | Counts for the whole run. |
 | `summary.functions_checked` | Functions whose cases ran on both versions. |
@@ -226,6 +269,7 @@ is strict. From the first release on, a new key needs a new `schema_version`.
 | `summary.flaky_dropped` | Cases dropped because a version gave different results on two runs. |
 | `summary.invalid_cases_dropped` | LLM cases rejected because an argument was not a Python literal. |
 | `summary.type_mismatch_dropped` | Findings dropped because an input contradicts the function's type annotations (for example `bytes` for a `str` parameter). Only simple annotations are checked: builtin types, `None`, `Optional`/`Union`, and `list`, `dict`, `tuple`, `set` of these. |
+| `summary.construction_dropped` | Method cases dropped because the instance could not be built from the case's constructor arguments in one version or both. |
 | `summary.skipped` | Functions not checked. Files that could not be read appear with their path; functions cut by `max_functions` have the reason `limit`. |
 | `summary.skipped[].function` | `path::qualname`, or a file path. |
 | `summary.skipped[].reason` | Why it was skipped, for example `obvious I/O: session.commit`, `blocked: os.system`, `cost limit` or `token limit`. |

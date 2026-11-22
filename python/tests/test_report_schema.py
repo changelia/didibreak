@@ -27,11 +27,19 @@ def _load_schema() -> dict[str, Any]:
     return schema
 
 
-def test_schema_is_draft_2020_12_for_version_1() -> None:
+def test_schema_is_draft_2020_12_for_version_2() -> None:
     schema = _load_schema()
 
     assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
-    assert schema["properties"]["schema_version"] == {"const": 1}
+    assert schema["properties"]["schema_version"] == {"const": 2}
+
+
+def test_version_2_only_adds_keys_and_they_are_optional_on_findings() -> None:
+    definitions = _load_schema()["$defs"]
+
+    assert "init_args" not in definitions["finding"]["required"]
+    assert "state" not in definitions["outcome"]["required"]
+    assert "construction_dropped" in definitions["summary"]["required"]
 
 
 def test_schema_requires_every_top_level_report_section() -> None:

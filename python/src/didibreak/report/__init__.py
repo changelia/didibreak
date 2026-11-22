@@ -2,7 +2,7 @@
 
 ``Report`` holds everything both formats show; report/text.py and
 report/json.py only render it. Detailed Design sections 6 (JSON,
-schema_version 1) and 7 (text) define the output.
+schema_version 2 since task 30) and 7 (text) define the output.
 """
 
 from dataclasses import dataclass
@@ -57,6 +57,8 @@ class Report:
         invalid_cases_dropped: LLM cases that were not Python literals.
         type_mismatch_dropped: Findings dropped because their inputs
             contradict the function's type annotations (task 21a).
+        construction_dropped: Method cases dropped because the instance
+            could not be built in one version or both (task 30).
         skipped: Functions (and unreadable files) not checked, with reasons.
         removed: ``path::qualname`` of removed functions.
         usage: LLM use.
@@ -85,6 +87,7 @@ class Report:
     test_files: tuple[str, ...] = ()
     no_tests: tuple[SkippedItem, ...] = ()
     type_mismatch_dropped: int = 0
+    construction_dropped: int = 0
 
     def by_label(self) -> list[tuple[str, list[Finding]]]:
         """Findings grouped in report order: unexpected, unclear, expected, new."""
