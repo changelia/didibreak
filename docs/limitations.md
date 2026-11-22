@@ -51,6 +51,9 @@ Obvious I/O. Names are resolved through the module's imports and aliases, so
   `os.spawn*`, `os.posix_spawn*`, `os.fork*`, `os.kill*`,
   `asyncio.create_subprocess_*` (`*` means any name starting that way, for
   example `os.execvp`);
+- calls that open network connections from coroutines:
+  `asyncio.open_connection`, `asyncio.open_unix_connection`,
+  `asyncio.start_server`, `asyncio.start_unix_server`;
 - calls that change files and folders: `os.remove`, `os.unlink`, `os.rmdir`,
   `os.removedirs`, `os.rename`, `os.renames`, `os.replace`, `os.mkdir`,
   `os.makedirs`, `os.chmod`, `os.chown`, `os.truncate`, `os.symlink`,
@@ -59,10 +62,12 @@ Obvious I/O. Names are resolved through the module's imports and aliases, so
 - network and database calls: `urllib.request.*` (any function in
   `urllib.request`), `sqlite3.connect`, `sqlalchemy.create_engine`;
 - any use or import of these modules or their submodules: `subprocess`,
-  `pty`, `socket`, `requests`, `httpx`, `urllib3`, `aiohttp`, `http.client`,
-  `smtplib`, `ftplib`, `imaplib`, `poplib`, `paramiko`, `psycopg`,
-  `psycopg2`, `pymysql`, `MySQLdb`, `mysql.connector`, `pymongo`, `redis`,
-  `boto3` (`http.client` matches, but `http.HTTPStatus` does not);
+  `pty`, `socket`, `requests`, `httpx`, `urllib3`, `aiohttp`, `websockets`,
+  `http.client`, `smtplib`, `ftplib`, `imaplib`, `poplib`, `paramiko`,
+  `psycopg`, `psycopg2`, `pymysql`, `MySQLdb`, `mysql.connector`, `pymongo`,
+  `redis`, `boto3`, and the async drivers and clients `asyncpg`,
+  `aiomysql`, `aiosqlite`, `aiofiles`, `motor`, `aioboto3`, `aiobotocore`
+  (`http.client` matches, but `http.HTTPStatus` does not);
 - `pathlib.Path` methods `open`, `read_bytes`, `read_text`, `write_bytes`,
   `write_text`, `unlink`, `rmdir`, `mkdir`, `touch`, `rename`, `chmod`,
   `symlink_to`, `hardlink_to`, matched by method name on any object, because

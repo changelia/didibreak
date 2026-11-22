@@ -60,6 +60,8 @@ class ChangedFunction:
         skip_reason: Why the function is not tested; set by later stages.
         raised_types: Exception types the current version raises with an
             explicit ``raise`` (see testability.explicitly_raised).
+        base_is_async: True when the base version is ``async def``; None
+            for new functions.
     """
 
     file: str
@@ -73,11 +75,23 @@ class ChangedFunction:
     new_source: str
     skip_reason: str | None = None
     raised_types: frozenset[str] = frozenset()
+    base_is_async: bool | None = None
 
     @property
     def report_name(self) -> str:
         """Name used in reports: ``path/to/file.py::Class.name``."""
         return f"{self.file}::{self.qualname}"
+
+    @property
+    def awaited(self) -> bool:
+        """Whether the harness runs each call's coroutine with ``asyncio.run``.
+
+        Only for a function that is ``async def`` in every version. A
+        function that changed between ``def`` and ``async def`` is called
+        without awaiting in both versions, so the change shows as a
+        coroutine on one side (task 29).
+        """
+        return self.is_async and self.base_is_async is not False
 
 
 @dataclass(frozen=True)
@@ -323,6 +337,7 @@ def _compare_file(
                     qualname, current, new_context, previous, old_context
                 ),
                 raised_types=explicitly_raised(qualname, new_context, module),
+                base_is_async=None if previous is None else previous.is_async,
             )
         )
     removed = [f"{file.path}::{name}" for name in old if name not in new]

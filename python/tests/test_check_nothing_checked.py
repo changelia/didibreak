@@ -105,22 +105,20 @@ def test_every_function_skipped_by_design_exits_0_and_says_so(
 ) -> None:
     change(
         git_repository,
-        "async def f(x):\n    return 1\n",
-        "async def f(x):\n    return 2\n",
+        "def f(x):\n    yield 1\n",
+        "def f(x):\n    yield 2\n",
     )
     monkeypatch.chdir(git_repository.path)
 
     assert main(["check"]) == EXIT_OK
     out = capsys.readouterr().out
     assert NOTHING_CHECKED in out
-    assert "skipped: app/m.py::f (async function)" in out
+    assert "skipped: app/m.py::f (generator)" in out
 
     assert main(["check", "--format", "json"]) == EXIT_OK
     summary = json.loads(capsys.readouterr().out)["summary"]
     assert summary["functions_checked"] == 0
-    assert summary["skipped"] == [
-        {"function": "app/m.py::f", "reason": "async function"}
-    ]
+    assert summary["skipped"] == [{"function": "app/m.py::f", "reason": "generator"}]
 
 
 def test_functions_without_cases_are_not_an_error(

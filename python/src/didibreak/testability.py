@@ -1,8 +1,9 @@
-"""Testability rules: which changed functions v0.1 cannot test safely, and why.
+"""Testability rules: which changed functions cannot be tested safely, and why.
 
 Pure functions over a module's source. The categories come from task 07:
-async functions, instance methods, generators and obvious I/O. These rules
-are the v0.1 safety boundary: a function that matches is never executed.
+instance methods, generators (async generators too) and obvious I/O; async
+functions are run since task 29. These rules are the static safety
+boundary: a function that matches is never executed.
 Names are resolved through the module's imports and aliases, so
 ``from subprocess import run`` and ``import shutil as sh`` are recognized.
 """
@@ -29,6 +30,11 @@ OBVIOUS_IO = {
         "os.fork*",
         "os.kill*",
         "asyncio.create_subprocess_*",
+        # Network from coroutines.
+        "asyncio.open_connection",
+        "asyncio.open_unix_connection",
+        "asyncio.start_server",
+        "asyncio.start_unix_server",
         # Changing files and folders.
         "os.remove",
         "os.unlink",
@@ -66,6 +72,7 @@ OBVIOUS_IO = {
         "httpx",
         "urllib3",
         "aiohttp",
+        "websockets",
         "http.client",
         "smtplib",
         "ftplib",
@@ -80,6 +87,14 @@ OBVIOUS_IO = {
         "pymongo",
         "redis",
         "boto3",
+        # Async drivers and clients.
+        "asyncpg",
+        "aiomysql",
+        "aiosqlite",
+        "aiofiles",
+        "motor",
+        "aioboto3",
+        "aiobotocore",
     ),
     # pathlib.Path methods, matched by method name on any object because the
     # type of a variable is not known from the source. ``replace`` is left
@@ -116,7 +131,7 @@ OBVIOUS_IO = {
     ),
 }
 
-ASYNC_REASON = "async function"
+ASYNC_GENERATOR_REASON = "async generator"
 INSTANCE_METHOD_REASON = "instance method"
 GENERATOR_REASON = "generator"
 IO_REASON_PREFIX = "obvious I/O: "
@@ -433,9 +448,11 @@ def is_generator(function: _FunctionNode) -> bool:
 def skip_reason(
     context: ModuleContext, qualname: str, function_type: str, is_async: bool
 ) -> str | None:
-    """Return why v0.1 cannot test a function, or None if it can.
+    """Return why a function cannot be tested, or None if it can.
 
-    The first matching rule wins: async, instance method, generator, I/O.
+    The first matching rule wins: instance method, generator (``async
+    generator`` for one defined with ``async def``), I/O. Other async
+    functions are tested: the harness awaits them (task 29).
 
     Args:
         context: The module version the function belongs to.
@@ -446,14 +463,12 @@ def skip_reason(
     Returns:
         A short user-readable reason, or None.
     """
-    if is_async:
-        return ASYNC_REASON
     if function_type == "method":
         return INSTANCE_METHOD_REASON
     function = context.functions.get(qualname)
     if function is None:
         return None
     if is_generator(function):
-        return GENERATOR_REASON
+        return ASYNC_GENERATOR_REASON if is_async else GENERATOR_REASON
     found = find_io_through_calls(qualname, context)
     return None if found is None else f"{IO_REASON_PREFIX}{found}"

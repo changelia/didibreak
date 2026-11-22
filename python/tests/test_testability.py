@@ -40,8 +40,39 @@ def test_static_and_class_methods_are_testable(function_type: str) -> None:
     assert _reason(source, function_type) is None
 
 
-def test_async_function_is_skipped() -> None:
-    assert _reason("async def f():\n    return 1\n", is_async=True) == "async function"
+def test_async_function_is_tested() -> None:
+    # Task 29: the harness awaits coroutine functions.
+    assert _reason("async def f(x):\n    return x\n", is_async=True) is None
+
+
+def test_async_generator_is_skipped() -> None:
+    source = "async def f(x):\n    yield x\n"
+
+    assert _reason(source, is_async=True) == "async generator"
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "reader, writer = await asyncio.open_connection(host, 80)",
+        "server = await asyncio.start_server(handle, host, 80)",
+        "process = await asyncio.create_subprocess_exec('ls')",
+        "async with aiohttp.ClientSession() as session:\n        pass",
+        "connection = await asyncpg.connect(host)",
+        "async with aiofiles.open(host) as file:\n        pass",
+        "await session.execute(host)",
+    ],
+)
+def test_async_function_with_obvious_io_is_skipped(statement: str) -> None:
+    source = (
+        "import asyncio\nimport aiohttp\nimport asyncpg\nimport aiofiles\n\n"
+        f"async def f(host, handle, session):\n    {statement}\n"
+    )
+
+    reason = _reason(source, is_async=True)
+
+    assert reason is not None
+    assert reason.startswith("obvious I/O")
 
 
 def test_instance_method_is_skipped() -> None:
@@ -113,10 +144,10 @@ def test_similar_looking_code_is_not_io(statement: str) -> None:
     assert _reason(f"def f(items, text, path, a, b):\n    {statement}\n") is None
 
 
-def test_first_rule_wins_async_before_instance_method() -> None:
+def test_first_rule_wins_instance_method_before_io_for_async() -> None:
     source = "async def fetch(self):\n    return open('x')\n"
 
-    assert _reason(source, "method", is_async=True) == "async function"
+    assert _reason(source, "method", is_async=True) == "instance method"
 
 
 def test_io_list_is_one_constant_with_the_task_categories() -> None:
