@@ -9,6 +9,12 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
+#### Added
+
+- A GitHub issue template "Skipped or wrong finding": it asks for the
+  didibreak version, the function's signature and a short excerpt, the
+  skip reason or the finding, and what you expected instead.
+
 ### 0.2.0 - 2026-11-15
 
 The cleanup from the code audit (`evaluation/audit-35a.md`, findings 7 and

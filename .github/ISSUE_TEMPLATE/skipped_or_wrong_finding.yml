@@ -1,0 +1,55 @@
+name: Skipped or wrong finding
+description: didibreak skipped a function you expected it to check, or reported a finding that looks wrong.
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks: these reports decide what didibreak checks next. **Remove API
+        keys, passwords and other secrets** from everything you paste below,
+        including the code. Some skips are on purpose; see the
+        [limitations](https://github.com/changelia/didibreak/blob/main/docs/limitations.md).
+  - type: input
+    id: version
+    attributes:
+      label: didibreak version
+      description: Output of `didibreak --version`.
+      placeholder: didibreak 0.2.0
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What happened
+      options:
+        - A function was skipped
+        - A finding looks wrong (false alarm or wrong label)
+        - A change was missed
+    validations:
+      required: true
+  - type: textarea
+    id: function
+    attributes:
+      label: The function
+      description: Its signature and a short excerpt of the code, enough to show the shape of its arguments and what it calls. No secrets, no private code you cannot share.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Skip reason or finding
+      description: >-
+        The skip line (for example `skipped: app/views.py::handler (instance method)`)
+        or the finding, from the text output or the JSON report (`--format json`).
+        Remove API keys first.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+      description: For a skip, how you would want the function checked. For a finding, why it is not a real behavior change, or what the label should have been.
+    validations:
+      required: true
