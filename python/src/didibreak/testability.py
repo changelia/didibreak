@@ -134,7 +134,6 @@ OBVIOUS_IO = {
 }
 
 ASYNC_GENERATOR_REASON = "async generator"
-INSTANCE_METHOD_REASON = "instance method"
 PROPERTY_REASON = "property"
 DUNDER_REASON = "dunder method"
 # Methods that run while an instance is built: I/O in them skips every
@@ -488,10 +487,7 @@ def skip_reason(
     if is_generator(function):
         return ASYNC_GENERATOR_REASON if is_async else GENERATOR_REASON
     found = find_io_through_calls(qualname, context)
-    if found is not None:
-        return f"{IO_REASON_PREFIX}{found}"
-    # TODO(task 30): removed once the pipeline builds instances.
-    return INSTANCE_METHOD_REASON if function_type == "method" else None
+    return None if found is None else f"{IO_REASON_PREFIX}{found}"
 
 
 def _is_property(function: _FunctionNode) -> bool:

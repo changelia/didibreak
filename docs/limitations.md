@@ -38,7 +38,8 @@ function; see [safety.md](safety.md).
 
 | Reason | When |
 | --- | --- |
-| `instance method` | A method without `@staticmethod` or `@classmethod`; it needs an instance. |
+| `construction failed: <type>` | Every case's instance failed to build in one version or both: the constructor raised `<type>` for every proposed constructor argument (`(base version)` when only the base failed). Cases whose instance fails to build are dropped and counted in `construction_dropped`. |
+| `constructor changed: no constructor arguments work in both versions` | The class's constructor changed, and no proposed constructor arguments built an instance in both versions. |
 | `property` | A method decorated with `@property`, `@<name>.setter` (or `getter`, `deleter`) or `@cached_property`. |
 | `dunder method` | A method named `__<name>__`, such as `__init__`, `__eq__` or `__repr__`. |
 | `generator` | The function itself contains `yield` or `yield from`. |

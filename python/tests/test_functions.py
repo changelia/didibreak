@@ -104,12 +104,11 @@ def test_method_qualified_names_types_and_dedented_source() -> None:
     assert [(f.module, f.qualname, f.function_type, f.is_async) for f in functions] == [
         ("app.phone", "Phone.clean", "staticmethod", False),
         ("app.phone", "Phone.parse", "classmethod", False),
+        ("app.phone", "Phone.format", "method", False),
+        ("app.phone", "Phone.fetch", "method", True),
     ]
-    assert [(f.qualname, f.skip_reason) for f in detection.skipped] == [
-        ("Phone.format", "instance method"),
-        ("Phone.fetch", "instance method"),
-    ]
-    method = detection.skipped[0]
+    assert detection.skipped == ()
+    method = functions[2]
     assert method.constructor == (
         "class Phone:\n    pass\n# no constructor in this class: object()"
     )

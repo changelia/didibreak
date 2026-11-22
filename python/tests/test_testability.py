@@ -79,10 +79,11 @@ def _method_reason(source: str, qualname: str, is_async: bool = False) -> str | 
     return _reason(source, "method", is_async, qualname)
 
 
-def test_an_instance_method_without_other_reason_is_still_skipped() -> None:
+def test_an_instance_method_is_tested() -> None:
+    # Task 30: the harness builds an instance and calls the method.
     source = "class Box:\n    def size(self):\n        return 1\n"
 
-    assert _method_reason(source, "Box.size") == "instance method"
+    assert _method_reason(source, "Box.size") is None
 
 
 @pytest.mark.parametrize(
@@ -142,7 +143,7 @@ def test_io_in_another_method_does_not_skip_a_method_that_never_calls_it() -> No
         "    def name(self):\n        return 'log'\n"
     )
 
-    assert _method_reason(source, "Log.name") == "instance method"
+    assert _method_reason(source, "Log.name") is None
     assert _method_reason(source, "Log.save") == "obvious I/O: os.remove"
 
 

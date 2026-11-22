@@ -34,6 +34,7 @@ from didibreak.gitdiff import base_worktree, working_tree_copy
 from didibreak.harness import (
     Case,
     HarnessSettings,
+    Outcome,
     Target,
     check_import,
     run_cases,
@@ -156,6 +157,8 @@ class Analysis:
         timeouts_dropped: Cases dropped because both versions timed out.
         type_mismatch_dropped: Findings dropped because their inputs
             contradict the function's type annotations (task 21a).
+        construction_dropped: Method cases dropped because the instance
+            could not be built in one version or both (task 30).
         runs: Every case run, with both outcomes, by report name (input for
             the refinement round).
     """
@@ -168,6 +171,7 @@ class Analysis:
     timeouts_dropped: int
     runs: Mapping[str, tuple[CaseRun, ...]] = field(default_factory=dict)
     type_mismatch_dropped: int = 0
+    construction_dropped: int = 0
 
 
 def tree_import_root(tree: Path, path: str) -> str:
@@ -189,7 +193,60 @@ def tree_import_root(tree: Path, path: str) -> str:
 def _target(tree: Path, path: str, function: ChangedFunction) -> Target:
     root = tree_import_root(tree, path)
     module = module_name(path, root)
-    return Target(tree, tree / root, module, function.qualname, function.awaited)
+    return Target(
+        tree,
+        tree / root,
+        module,
+        function.qualname,
+        function.awaited,
+        is_method(function),
+    )
+
+
+CONSTRUCTION_FAILED_PREFIX = "construction failed: "
+CONSTRUCTOR_CHANGED_REASON = (
+    "constructor changed: no constructor arguments work in both versions"
+)
+
+
+def _construction_reason(
+    function: ChangedFunction,
+    before: Sequence[Outcome] | None,
+    after: Sequence[Outcome],
+) -> str:
+    """Why a method whose instance was never built in both versions is skipped."""
+    in_base = [o for o in before or () if o.construction_failed]
+    in_current = [o for o in after if o.construction_failed]
+    changed = before is not None and function.constructor != function.base_constructor
+    if changed and len(in_base) < len(after) and len(in_current) < len(after):
+        # Some arguments built each version, but never the same ones.
+        return CONSTRUCTOR_CHANGED_REASON
+    failed = in_current or in_base
+    name = failed[0].type_name.rpartition(".")[2]
+    where = " (base version)" if not in_current else ""
+    return f"{CONSTRUCTION_FAILED_PREFIX}{name}{where}"
+
+
+def _built_cases(
+    function: ChangedFunction,
+    cases: Sequence[Case],
+    before: Sequence[Outcome] | None,
+    after: Sequence[Outcome],
+) -> tuple[list[int], str | None]:
+    """Indexes of method cases whose instance was built in every version.
+
+    Returns:
+        The kept indexes, and a skip reason when none is left.
+    """
+    kept = [
+        index
+        for index in range(len(cases))
+        if not after[index].construction_failed
+        and not (before is not None and before[index].construction_failed)
+    ]
+    if kept or not cases:
+        return kept, None
+    return kept, _construction_reason(function, before, after)
 
 
 def _run(
@@ -199,8 +256,15 @@ def _run(
     base_path: str,
     settings: HarnessSettings,
 ) -> tuple[Comparison, tuple[CaseRun, ...]] | str:
-    """Run one function on both versions; a str is the skip reason."""
+    """Run one function on both versions; a str is the skip reason.
+
+    For an instance method, a case whose instance could not be built in one
+    version or both is dropped and counted (task 30); when no case is left,
+    the method is skipped with the reason.
+    """
     base_tree, current_tree = trees
+    if is_method(function):
+        cases = [c if c.is_method_case else replace(c, init_args=()) for c in cases]
     before = None
     if function.kind == "changed":
         base = run_cases(_target(base_tree, base_path, function), cases, settings)
@@ -211,8 +275,19 @@ def _run(
     current = run_cases(current_target, cases, settings)
     if current.skip_reason is not None:
         return current.skip_reason
+    after = current.outcomes
+    dropped = 0
+    if is_method(function):
+        built, reason = _built_cases(function, cases, before, after)
+        if reason is not None:
+            return reason
+        dropped = len(cases) - len(built)
+        cases = [cases[index] for index in built]
+        after = tuple(after[index] for index in built)
+        if before is not None:
+            before = tuple(before[index] for index in built)
     comparison = compare_cases(
-        function.report_name, cases, before, current.outcomes, function.raised_types
+        function.report_name, cases, before, after, function.raised_types
     )
     # Inputs outside the annotated contract rarely matter (task 21: all 25
     # false alarms); their findings are dropped and counted.
@@ -223,11 +298,12 @@ def _run(
         comparison,
         findings=kept,
         type_mismatch_dropped=len(comparison.findings) - len(kept),
+        construction_dropped=dropped,
     )
     olds = before if before is not None else (None,) * len(cases)
     runs = tuple(
         CaseRun(case, old, new)
-        for case, old, new in zip(cases, olds, current.outcomes, strict=True)
+        for case, old, new in zip(cases, olds, after, strict=True)
     )
     return comparison, runs
 
@@ -296,6 +372,7 @@ def analyze(
         timeouts_dropped=sum(c.timeouts_dropped for c in comparisons),
         runs=runs,
         type_mismatch_dropped=sum(c.type_mismatch_dropped for c in comparisons),
+        construction_dropped=sum(c.construction_dropped for c in comparisons),
     )
 
 

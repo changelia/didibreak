@@ -9,7 +9,26 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
+#### Added
+
+- Instance methods are checked instead of skipped. For each case the LLM
+  proposes constructor arguments as well as the call's arguments, as
+  Python literals under the same rule; the instance is built from them
+  (under the runtime I/O guard and the timeout) and the method is called
+  on it. The instance's state after the call (`__dict__` and slots) is
+  compared too, so a method that returns `None` but changes `self`
+  differently is a finding. Reproducing tests build the instance and
+  assert its state. A case whose instance cannot be built in one version
+  or both is dropped and counted; when none is left the method is
+  skipped (`construction failed: <type>` or `constructor changed: ...`).
+  Properties, dunder methods and methods of classes that do I/O while
+  they are built stay skipped.
+
 #### Changed
+
+- The skip reason `instance method` is gone; new reasons are `property`,
+  `dunder method`, `construction failed: <type>` and `constructor
+  changed: no constructor arguments work in both versions`.
 
 - The JSON report is `schema_version: 2`. It only adds keys to version 1:
   `init_args` and `init_kwargs` on findings of instance methods, `state`

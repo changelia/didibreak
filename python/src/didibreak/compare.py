@@ -68,6 +68,9 @@ class Comparison:
         timeouts_dropped: Cases dropped because both versions timed out.
         type_mismatch_dropped: Findings dropped later because their inputs
             contradict the type annotations (set by the pipeline).
+        construction_dropped: Method cases not compared because the
+            instance could not be built in one version or both (set by the
+            pipeline, task 30).
     """
 
     findings: tuple[Finding, ...]
@@ -75,6 +78,7 @@ class Comparison:
     flaky_dropped: int
     timeouts_dropped: int
     type_mismatch_dropped: int = 0
+    construction_dropped: int = 0
 
 
 def floats_close(before: float, after: float) -> bool:

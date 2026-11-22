@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import TextIO
 
 from didibreak import __version__
+from didibreak.cases import is_method
 from didibreak.config import (
     CONFIG_KEYS,
     FAIL_ON,
@@ -474,6 +475,7 @@ def _merge(first: Analysis, second: Analysis) -> Analysis:
         runs=runs,
         type_mismatch_dropped=first.type_mismatch_dropped
         + second.type_mismatch_dropped,
+        construction_dropped=first.construction_dropped + second.construction_dropped,
     )
 
 
@@ -654,6 +656,7 @@ def _build_report(
         flaky_dropped=analysis.flaky_dropped,
         invalid_cases_dropped=generation.invalid_cases_dropped if generation else 0,
         type_mismatch_dropped=analysis.type_mismatch_dropped,
+        construction_dropped=analysis.construction_dropped,
         skipped=_skipped_items(detection, generation, analysis),
         removed=detection.removed,
         usage=_report_usage(llm_cases),
@@ -671,9 +674,16 @@ def _write_tests(
     # The report is still useful without the tests: warn and go on.
     findings = analysis.findings
     awaited = {f.report_name for f in analysis.checked if f.awaited}
+    methods = {f.report_name for f in analysis.checked if is_method(f)}
     try:
         return write_tests(
-            root, Path(config.output_dir), findings, __version__, base_sha, awaited
+            root,
+            Path(config.output_dir),
+            findings,
+            __version__,
+            base_sha,
+            awaited,
+            methods,
         )
     except OSError as error:
         _print_problem("warning", f"could not write the reproducing tests: {error}")
