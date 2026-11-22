@@ -1,11 +1,15 @@
 """Tests for changed-function detection over two versions of each file."""
 
+import ast
+import textwrap
+
 import pytest
 
 from didibreak.functions import (
     ChangedFunction,
     SkippedFile,
     SourceFile,
+    constructor_description,
     detect_changed_functions,
 )
 
@@ -105,6 +109,12 @@ def test_method_qualified_names_types_and_dedented_source() -> None:
         ("Phone.format", "instance method"),
         ("Phone.fetch", "instance method"),
     ]
+    method = detection.skipped[0]
+    assert method.constructor == (
+        "class Phone:\n    pass\n# no constructor in this class: object()"
+    )
+    assert method.base_constructor == method.constructor
+    assert functions[0].constructor is None
     assert functions[0].new_source.startswith("@staticmethod\ndef clean(number):")
     assert functions[0].line == 10
 
@@ -260,3 +270,62 @@ def test_current_version_reason_wins_when_both_match() -> None:
     detection = detect_changed_functions([SourceFile("tidy.py", old, new)], 10)
 
     assert [f.skip_reason for f in detection.skipped] == ["obvious I/O: os.unlink"]
+
+
+def _constructor(source: str) -> str:
+    node = ast.parse(textwrap.dedent(source)).body[-1]
+    assert isinstance(node, ast.ClassDef)
+    return constructor_description(node)
+
+
+def test_the_constructor_shows_init_and_leaves_other_methods_out() -> None:
+    text = _constructor(
+        """
+        class Account:
+            KIND = "bank"
+
+            def __init__(self, balance: int, owner: str = "ada"):
+                self.balance = balance
+
+            def deposit(self, amount):
+                self.balance += amount
+        """
+    )
+
+    assert text == (
+        "class Account:\n\n"
+        "    def __init__(self, balance: int, owner: str='ada'):\n"
+        "        self.balance = balance"
+    )
+
+
+def test_the_constructor_of_a_dataclass_lists_its_fields() -> None:
+    text = _constructor(
+        """
+        from dataclasses import dataclass
+
+        @dataclass(frozen=True)
+        class Point:
+            x: int
+            y: int = 0
+
+            def moved(self, dx):
+                return Point(self.x + dx, self.y)
+        """
+    )
+
+    assert text == "@dataclass(frozen=True)\nclass Point:\n    x: int\n    y: int = 0"
+
+
+def test_an_inherited_constructor_is_named() -> None:
+    assert _constructor(
+        "class Fast(Base):\n    def go(self):\n        pass\n"
+    ).endswith("# no constructor in this class: inherited from a base class")
+
+
+def test_a_long_constructor_is_cut() -> None:
+    body = "".join(f"        self.a{n} = {n}\n" for n in range(200))
+    text = _constructor(f"class Big:\n    def __init__(self):\n{body}")
+
+    assert len(text.splitlines()) == 81
+    assert text.endswith("    ...")

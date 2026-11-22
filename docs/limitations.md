@@ -39,9 +39,11 @@ function; see [safety.md](safety.md).
 | Reason | When |
 | --- | --- |
 | `instance method` | A method without `@staticmethod` or `@classmethod`; it needs an instance. |
+| `property` | A method decorated with `@property`, `@<name>.setter` (or `getter`, `deleter`) or `@cached_property`. |
+| `dunder method` | A method named `__<name>__`, such as `__init__`, `__eq__` or `__repr__`. |
 | `generator` | The function itself contains `yield` or `yield from`. |
 | `async generator` | The function is defined with `async def` and contains `yield`. |
-| `obvious I/O: <name>` | The body (including helpers defined inside it) uses one of the I/O names below. |
+| `obvious I/O: <name>` | The body (including helpers defined inside it) uses one of the I/O names below. For a method, also `__new__`, `__init__` and `__post_init__` of its class and the class body: `obvious I/O: <name> (in Class.__init__)` or `(in the class body)`. |
 | `blocked: <event>` | While it ran, the function (or its module's import) tried an operation the runtime I/O guard stops: a command, a process, network access, native code, or a file change outside its temporary folder ([safety.md](safety.md#the-runtime-io-guard)). |
 
 Obvious I/O. Names are resolved through the module's imports and aliases, so

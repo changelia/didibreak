@@ -16,6 +16,7 @@ from dataclasses import dataclass, replace
 from pathlib import PurePosixPath
 
 from didibreak.testability import (
+    CONSTRUCTION_METHODS,
     ModuleContext,
     explicitly_raised,
     module_context,
@@ -62,6 +63,10 @@ class ChangedFunction:
             explicit ``raise`` (see testability.explicitly_raised).
         base_is_async: True when the base version is ``async def``; None
             for new functions.
+        constructor: For an instance method, how its class is built in the
+            current version (see constructor_description()); None otherwise.
+        base_constructor: The same for the base version; None for new
+            methods and functions.
     """
 
     file: str
@@ -76,6 +81,8 @@ class ChangedFunction:
     skip_reason: str | None = None
     raised_types: frozenset[str] = frozenset()
     base_is_async: bool | None = None
+    constructor: str | None = None
+    base_constructor: str | None = None
 
     @property
     def report_name(self) -> str:
@@ -285,6 +292,60 @@ def _parse_version(
         return f"cannot parse the {version} version: {error}"
 
 
+# Longer constructor descriptions are cut: they only guide the LLM.
+MAX_CONSTRUCTOR_LINES = 80
+
+
+def _is_dataclass(node: ast.ClassDef) -> bool:
+    for decorator in node.decorator_list:
+        target = decorator.func if isinstance(decorator, ast.Call) else decorator
+        name = ast.unparse(target)
+        if name.rpartition(".")[2] == "dataclass":
+            return True
+    return False
+
+
+def constructor_description(node: ast.ClassDef) -> str:
+    """How a class is built, as source text for the case-generation prompt.
+
+    The class header with its decorators and bases, its dataclass fields,
+    and its ``__new__``, ``__init__`` and ``__post_init__``; other methods
+    are left out. A class with none of these says that its constructor is
+    inherited or takes no arguments.
+
+    Args:
+        node: A module-level class definition.
+
+    Returns:
+        Source text, at most MAX_CONSTRUCTOR_LINES lines.
+    """
+    kept: list[ast.stmt] = [
+        member
+        for member in node.body
+        if (isinstance(member, ast.AnnAssign) and _is_dataclass(node))
+        or (isinstance(member, _FunctionNode) and member.name in CONSTRUCTION_METHODS)
+    ]
+    shown = copy.copy(node)
+    shown.body = kept or [ast.Pass()]
+    text = ast.unparse(shown)
+    if not kept:
+        inherited = "inherited from a base class" if node.bases else "object()"
+        text += f"\n# no constructor in this class: {inherited}"
+    lines = text.splitlines()
+    if len(lines) > MAX_CONSTRUCTOR_LINES:
+        lines = [*lines[:MAX_CONSTRUCTOR_LINES], "    ..."]
+    return "\n".join(lines)
+
+
+def _constructor(
+    definition: FunctionDefinition | None, qualname: str, context: ModuleContext
+) -> str | None:
+    if definition is None or definition.function_type != "method":
+        return None
+    node = context.class_nodes.get(qualname.partition(".")[0])
+    return None if node is None else constructor_description(node)
+
+
 def _either_version_skip_reason(
     qualname: str,
     current: FunctionDefinition,
@@ -338,6 +399,8 @@ def _compare_file(
                 ),
                 raised_types=explicitly_raised(qualname, new_context, module),
                 base_is_async=None if previous is None else previous.is_async,
+                constructor=_constructor(current, qualname, new_context),
+                base_constructor=_constructor(previous, qualname, old_context),
             )
         )
     removed = [f"{file.path}::{name}" for name in old if name not in new]
