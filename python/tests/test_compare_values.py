@@ -8,9 +8,12 @@ from didibreak._harness_child import normalize
 from didibreak.compare import (
     FLOAT_ABSOLUTE_TOLERANCE,
     FLOAT_RELATIVE_TOLERANCE,
+    difference,
     floats_close,
+    state_changed,
     values_equal,
 )
+from didibreak.harness import Outcome
 
 
 def same(before: object, after: object) -> bool:
@@ -96,3 +99,74 @@ def test_long_text_is_compared_by_length_and_digest() -> None:
     assert values_equal(before, same)
     assert not values_equal(before, changed)
     assert not values_equal(before, shorter)
+
+
+def _state(**attributes: dict[str, object]) -> dict[str, object]:
+    items = [
+        [{"type": "str", "value": name}, node] for name, node in attributes.items()
+    ]
+    return {"type": "state", "items": items}
+
+
+def _method_outcome(state: dict[str, object] | None) -> Outcome:
+    return Outcome(
+        "return",
+        "builtins.NoneType",
+        "None",
+        {"type": "none"},
+        state=state,
+        state_repr=str(state),
+    )
+
+
+INT_5 = {"type": "int", "value": 5}
+INT_6 = {"type": "int", "value": 6}
+
+
+def test_a_different_state_after_the_call_is_a_finding() -> None:
+    before = _method_outcome(_state(balance=INT_5))
+    after = _method_outcome(_state(balance=INT_6))
+
+    assert state_changed(before, after)
+    assert difference(before, after) == "high"
+
+
+def test_the_same_state_and_result_are_no_finding() -> None:
+    before = _method_outcome(_state(balance=INT_5))
+
+    assert difference(before, _method_outcome(_state(balance=INT_5))) is None
+
+
+def test_a_new_attribute_is_a_state_difference() -> None:
+    before = _method_outcome(_state(balance=INT_5))
+    after = _method_outcome(_state(balance=INT_5, note=INT_6))
+
+    assert difference(before, after) == "high"
+
+
+def test_an_opaque_attribute_is_compared_by_type_with_low_confidence() -> None:
+    lock = {"type": "opaque", "class": "threading.Lock"}
+    other = {"type": "opaque", "class": "threading.RLock"}
+
+    same = difference(
+        _method_outcome(_state(lock=lock)), _method_outcome(_state(lock=lock))
+    )
+    changed = difference(
+        _method_outcome(_state(lock=lock)), _method_outcome(_state(lock=other))
+    )
+
+    assert same is None
+    assert changed == "low"
+
+
+def test_a_string_attribute_named_like_the_opaque_tag_is_compared_by_value() -> None:
+    text = {"type": "str", "value": "opaque"}
+    before = _method_outcome(_state(kind=text))
+    after = _method_outcome(_state(kind={"type": "str", "value": "clear"}))
+
+    assert difference(before, after) == "high"
+
+
+def test_function_outcomes_without_state_compare_as_before() -> None:
+    assert not state_changed(_method_outcome(None), _method_outcome(None))
+    assert difference(_method_outcome(None), _method_outcome(None)) is None

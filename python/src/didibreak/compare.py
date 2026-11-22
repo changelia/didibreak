@@ -169,6 +169,33 @@ def finding_id(function: str, case: Case) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:FINDING_ID_LENGTH]
 
 
+def state_changed(before: Outcome, after: Outcome) -> bool:
+    """Whether a method case left the instance in a different state (task 30).
+
+    Args:
+        before: Base outcome.
+        after: Current outcome.
+
+    Returns:
+        True when both outcomes carry a state and the states differ:
+        another attribute set, or an attribute with another value (by the
+        value rules) or, for attributes that cannot be normalized, another
+        type.
+    """
+    if before.state is None or after.state is None:
+        return False
+    return not values_equal(before.state, after.state)
+
+
+def _has_opaque(node: Any) -> bool:
+    # An attribute normalized as {"type": "opaque", ...}, at any depth.
+    if isinstance(node, list):
+        return any(_has_opaque(item) for item in node)
+    if isinstance(node, Mapping):
+        return node.get("type") == "opaque" or _has_opaque(node.get("items", []))
+    return False
+
+
 def difference(before: Outcome, after: Outcome) -> str | None:
     """Apply the Spec comparison rules to two stable outcomes of one case.
 
@@ -182,8 +209,19 @@ def difference(before: Outcome, after: Outcome) -> str | None:
         type, ``high`` otherwise. Raise vs return, and a timeout on one side
         only, are differences. Exceptions of the same type are the same
         (messages ignored). Both sides timing out counts as the same here;
-        compare_cases() drops such cases.
+        compare_cases() drops such cases. For a method case, a different
+        state after the call is a difference too; it is ``low`` when an
+        attribute could only be compared by type.
     """
+    found = _result_difference(before, after)
+    if found is not None or not state_changed(before, after):
+        return found
+    assert before.state is not None and after.state is not None
+    opaque = _has_opaque(before.state) or _has_opaque(after.state)
+    return LOW_CONFIDENCE if opaque else HIGH_CONFIDENCE
+
+
+def _result_difference(before: Outcome, after: Outcome) -> str | None:
     if before.kind != after.kind:
         return HIGH_CONFIDENCE
     if before.kind == "timeout":
