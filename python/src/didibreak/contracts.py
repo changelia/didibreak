@@ -217,7 +217,8 @@ def case_contradicts(function: ChangedFunction, case: Case) -> bool:
     """
     args = [ast.literal_eval(text) for text in case.args]
     kwargs = {name: ast.literal_eval(text) for name, text in case.kwargs.items()}
-    skip_first = function.function_type == "classmethod"
+    # cls of a class method and self of an instance method are bound already.
+    skip_first = function.function_type in ("classmethod", "method")
     sources = [function.new_source]
     if function.old_source is not None:
         sources.append(function.old_source)

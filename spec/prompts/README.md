@@ -10,6 +10,11 @@ starts with a version header (`prompt_version: 1`).
 - `intent_labelling.md` (task 17): labels the findings of a run
   `expected`, `unexpected` or `unclear` against the intent.
 
+For an instance method (task 30) both case templates fill `$constructor`
+with how its class is built (both versions when it changed), and the reply
+schema has `init_args` and `init_kwargs` for the constructor arguments; for
+a function `$constructor` says it is not an instance method.
+
 Format: the first line is `prompt_version: N`; `=== system ===` and
 `=== user ===` start the two messages. Placeholders use Python
 `string.Template` syntax (`$name`); write `$$` for a literal dollar sign.

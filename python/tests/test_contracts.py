@@ -4,7 +4,9 @@ import ast
 
 import pytest
 
-from didibreak.contracts import contradicts_annotations, value_matches
+from didibreak.contracts import case_contradicts, contradicts_annotations, value_matches
+from didibreak.functions import ChangedFunction
+from didibreak.harness import Case
 
 
 def annotation(text: str) -> ast.expr:
@@ -112,3 +114,20 @@ def test_unbindable_or_unparsable_input_is_not_judged() -> None:
 
     assert contradicts_annotations(source, [1, "extra"], {"nope": "x"}) is False
     assert contradicts_annotations("def broken(:\n", ["x"], {}) is False
+
+
+def test_self_of_an_instance_method_is_not_matched_against_an_argument() -> None:
+    method = ChangedFunction(
+        file="a.py",
+        module="a",
+        qualname="C.m",
+        kind="changed",
+        function_type="method",
+        is_async=False,
+        line=1,
+        old_source="def m(self, count: int):\n    return count\n",
+        new_source="def m(self, count: int):\n    return -count\n",
+    )
+
+    assert not case_contradicts(method, Case(("3",)))
+    assert case_contradicts(method, Case(("'three'",)))

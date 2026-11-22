@@ -1,16 +1,23 @@
+from dataclasses import replace
+
 import pytest
 
 from didibreak.cases import (
+    CASES_SCHEMA,
     CHANGED_TASK,
     MAX_PREVIOUS_CASES,
+    METHOD_CASES_SCHEMA,
     NEW_TASK,
     NO_OLD_SOURCE,
     OUTCOME_TEXT_LIMIT,
     REFINEMENT_PROMPT_FILE,
     CaseRun,
     PromptTemplate,
+    accept_cases,
     build_messages,
     build_refinement_messages,
+    cases_schema,
+    constructor_text,
     docstring,
     load_template,
     parse_template,
@@ -44,7 +51,7 @@ def function(old: str | None = OLD, new: str = NEW) -> ChangedFunction:
 def test_packaged_template_has_a_version_and_both_messages() -> None:
     template = load_template()
 
-    assert template.version == 2
+    assert template.version == 3
     assert "Python literal" in template.system
     assert "$new_source" in template.user
 
@@ -115,7 +122,7 @@ def outcome(repr_text: str, kind: str = "return", stable: bool = True) -> Outcom
 def test_refinement_template_is_packaged() -> None:
     template = load_template(REFINEMENT_PROMPT_FILE)
 
-    assert template.version == 2
+    assert template.version == 3
     assert "$previous" in template.user
     assert "differ from all cases already tried" in template.system
 
@@ -185,3 +192,107 @@ def test_both_case_templates_ask_for_inputs_matching_the_annotations(
     template = load_template() if name is None else load_template(name)
 
     assert "every value for it must match that annotation" in template.system
+
+
+ACCOUNT_INIT = "class Account:\n\n    def __init__(self, balance: int):\n        pass"
+METHOD = ChangedFunction(
+    file="app/bank.py",
+    module="app.bank",
+    qualname="Account.deposit",
+    kind="changed",
+    function_type="method",
+    is_async=False,
+    line=5,
+    old_source="def deposit(self, amount: int):\n    self.balance += amount\n",
+    new_source="def deposit(self, amount: int):\n    self.balance += abs(amount)\n",
+    constructor=ACCOUNT_INIT,
+    base_constructor=ACCOUNT_INIT,
+)
+
+
+def test_a_method_prompt_shows_the_constructor_and_asks_for_its_arguments() -> None:
+    system, user = build_messages(METHOD, 6, load_template())
+
+    assert '"init_args" and "init_kwargs"' in system.content
+    assert "This is an instance method" in user.content
+    assert f"New version:\n```python\n{ACCOUNT_INIT}\n```" in user.content
+    assert "Old version:\n```python\nclass Account" not in user.content
+    assert cases_schema(METHOD) == (METHOD_CASES_SCHEMA, "didibreak_method_cases")
+
+
+def test_a_changed_constructor_shows_both_versions() -> None:
+    changed = replace(
+        METHOD, constructor=ACCOUNT_INIT.replace("balance: int", "balance: int, fee=0")
+    )
+
+    text = constructor_text(changed)
+
+    assert "Old version:" in text
+    assert "give constructor arguments that both versions accept" in text
+
+
+def test_a_function_prompt_says_it_is_not_a_method() -> None:
+    _, user = build_messages(function(), 6, load_template())
+
+    assert "(none: not an instance method)" in user.content
+    assert "This is an instance method" not in user.content
+    assert cases_schema(function()) == (CASES_SCHEMA, "didibreak_cases")
+
+
+def test_the_refinement_prompt_shows_the_constructor_and_the_state() -> None:
+    tried = CaseRun(
+        Case(("5",), {}, "", ("100",)),
+        Outcome("return", "builtins.NoneType", "None", state_repr="{'balance': 105}"),
+        Outcome("return", "builtins.NoneType", "None", state_repr="{'balance': 105}"),
+    )
+
+    _, user = build_refinement_messages(
+        METHOD, 6, load_template("case_refinement.md"), [tried]
+    )
+
+    assert ACCOUNT_INIT in user.content
+    assert (
+        "- Account(100).deposit(5) -> old: None; state after the call "
+        "{'balance': 105}; new: None; state after the call {'balance': 105}"
+    ) in user.content
+
+
+def test_method_cases_need_literal_constructor_arguments() -> None:
+    reply = {
+        "cases": [
+            {
+                "init_args": ["100"],
+                "init_kwargs": [{"name": "owner", "value": "'ada'"}],
+                "args": ["5"],
+                "kwargs": [],
+                "rationale": "plain",
+            },
+            {
+                "init_args": ["Account()"],
+                "init_kwargs": [],
+                "args": ["5"],
+                "kwargs": [],
+                "rationale": "code",
+            },
+            {"init_args": ["7"], "init_kwargs": [], "args": ["5"], "kwargs": []},
+        ]
+    }
+
+    batch = accept_cases(reply, 6, METHOD.report_name, method=True)
+
+    assert batch.invalid == 1
+    assert [c.init_args for c in batch.cases] == [("100",), ("7",)]
+    assert batch.cases[0].init_kwargs == {"owner": "'ada'"}
+
+
+def test_the_method_schema_requires_the_constructor_fields() -> None:
+    item = METHOD_CASES_SCHEMA["properties"]["cases"]["items"]
+
+    assert set(item["required"]) == {
+        "init_args",
+        "init_kwargs",
+        "args",
+        "kwargs",
+        "rationale",
+    }
+    assert "init_args" not in CASES_SCHEMA["properties"]["cases"]["items"]["properties"]

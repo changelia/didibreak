@@ -23,6 +23,8 @@ from didibreak.cases import (
     accept_cases,
     build_messages,
     build_refinement_messages,
+    cases_schema,
+    is_method,
 )
 from didibreak.compare import Comparison, Finding, compare_cases, finding_id
 from didibreak.config import ConfigError, find_pyproject
@@ -530,7 +532,10 @@ _UNAVAILABLE = object()
 
 
 def _ask(
-    client: LLMClient, messages: Sequence[Message], spending: Budget
+    client: LLMClient,
+    messages: Sequence[Message],
+    spending: Budget,
+    schema: tuple[dict[str, Any], str] = (CASES_SCHEMA, CASES_SCHEMA_NAME),
 ) -> LLMReply | str | object:
     """The reply, a skip reason for this function, or _UNAVAILABLE."""
 
@@ -538,9 +543,7 @@ def _ask(
         return spending.refusal(messages, spent) is None
 
     try:
-        reply = client.complete_json(
-            messages, CASES_SCHEMA, CASES_SCHEMA_NAME, may_continue
-        )
+        reply = client.complete_json(messages, schema[0], schema[1], may_continue)
     except LLMInvalidResponseError as error:
         spending.add(error.usage)
         return INVALID_RESPONSE_REASON
@@ -598,7 +601,8 @@ def generate_cases(
         else:
             messages = build_refinement_messages(function, count, template, tried)
         stop = spending.refusal(messages)
-        result = _ask(client, messages, spending) if stop is None else None
+        schema = cases_schema(function)
+        result = _ask(client, messages, spending, schema) if stop is None else None
         if result is _UNAVAILABLE:
             stop = UNAVAILABLE_REASON
         if stop is not None:
@@ -607,7 +611,9 @@ def generate_cases(
         if not isinstance(result, LLMReply):  # a skip reason
             skipped.append(replace(function, skip_reason=str(result)))
             continue
-        batch = accept_cases(result.data, count, function.report_name)
+        batch = accept_cases(
+            result.data, count, function.report_name, is_method(function)
+        )
         invalid += batch.invalid
         new = _not_tried(function.report_name, batch.cases, tried)
         if new:
