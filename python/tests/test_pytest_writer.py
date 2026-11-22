@@ -3,10 +3,12 @@
 import os
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
+from didibreak._harness_child import normalize
 from didibreak.compare import Finding
 from didibreak.harness import PROCESS_EXITED_TYPE, Case, Outcome
 from didibreak.report.pytest_writer import (
@@ -383,3 +385,156 @@ def test_awaited_functions_get_async_tests_when_written(tmp_path: Path) -> None:
 
     assert written.files
     assert run.returncode == 0, run.stdout
+
+
+ACCOUNT = "app/bank.py::Account.deposit"
+METHOD_SUBJECT = Subject(ACCOUNT, "app.bank", "Account.deposit", Path(), is_method=True)
+
+
+def method_finding(before: Outcome, after: Outcome | None = None) -> Finding:
+    return Finding(
+        "a1b2c3d4e5f6",
+        ACCOUNT,
+        Case(("-5",), {}, "negative", ("100",), {"owner": "'ada'"}),
+        before,
+        after or before,
+        "high",
+        "unexpected",
+        "state changed",
+    )
+
+
+def state_outcome(balance: object, kind: str = "return") -> Outcome:
+    value = normalize(balance)
+    assert value is not None
+    state = {"type": "state", "items": [[{"type": "str", "value": "balance"}, value]]}
+    if kind == "exception":
+        return Outcome(
+            kind,
+            "builtins.ValueError",
+            "ValueError('negative')",
+            None,
+            "negative",
+            state=state,
+            state_repr=f"{{'balance': {balance!r}}}",
+        )
+    return Outcome(
+        kind,
+        "builtins.NoneType",
+        "None",
+        {"type": "none"},
+        state=state,
+        state_repr=f"{{'balance': {balance!r}}}",
+    )
+
+
+def test_a_method_test_builds_the_instance_and_checks_the_state() -> None:
+    text = render(method_finding(state_outcome(95)), subject=METHOD_SUBJECT)
+
+    assert "from app.bank import Account\n" in text
+    assert "    instance = Account(100, owner='ada')\n" in text
+    assert "    result = instance.deposit(-5)\n" in text
+    assert "    assert result == None\n" in text
+    assert "    assert _state(instance) == {'balance': 95}\n" in text
+    assert "def _state(instance: object) -> dict[str, object]:" in text
+
+
+def test_a_method_exception_test_checks_the_state_after_the_raise() -> None:
+    text = render(
+        method_finding(state_outcome(100, "exception")), subject=METHOD_SUBJECT
+    )
+
+    assert "    with pytest.raises(ValueError) as info:\n" in text
+    assert "        instance.deposit(-5)\n" in text
+    assert text.index("instance = Account") < text.index("pytest.raises")
+    assert "    assert _state(instance) == {'balance': 100}\n" in text
+
+
+def test_a_float_state_is_compared_with_approx() -> None:
+    text = render(method_finding(state_outcome(0.1)), subject=METHOD_SUBJECT)
+
+    assert "assert _state(instance) == pytest.approx({'balance': 0.1}," in text
+
+
+def test_a_state_that_is_not_all_literals_checks_the_attribute_names() -> None:
+    before = replace(
+        state_outcome(1),
+        state={
+            "type": "state",
+            "items": [
+                [{"type": "str", "value": "lock"}, {"type": "opaque", "class": "x.L"}]
+            ],
+        },
+        state_repr="{'lock': <x.L object at 0x1>}",
+    )
+
+    text = render(method_finding(before), subject=METHOD_SUBJECT)
+
+    assert "    assert sorted(_state(instance)) == ['lock']\n" in text
+
+
+def test_an_async_method_test_awaits_the_call() -> None:
+    subject = replace(METHOD_SUBJECT, is_async=True)
+
+    text = render(method_finding(state_outcome(95)), subject=subject)
+
+    assert "    result = asyncio.run(instance.deposit(-5))\n" in text
+
+
+BANK_BASE = """\
+class Account:
+    __slots__ = ("balance", "__audit")
+
+    def __init__(self, balance, owner="ada"):
+        self.balance = balance
+        self.__audit = owner
+
+    def deposit(self, amount):
+        if amount < 0:
+            return None
+        self.balance += amount
+"""
+
+
+def test_written_method_tests_pass_on_the_base_and_fail_on_the_change(
+    tmp_path: Path,
+) -> None:
+    folder = tmp_path / "app"
+    folder.mkdir()
+    (folder / "bank.py").write_text(BANK_BASE)
+    before = Outcome(
+        "return",
+        "builtins.NoneType",
+        "None",
+        {"type": "none"},
+        state={
+            "type": "state",
+            "items": [
+                [
+                    {"type": "str", "value": "_Account__audit"},
+                    {"type": "str", "value": "ada"},
+                ],
+                [{"type": "str", "value": "balance"}, {"type": "int", "value": 100}],
+            ],
+        },
+        state_repr="{'_Account__audit': 'ada', 'balance': 100}",
+    )
+    found = method_finding(before)
+    write_tests(
+        tmp_path, tmp_path / ".didibreak", [found], "0.1.0", "a1b", methods={ACCOUNT}
+    )
+    command = [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"]
+    tests = tmp_path / ".didibreak" / "tests"
+
+    on_base = subprocess.run(
+        command, cwd=tests, capture_output=True, text=True, check=False
+    )
+    (folder / "bank.py").write_text(
+        BANK_BASE.replace("return None", "self.balance += amount")
+    )
+    on_change = subprocess.run(
+        command, cwd=tests, capture_output=True, text=True, check=False
+    )
+
+    assert on_base.returncode == 0, on_base.stdout
+    assert on_change.returncode == 1, on_change.stdout

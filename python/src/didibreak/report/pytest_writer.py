@@ -27,12 +27,34 @@ from didibreak.pipeline import tree_import_root
 _APPROX = "rel=1e-9, abs=1e-12"
 # Names the generated code uses itself; a function with one of these names is
 # imported under an alias.
-_RESERVED = frozenset({"pytest", "result", "info", "_type_name"})
+_RESERVED = frozenset(
+    {"pytest", "asyncio", "result", "info", "instance", "_type_name", "_state"}
+)
 _TYPE_NAME_HELPER = """
 
 def _type_name(value: object) -> str:
     kind = type(value)
     return f"{kind.__module__}.{kind.__qualname__}"
+"""
+# Reads an instance's attributes the way the harness compared them: slots
+# (private ones by their mangled name) and __dict__ (task 30).
+_STATE_HELPER = """
+
+def _state(instance: object) -> dict[str, object]:
+    values: dict[str, object] = {}
+    for owner in type(instance).__mro__:
+        slots = owner.__dict__.get("__slots__", ())
+        for name in (slots,) if isinstance(slots, str) else slots:
+            if name in ("__dict__", "__weakref__"):
+                continue
+            if name.startswith("__"):
+                name = f"_{owner.__name__.lstrip('_')}{name}"
+            try:
+                values[name] = owner.__dict__[name].__get__(instance, owner)
+            except AttributeError:
+                continue
+    values.update(getattr(instance, "__dict__", {}))
+    return values
 """
 
 
@@ -47,6 +69,9 @@ class Subject:
         import_root: Absolute import root of the file in the working tree.
         is_async: The tests run each call with ``asyncio.run``, as the
             harness did (task 29).
+        is_method: An instance method: each test builds the instance from
+            the case's constructor arguments, calls the method on it, and
+            also checks the instance's state after the call (task 30).
     """
 
     report_name: str
@@ -54,6 +79,7 @@ class Subject:
     qualname: str
     import_root: Path
     is_async: bool = False
+    is_method: bool = False
 
 
 def no_test_reason(finding: Finding) -> str | None:
@@ -114,8 +140,59 @@ def _builtin_exception(type_name: str) -> str | None:
 def _call(subject: Subject, subject_name: str, finding: Finding) -> str:
     method = subject.qualname.partition(".")[2]
     target = f"{subject_name}.{method}" if method else subject_name
+    if subject.is_method:
+        target = f"instance.{subject.qualname.rpartition('.')[2]}"
     call = format_call(target, finding.case.args, finding.case.kwargs)
     return f"asyncio.run({call})" if subject.is_async else call
+
+
+def _instance_line(subject: Subject, subject_name: str, finding: Finding) -> str:
+    # The class is the imported name; nested classes keep their path.
+    owner = subject.qualname.rpartition(".")[0]
+    class_path = subject_name + owner[len(owner.partition(".")[0]) :]
+    case = finding.case
+    constructor = format_call(class_path, case.init_args or (), case.init_kwargs)
+    return f"    instance = {constructor}"
+
+
+def literal_state(outcome: Outcome) -> tuple[bool, dict[str, object]]:
+    """The base state as a dict of literals, when its text round-trips.
+
+    Like literal_value(): only if ``ast.literal_eval`` reads the state text
+    back and every attribute normalizes to the recorded value.
+    """
+    if outcome.state is None or outcome.state_repr is None:
+        return False, {}
+    try:
+        values = ast.literal_eval(outcome.state_repr)
+    except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
+        return False, {}
+    if not isinstance(values, dict):
+        return False, {}
+    items = [
+        [{"type": "str", "value": name}, normalize(values[name])]
+        for name in sorted(values, key=str)
+    ]
+    rebuilt = json.loads(json.dumps({"type": "state", "items": items}))
+    return rebuilt == outcome.state, values
+
+
+def _state_lines(finding: Finding) -> list[str]:
+    before = finding.before
+    assert before is not None
+    if before.state is None:
+        return []
+    is_literal, values = literal_state(before)
+    if not is_literal:
+        names = sorted(str(item[0]["value"]) for item in before.state["items"])
+        return [
+            "    # Weak check: the base state is not all literals, so only the",
+            "    # attribute names are compared.",
+            f"    assert sorted(_state(instance)) == {names!r}",
+        ]
+    if _uses_approx(values):
+        return [f"    assert _state(instance) == pytest.approx({values!r}, {_APPROX})"]
+    return [f"    assert _state(instance) == {values!r}"]
 
 
 def _return_lines(call: str, finding: Finding) -> list[str]:
@@ -177,6 +254,9 @@ def render_test(finding: Finding, subject_name: str, subject: Subject) -> str:
         if before.kind == "exception"
         else _return_lines(call, finding)
     )
+    if subject.is_method:
+        instance = _instance_line(subject, subject_name, finding)
+        body = [instance, *body, *_state_lines(finding)]
     return "\n".join([*_comment_lines(finding), f"def {test_name}() -> None:", *body])
 
 
@@ -208,6 +288,7 @@ def render_test_file(
         header.append("")
     header.append(f"from {subject.module} import {imported}{alias}")
     helper = _TYPE_NAME_HELPER if "_type_name(" in code else ""
+    helper += _STATE_HELPER if "_state(" in code else ""
     return "\n".join(header) + "\n" + helper + "\n\n" + code + "\n"
 
 
@@ -293,11 +374,13 @@ class WrittenTests:
     not_written: tuple[tuple[str, str], ...]
 
 
-def _subject(root: Path, report_name: str, is_async: bool) -> Subject:
+def _subject(root: Path, report_name: str, is_async: bool, is_method: bool) -> Subject:
     path, _, qualname = report_name.partition("::")
     import_root = tree_import_root(root, path)
     module = module_name(path, import_root)
-    return Subject(report_name, module, qualname, root / import_root, is_async)
+    return Subject(
+        report_name, module, qualname, root / import_root, is_async, is_method
+    )
 
 
 def _shown(path: Path, root: Path) -> str:
@@ -316,13 +399,15 @@ def write_tests(
     version: str,
     base_sha: str,
     awaited: Collection[str] = frozenset(),
+    methods: Collection[str] = frozenset(),
 ) -> WrittenTests:
     """Write one test file per function with findings into output_dir/tests.
 
     Files of functions without findings in this run are left alone; the
     file of a function with findings is replaced. ``awaited`` holds the
     report names of functions whose cases the harness ran with
-    ``asyncio.run``; their tests do the same.
+    ``asyncio.run``; their tests do the same. ``methods`` holds the report
+    names of instance methods; their tests build the instance first.
 
     Raises:
         OSError: A file cannot be written.
@@ -337,7 +422,9 @@ def write_tests(
             not_written.append((finding_call(finding), reason))
     if not by_function:
         return WrittenTests(tuple(findings), (), tuple(not_written))
-    subjects = [_subject(root, name, name in awaited) for name in by_function]
+    subjects = [
+        _subject(root, name, name in awaited, name in methods) for name in by_function
+    ]
     names = file_names(subjects)
     folder = output_dir / "tests"
     folder.mkdir(parents=True, exist_ok=True)
