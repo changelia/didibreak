@@ -11,7 +11,7 @@ import builtins
 import hashlib
 import json
 import os
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -45,12 +45,15 @@ class Subject:
         module: Dotted module name relative to the import root.
         qualname: ``name`` or ``Class.name``.
         import_root: Absolute import root of the file in the working tree.
+        is_async: The tests run each call with ``asyncio.run``, as the
+            harness did (task 29).
     """
 
     report_name: str
     module: str
     qualname: str
     import_root: Path
+    is_async: bool = False
 
 
 def no_test_reason(finding: Finding) -> str | None:
@@ -108,10 +111,11 @@ def _builtin_exception(type_name: str) -> str | None:
     return name if module == "builtins" and is_exception else None
 
 
-def _call(subject_name: str, finding: Finding, qualname: str) -> str:
-    method = qualname.partition(".")[2]
+def _call(subject: Subject, subject_name: str, finding: Finding) -> str:
+    method = subject.qualname.partition(".")[2]
     target = f"{subject_name}.{method}" if method else subject_name
-    return format_call(target, finding.case.args, finding.case.kwargs)
+    call = format_call(target, finding.case.args, finding.case.kwargs)
+    return f"asyncio.run({call})" if subject.is_async else call
 
 
 def _return_lines(call: str, finding: Finding) -> list[str]:
@@ -162,12 +166,12 @@ def _comment_lines(finding: Finding) -> list[str]:
     return lines
 
 
-def render_test(finding: Finding, subject_name: str, qualname: str) -> str:
+def render_test(finding: Finding, subject_name: str, subject: Subject) -> str:
     """One test function for one finding that has a base outcome."""
     before = finding.before
     assert before is not None
-    call = _call(subject_name, finding, qualname)
-    test_name = f"test_{qualname.replace('.', '_')}_{finding.id}"
+    call = _call(subject, subject_name, finding)
+    test_name = f"test_{subject.qualname.replace('.', '_')}_{finding.id}"
     body = (
         _exception_lines(call, before)
         if before.kind == "exception"
@@ -186,7 +190,7 @@ def render_test_file(
     imported = subject.qualname.partition(".")[0]
     subject_name = f"subject_{imported}" if imported in _RESERVED else imported
     alias = f" as {subject_name}" if subject_name != imported else ""
-    tests = [render_test(f, subject_name, subject.qualname) for f in findings]
+    tests = [render_test(f, subject_name, subject) for f in findings]
     code = "\n\n\n".join(tests)
     header = [
         f"# Reproducing tests for {subject.report_name}.",
@@ -196,6 +200,9 @@ def render_test_file(
         "# behavior change. Safe to edit and move.",
         "",
     ]
+    if subject.is_async:
+        header.append("import asyncio")
+        header.append("")
     if "pytest." in code:
         header.append("import pytest")
         header.append("")
@@ -286,12 +293,11 @@ class WrittenTests:
     not_written: tuple[tuple[str, str], ...]
 
 
-def _subject(root: Path, report_name: str) -> Subject:
+def _subject(root: Path, report_name: str, is_async: bool) -> Subject:
     path, _, qualname = report_name.partition("::")
     import_root = tree_import_root(root, path)
-    return Subject(
-        report_name, module_name(path, import_root), qualname, root / import_root
-    )
+    module = module_name(path, import_root)
+    return Subject(report_name, module, qualname, root / import_root, is_async)
 
 
 def _shown(path: Path, root: Path) -> str:
@@ -309,11 +315,14 @@ def write_tests(
     findings: Sequence[Finding],
     version: str,
     base_sha: str,
+    awaited: Collection[str] = frozenset(),
 ) -> WrittenTests:
     """Write one test file per function with findings into output_dir/tests.
 
     Files of functions without findings in this run are left alone; the
-    file of a function with findings is replaced.
+    file of a function with findings is replaced. ``awaited`` holds the
+    report names of functions whose cases the harness ran with
+    ``asyncio.run``; their tests do the same.
 
     Raises:
         OSError: A file cannot be written.
@@ -328,7 +337,7 @@ def write_tests(
             not_written.append((finding_call(finding), reason))
     if not by_function:
         return WrittenTests(tuple(findings), (), tuple(not_written))
-    subjects = [_subject(root, name) for name in by_function]
+    subjects = [_subject(root, name, name in awaited) for name in by_function]
     names = file_names(subjects)
     folder = output_dir / "tests"
     folder.mkdir(parents=True, exist_ok=True)
