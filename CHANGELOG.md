@@ -9,6 +9,20 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
+#### Added
+
+- A GitHub issue template "Skipped or wrong finding": it asks for the
+  didibreak version, the function's signature and a short excerpt, the
+  skip reason or the finding, and what you expected instead.
+
+#### Changed
+
+- The README, the PyPI page and `docs/safety.md` no longer name a version
+  in statements about the current release ("Currently skipped", "didibreak
+  is alpha"), and the JavaScript / TypeScript package is described as
+  "planned, not available yet". Recorded example output keeps the version
+  it was recorded with.
+
 ### 0.2.0 - 2026-11-15
 
 The cleanup from the code audit (`evaluation/audit-35a.md`, findings 7 and
