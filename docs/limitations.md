@@ -109,6 +109,25 @@ table; the first match is the reason.
   and an awaitable returned by a plain `def` function is not run; it is
   compared by type.
 
+## Instance methods
+
+- The instance is built from literal constructor arguments. A class that
+  needs objects to be built (a session, a client, another instance) gets
+  no instance, and its methods are skipped with `construction failed:
+  <type>`.
+- Each case gets a new instance: state that builds up over several calls
+  is not checked, and class-level state (class attributes changed by a
+  method) is not compared, only the instance's own attributes.
+- A case whose instance fails to build in only one version is dropped, not
+  reported: a constructor that now rejects some arguments shows only in
+  `construction_dropped`. Constructors (`__init__`) are dunder methods and
+  are not checked themselves.
+- Properties, dunder methods, and methods of classes defined inside a
+  function or inside another class are not checked.
+- The state is the instance's `__dict__` and `__slots__`. Attributes kept
+  elsewhere (in a C extension, a `__getattr__` or a weak reference) are not
+  seen.
+
 ## Inputs from the LLM
 
 - Arguments are Python literals only. Functions that need objects (class
