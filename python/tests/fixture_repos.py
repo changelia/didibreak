@@ -13,6 +13,7 @@ test can run ``didibreak check`` (default base ``HEAD``) inside it.
 import importlib.util
 import json
 import shutil
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
@@ -20,7 +21,12 @@ from typing import Any
 
 from conftest import GitRepository
 
+from didibreak.functions import SourceFile, detect_changed_functions
+
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
+# Per-case timeout for tests that run the harness directly; a case can set
+# its own in [tool.didibreak] of before/pyproject.toml (async_timeout does).
+DEFAULT_TIMEOUT = 5.0
 
 # Keys of expected.json and what they mean.
 FIXTURE_KEYS = {
@@ -86,6 +92,28 @@ def build_fixture_repository(name: str, destination: Path) -> FixtureRepository:
             (destination / path.relative_to(case / "before")).unlink()
     shutil.copytree(case / "after", destination, dirs_exist_ok=True)
     return FixtureRepository(name, repository, load_expected(name))
+
+
+def fixture_timeout(name: str) -> float:
+    """The case's ``timeout`` from before/pyproject.toml, or DEFAULT_TIMEOUT."""
+    path = FIXTURES_DIR / name / "before" / "pyproject.toml"
+    if not path.is_file():
+        return DEFAULT_TIMEOUT
+    settings = tomllib.loads(path.read_text(encoding="utf-8"))
+    return float(settings.get("tool", {}).get("didibreak", {}).get("timeout"))
+
+
+def is_awaited(name: str, function: str) -> bool:
+    """Whether detection marks a fixture function as awaited (task 29)."""
+    file, _, qualname = function.partition("::")
+    before = FIXTURES_DIR / name / "before" / file
+    after = FIXTURES_DIR / name / "after" / file
+    old = before.read_bytes() if before.is_file() else None
+    detection = detect_changed_functions(
+        [SourceFile(file, old, after.read_bytes())], max_functions=50
+    )
+    found = [f for f in detection.functions if f.qualname == qualname]
+    return bool(found) and found[0].awaited
 
 
 def load_version(name: str, version: str, file: str) -> ModuleType:

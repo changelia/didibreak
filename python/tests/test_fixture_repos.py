@@ -5,6 +5,8 @@ functions (our own test data) directly, so later milestones can rely on them.
 """
 
 import ast
+import asyncio
+import inspect
 import math
 from pathlib import Path
 from typing import Any
@@ -14,6 +16,7 @@ from fixture_repos import (
     FIXTURE_KEYS,
     build_fixture_repository,
     fixture_names,
+    fixture_timeout,
     load_expected,
     load_version,
 )
@@ -36,6 +39,15 @@ def _call(case: str, version: str, item: dict[str, Any]) -> dict[str, str]:
     kwargs = {key: ast.literal_eval(text) for key, text in item["kwargs"].items()}
     try:
         value = target(*args, **kwargs)
+        if inspect.iscoroutine(value):
+            timeout = fixture_timeout(case)
+            value = asyncio.run(asyncio.wait_for(value, timeout))
+    except TimeoutError:
+        return {
+            "kind": "timeout",
+            "type_name": "",
+            "repr": f"<timed out after {timeout:g} s>",
+        }
     except Exception as error:
         kind, result = "exception", error
     else:
@@ -49,6 +61,8 @@ def _call(case: str, version: str, item: dict[str, Any]) -> dict[str, str]:
 
 
 def _same(before: dict[str, str], after: dict[str, str]) -> bool:
+    if before["kind"] == "timeout" or after["kind"] == "timeout":
+        return before == after
     if before["kind"] != after["kind"] or before["type_name"] != after["type_name"]:
         return False
     if before["kind"] == "exception":
@@ -69,6 +83,10 @@ def test_the_required_cases_exist() -> None:
         "float_precision",
         "nondeterministic",
         "exception_type",
+        "async_regression",
+        "async_intended_change",
+        "async_timeout",
+        "async_exception",
     }
 
 

@@ -1,0 +1,3 @@
+[tool.didibreak]
+# One second per case keeps the timed-out case short in the test suite.
+timeout = 1
