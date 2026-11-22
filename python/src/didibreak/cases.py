@@ -14,10 +14,10 @@ from importlib import resources
 from string import Template
 from typing import Any
 
-from didibreak.arguments import case_problem, format_call, normalized_case
+from didibreak.arguments import case_problem, normalized_case
 from didibreak.compare import finding_id
 from didibreak.functions import ChangedFunction
-from didibreak.harness import Case, Outcome
+from didibreak.harness import Case, Outcome, case_call
 from didibreak.llm.common import Message
 
 PROMPT_FILE = "case_generation.md"
@@ -172,8 +172,9 @@ class CaseRun:
 
 
 def describe_call(qualname: str, case: Case) -> str:
-    """``name(arg, key=value)`` as written in the case."""
-    return format_call(qualname.rsplit(".", 1)[-1], case.args, case.kwargs)
+    """``name(arg, key=value)``, or ``Class(...).name(...)`` for a method case."""
+    name = qualname if case.is_method_case else qualname.rsplit(".", 1)[-1]
+    return case_call(name, case)
 
 
 def describe_outcome(outcome: Outcome) -> str:

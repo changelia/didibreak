@@ -20,7 +20,7 @@ from didibreak.arguments import format_call
 from didibreak.cache import ignore_output_dir
 from didibreak.compare import Finding
 from didibreak.functions import module_name
-from didibreak.harness import PROCESS_EXITED_TYPE, Outcome
+from didibreak.harness import PROCESS_EXITED_TYPE, Outcome, case_call
 from didibreak.pipeline import tree_import_root
 
 # Comparison rule for floats (Spec, "Comparison rules").
@@ -306,7 +306,7 @@ def _shown(path: Path, root: Path) -> str:
 
 def finding_call(finding: Finding) -> str:
     """``path::qualname(args)`` as the text report shows a finding."""
-    return format_call(finding.function, finding.case.args, finding.case.kwargs)
+    return case_call(finding.function, finding.case)
 
 
 def write_tests(

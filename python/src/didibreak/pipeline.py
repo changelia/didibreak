@@ -81,7 +81,28 @@ def _case(item: object, number: int) -> tuple[str, Case]:
     problem = case_problem(args, kwargs)
     if problem is not None:
         raise ValueError(f"{where}: {problem}")
-    return function, Case(*normalized_case(args, kwargs), rationale)
+    case = Case(*normalized_case(args, kwargs), rationale)
+    if "init_args" in item or "init_kwargs" in item:
+        case = _with_constructor(case, item, where)
+    return function, case
+
+
+def _with_constructor(case: Case, item: dict[str, Any], where: str) -> Case:
+    # A method case (task 30): the class is built with these arguments.
+    init_args = item.get("init_args", [])
+    init_kwargs = item.get("init_kwargs", {})
+    if not (isinstance(init_args, list) and all(isinstance(a, str) for a in init_args)):
+        raise ValueError(f'{where}: "init_args" must be a list of strings')
+    if not (
+        isinstance(init_kwargs, dict)
+        and all(isinstance(v, str) for v in init_kwargs.values())
+    ):
+        raise ValueError(f'{where}: "init_kwargs" must map names to strings')
+    problem = case_problem(init_args, init_kwargs)
+    if problem is not None:
+        raise ValueError(f"{where}: constructor argument: {problem}")
+    positional, keywords = normalized_case(init_args, init_kwargs)
+    return replace(case, init_args=positional, init_kwargs=keywords)
 
 
 def load_cases_file(path: Path) -> Mapping[str, tuple[Case, ...]]:

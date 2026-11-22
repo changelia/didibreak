@@ -138,3 +138,31 @@ def format_call(name: str, args: Sequence[str], kwargs: Mapping[str, str]) -> st
         *(f"{key}={_call_argument(value)}" for key, value in kwargs.items()),
     ]
     return f"{name}({', '.join(arguments)})"
+
+
+def format_case_call(
+    name: str,
+    args: Sequence[str],
+    kwargs: Mapping[str, str],
+    init_args: Sequence[str] | None = None,
+    init_kwargs: Mapping[str, str] | None = None,
+) -> str:
+    """A case as one call: ``name(...)``, or ``Owner(...).method(...)``.
+
+    Args:
+        name: The function, ``Class.method`` or ``path::Class.method``.
+        args: Positional arguments of the call.
+        kwargs: Keyword arguments of the call.
+        init_args: Constructor arguments of a method case (task 30); None
+            for a function, where the call is printed as format_call().
+        init_kwargs: Constructor keyword arguments of a method case.
+
+    Returns:
+        For a method case, the constructor call on the class followed by the
+        method call, e.g. ``app/bank.py::Account(100).deposit(-5)``.
+    """
+    if init_args is None:
+        return format_call(name, args, kwargs)
+    owner, _, method = name.rpartition(".")
+    instance = format_call(owner, init_args, init_kwargs or {})
+    return f"{instance}.{format_call(method, args, kwargs)}"

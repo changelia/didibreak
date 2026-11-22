@@ -146,7 +146,9 @@ def finding_id(function: str, case: Case) -> str:
 
     Returns:
         The first FINDING_ID_LENGTH hex characters of the SHA-256 of the
-        function name and the normalized arguments.
+        function name and the normalized arguments; a method case's
+        constructor arguments are part of it (a function's id is the same
+        as before task 30).
 
     Raises:
         ValueError: If an argument is not a Python literal.
@@ -158,6 +160,11 @@ def finding_id(function: str, case: Case) -> str:
             name: _canonical_argument(text) for name, text in case.kwargs.items()
         },
     }
+    if case.init_args is not None:
+        payload["init_args"] = [_canonical_argument(text) for text in case.init_args]
+        payload["init_kwargs"] = {
+            name: _canonical_argument(text) for name, text in case.init_kwargs.items()
+        }
     text = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:FINDING_ID_LENGTH]
 

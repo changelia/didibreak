@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
-from didibreak.arguments import case_problem
+from didibreak.arguments import case_problem, format_case_call
 
 _CHILD_SCRIPT = Path(__file__).with_name("_harness_child.py")
 # -s: no user site-packages. -P: the script's folder is not put on sys.path.
@@ -69,11 +69,23 @@ class Case:
         args: Positional arguments, e.g. ``("'995 555 12 34 56'",)``.
         kwargs: Keyword arguments by name.
         rationale: Why the case was chosen; not used by the harness.
+        init_args: Constructor arguments of a method case: the class is
+            built with them and the method is called on the instance (task
+            30). None for a function; ``()`` for a constructor without
+            arguments.
+        init_kwargs: Constructor keyword arguments of a method case.
     """
 
     args: tuple[str, ...]
     kwargs: Mapping[str, str] = field(default_factory=dict)
     rationale: str = ""
+    init_args: tuple[str, ...] | None = None
+    init_kwargs: Mapping[str, str] = field(default_factory=dict)
+
+    @property
+    def is_method_case(self) -> bool:
+        """Whether the case builds an instance before the call."""
+        return self.init_args is not None
 
 
 @dataclass(frozen=True)
@@ -95,6 +107,13 @@ class Target:
     module: str
     qualname: str
     is_async: bool = False
+
+
+def case_call(name: str, case: Case) -> str:
+    """The case as one call, as every report prints it (format_case_call)."""
+    return format_case_call(
+        name, case.args, case.kwargs, case.init_args, case.init_kwargs
+    )
 
 
 @dataclass(frozen=True)

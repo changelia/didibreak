@@ -12,7 +12,7 @@ import hashlib
 import json
 import os
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -85,14 +85,7 @@ class CaseCache:
         data = {
             "format": CACHE_FORMAT,
             "function": function.report_name,
-            "cases": [
-                {
-                    "args": list(c.args),
-                    "kwargs": dict(c.kwargs),
-                    "rationale": c.rationale,
-                }
-                for c in cases
-            ],
+            "cases": [_case_to_json(c) for c in cases],
         }
         try:
             self.folder.mkdir(parents=True, exist_ok=True)
@@ -125,6 +118,27 @@ def _write_atomically(path: Path, text: str) -> None:
         raise
 
 
+def _case_to_json(case: Case) -> dict[str, Any]:
+    data: dict[str, Any] = {
+        "args": list(case.args),
+        "kwargs": dict(case.kwargs),
+        "rationale": case.rationale,
+    }
+    if case.init_args is not None:
+        data["init_args"] = list(case.init_args)
+        data["init_kwargs"] = dict(case.init_kwargs)
+    return data
+
+
+def _init_from_json(item: dict[str, Any]) -> tuple[list[Any], dict[Any, Any]] | None:
+    init_args, init_kwargs = item.get("init_args"), item.get("init_kwargs", {})
+    if not isinstance(init_args, list) or not isinstance(init_kwargs, dict):
+        return None
+    if case_problem(init_args, init_kwargs) is not None:
+        return None
+    return init_args, init_kwargs
+
+
 def _case_from_json(item: Any) -> Case | None:
     if not isinstance(item, dict):
         return None
@@ -138,9 +152,16 @@ def _case_from_json(item: Any) -> Case | None:
     if case_problem(args, kwargs) is not None:
         return None
     # Files written before the normal form existed may hold comments.
-    return Case(
+    case = Case(
         *normalized_case(args, kwargs), rationale if isinstance(rationale, str) else ""
     )
+    if "init_args" not in item:
+        return case
+    init = _init_from_json(item)
+    if init is None:
+        return None
+    init_args, init_kwargs = normalized_case(*init)
+    return replace(case, init_args=init_args, init_kwargs=init_kwargs)
 
 
 def _cases_from_json(data: Any) -> tuple[Case, ...] | None:
