@@ -31,15 +31,16 @@ What didibreak cannot check, shared and per language.
 
 ## Functions that are skipped
 
-v0.1 does not run these functions; the report lists each one with its reason.
+didibreak does not run these functions; the report lists each one with its
+reason.
 A rule that matches in either the base or the current version skips the
 function; see [safety.md](safety.md).
 
 | Reason | When |
 | --- | --- |
-| `async function` | The function is defined with `async def`. |
 | `instance method` | A method without `@staticmethod` or `@classmethod`; it needs an instance. |
 | `generator` | The function itself contains `yield` or `yield from`. |
+| `async generator` | The function is defined with `async def` and contains `yield`. |
 | `obvious I/O: <name>` | The body (including helpers defined inside it) uses one of the I/O names below. |
 | `blocked: <event>` | While it ran, the function (or its module's import) tried an operation the runtime I/O guard stops: a command, a process, network access, native code, or a file change outside its temporary folder ([safety.md](safety.md#the-runtime-io-guard)). |
 
@@ -89,6 +90,21 @@ extension with its own I/O is not stopped
 function that only looks like I/O (for example a DataFrame's `rename`). A
 container is the real isolation. Rules are checked in the order of the
 table; the first match is the reason.
+
+## Async functions
+
+- Each case gets a new event loop. A coroutine that relies on something
+  started earlier in the same loop (a server, a background task, a client
+  or connection pool created at import for a loop) does not find it.
+- Typical async endpoints take objects such as a request, a database
+  session or injected dependencies; literals cannot express them, so such
+  functions get no useful cases or are skipped as I/O.
+- Time spent in `await` counts toward `timeout`: a coroutine that sleeps
+  longer than `timeout` seconds times out in both versions and its case is
+  dropped.
+- Only `async def` functions are awaited. Async generators are skipped,
+  and an awaitable returned by a plain `def` function is not run; it is
+  compared by type.
 
 ## Inputs from the LLM
 

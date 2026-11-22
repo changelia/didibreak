@@ -11,9 +11,10 @@ One `didibreak check` run:
    versions of each changed file are parsed, and a function counts as
    changed when its code changes (formatting, comments and docstrings are
    ignored). New functions are found too; removed ones are listed.
-2. **Skip what cannot be run.** Async functions, instance methods,
-   generators and functions with obvious I/O are skipped with a reason
-   ([limitations.md](limitations.md#functions-that-are-skipped)). Each
+2. **Skip what cannot be run.** Instance methods, generators (async
+   generators too) and functions with obvious I/O are skipped with a
+   reason ([limitations.md](limitations.md#functions-that-are-skipped)).
+   Async functions are run ([Async functions](#async-functions)). Each
    remaining module is imported once in both versions, so a module that
    cannot be imported costs no tokens.
 3. **Estimate the cost** and stop at `max_cost`
@@ -152,6 +153,22 @@ finding when the current version behaves differently.
 
 Intent never hides a finding; it only labels it `expected`, `unexpected` or
 `unclear`.
+
+### Async functions
+
+A function defined with `async def` in both versions is called like any
+other function, and the coroutine it returns is run with `asyncio.run`:
+one new event loop per case, under the same timeout, seed and comparison
+rules. What the coroutine returns or raises is the outcome. Tasks it left
+running are cancelled when the case ends. After a timeout the coroutine is
+cancelled too; one that ignores the cancellation gets one more second
+before the case ends.
+
+A function that changed between `def` and `async def` is called without
+`asyncio.run` in both versions, so the change shows as a finding: callers
+now get a coroutine (or no longer do), a `builtins.coroutine` on one side
+and the value on the other.
+Reproducing tests call async functions with `asyncio.run(...)` as well.
 
 ### Comparing values
 

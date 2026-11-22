@@ -7,9 +7,10 @@ How your code is executed and isolated, and what is not covered.
 
 ## Which functions are never executed
 
-Before running anything, didibreak skips functions it cannot run safely: async
-functions, instance methods, generators, and functions with obvious I/O (files,
-processes, network, databases). The full list of rules and I/O names is in
+Before running anything, didibreak skips functions it cannot run safely:
+instance methods, generators (async generators too), and functions with
+obvious I/O (files, processes, network, databases). Async functions are
+run, under the same rules and the same guard. The full list of rules and I/O names is in
 [limitations.md](limitations.md#functions-that-are-skipped). These rules read
 the source; they are a fast first filter. What they miss is run under the
 [runtime I/O guard](#the-runtime-io-guard).
@@ -56,6 +57,13 @@ is imported. While your module is imported and while a case runs, it stops:
   `HOME` is not changed: a module that writes under your home folder
   without these variables is skipped with `blocked: <event>`. An SQLite
   database in memory (`:memory:`) is allowed.
+
+Async functions run under the same guard. The event loop itself is
+allowed (its internal socket pair connects nothing), but a coroutine that
+starts a process (`asyncio.create_subprocess_exec`), opens a connection
+(`asyncio.open_connection`), looks up a name (the loop does that in a
+worker thread, which the guard also covers) or writes outside the
+temporary folder is skipped with `blocked: <event>`.
 
 Reading files is allowed. The full list of audit events is
 `BLOCKED_EVENTS` in
@@ -148,7 +156,9 @@ changes), but not the evaluation itself.
   recorded as a timeout; the other cases still run. Code that catches every
   exception (`except BaseException`) cannot stop this for long: the process
   and any processes it started are killed after a total of `timeout` ×
-  number of cases plus 5 seconds.
+  number of cases plus 5 seconds. For an async function, the coroutine
+  is cancelled at the timeout and gets one more second to finish; the
+  total grows by one second per case.
 - **Crashes.** A case that ends the process (`os._exit`, a crash in a C
   extension) is recorded as the exception `didibreak.ProcessExited`, and the
   remaining cases run in a new process.
