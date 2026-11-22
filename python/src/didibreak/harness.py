@@ -53,6 +53,9 @@ URL_SUFFIXES = ("_URL", "_URI", "_DSN", "_PROXY")
 CACHE_VARIABLES = ("XDG_CACHE_HOME", "MPLCONFIGDIR", "NUMBA_CACHE_DIR")
 # Matplotlib's cached list of the system fonts, one file per cache version.
 MATPLOTLIB_FONT_LISTS = "fontlist-*.json"
+# Extra time an async case may take to cancel its coroutine after a timeout
+# (ASYNC_CLEANUP_SECONDS in _harness_child.py).
+ASYNC_CLEANUP_SECONDS = 1.0
 # Extra time for interpreter start and import before the child is killed.
 _KILL_GRACE_SECONDS = 5.0
 PROCESS_EXITED_TYPE = "didibreak.ProcessExited"
@@ -83,12 +86,15 @@ class Target:
         import_root: Folder put first on ``sys.path``, inside ``tree``.
         module: Dotted module name relative to ``import_root``.
         qualname: ``name`` or ``Class.name``.
+        is_async: Run the coroutine each call returns with ``asyncio.run``
+            (task 29).
     """
 
     tree: Path
     import_root: Path
     module: str
     qualname: str
+    is_async: bool = False
 
 
 @dataclass(frozen=True)
@@ -240,6 +246,7 @@ def _write_request(
         "import_root": str(target.import_root),
         "module": target.module,
         "qualname": target.qualname,
+        "is_async": target.is_async,
         "timeout": timeout,
         "cases": [
             {"args": list(case.args), "kwargs": dict(case.kwargs)} for case in cases
@@ -377,8 +384,10 @@ def _start_child(
     working_directory.mkdir(exist_ok=True)
     _write_request(request, target, cases, settings.timeout, working_directory)
     process = _spawn(settings, environment, request, results, working_directory)
-    # An import check runs no case but still gets one timeout to import.
-    limit = settings.timeout * max(len(cases), 1) + _KILL_GRACE_SECONDS
+    # An import check runs no case but still gets one timeout to import. An
+    # async case that times out also gets its cleanup time.
+    per_case = settings.timeout + (ASYNC_CLEANUP_SECONDS if target.is_async else 0)
+    limit = per_case * max(len(cases), 1) + _KILL_GRACE_SECONDS
     killed = _wait_or_kill(process, limit)
     return _ChildRun(_read_records(results), killed, process.returncode)
 

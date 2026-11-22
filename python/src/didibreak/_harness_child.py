@@ -8,6 +8,11 @@ didibreak installed.
 Results cross the process boundary as JSON, never pickle. Return values are
 normalized here (Detailed Design section 4) because the objects themselves
 cannot leave the process.
+
+A coroutine function (``async def`` in both versions, request key
+``is_async``) is called like any other function, and the coroutine it
+returns is run with ``asyncio.run``: a new event loop per case, under the
+same timeout.
 """
 
 import ast
@@ -39,6 +44,10 @@ MAX_TEXT_LENGTH = 100_000
 # All stored str and bytes of one value together; a value with more text is
 # compared by type only, like one with too many elements.
 _MAX_TOTAL_TEXT = 1_000_000
+# After an async case times out, asyncio.run cancels the coroutine and waits
+# for it to finish. A coroutine that ignores the cancellation would wait
+# forever, so the alarm fires once more after this many seconds.
+ASYNC_CLEANUP_SECONDS = 1.0
 
 
 class CaseTimeout(BaseException):
@@ -227,8 +236,30 @@ def timeout_outcome(timeout: float) -> dict[str, Any]:
     }
 
 
+# True while an async case runs: the alarm then also limits the cleanup.
+_running_async = [False]
+
+
 def _on_alarm(signal_number: int, frame: object) -> None:
+    if _running_async[0]:
+        signal.setitimer(signal.ITIMER_REAL, ASYNC_CLEANUP_SECONDS)
     raise CaseTimeout
+
+
+def _await(value: object) -> object:
+    """Run a returned coroutine to its end in a new event loop."""
+    # Imported here, under the guard, so that runs of sync functions do not
+    # pay for it; importing reads files and changes none.
+    import asyncio
+    import inspect
+
+    if not inspect.iscoroutine(value):
+        return value  # a decorator made the function return something else
+    _running_async[0] = True
+    try:
+        return asyncio.run(value)
+    finally:
+        _running_async[0] = False
 
 
 def _load_function(request: dict[str, Any]) -> Callable[..., object] | str:
@@ -259,9 +290,16 @@ def _load_function(request: dict[str, Any]) -> Callable[..., object] | str:
 
 
 def run_case(
-    function: Callable[..., object], case: dict[str, Any], timeout: float
+    function: Callable[..., object],
+    case: dict[str, Any],
+    timeout: float,
+    is_async: bool = False,
 ) -> dict[str, Any]:
-    """Call the function with one case's arguments and record the outcome."""
+    """Call the function with one case's arguments and record the outcome.
+
+    With ``is_async`` the returned coroutine is run with ``asyncio.run``;
+    its result or exception is the outcome.
+    """
     args = [ast.literal_eval(text) for text in case["args"]]
     kwargs = {name: ast.literal_eval(text) for name, text in case["kwargs"].items()}
     random.seed(0)  # the same random sequence for every case and run
@@ -269,6 +307,8 @@ def run_case(
     try:
         try:
             value = function(*args, **kwargs)
+            if is_async:
+                value = _await(value)
         except CaseTimeout:
             raise
         except BaseException as error:  # SystemExit is an outcome too
@@ -333,7 +373,9 @@ def main(arguments: list[str]) -> None:
         signal.signal(signal.SIGALRM, _on_alarm)
         for case in request["cases"]:
             try:
-                outcome = run_case(function, case, request["timeout"])
+                outcome = run_case(
+                    function, case, request["timeout"], request.get("is_async", False)
+                )
             except CaseTimeout:  # the alarm fired while cancelling the timer
                 outcome = timeout_outcome(request["timeout"])
             stop = _blocked_record(blocked)
