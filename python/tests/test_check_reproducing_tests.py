@@ -41,10 +41,13 @@ def test_generated_tests_pass_on_the_base_and_fail_on_the_change(
     main(["check", "--cases-file", str(path), "--format", "json"])
 
     report = json.loads(capsys.readouterr().out)
+    # A base that timed out gets no test either (task 29, async_timeout).
     with_base = [
         f
         for f in report["findings"]
-        if f["before"] is not None and f["label"] != "expected"
+        if f["before"] is not None
+        and f["before"]["kind"] != "timeout"
+        and f["label"] != "expected"
     ]
     assert all(f["test_file"] for f in with_base)
     others = [f for f in report["findings"] if f not in with_base]

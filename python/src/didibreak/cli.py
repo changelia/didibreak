@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import TextIO
 
 from didibreak import __version__
-from didibreak.compare import Finding
 from didibreak.config import (
     CONFIG_KEYS,
     FAIL_ON,
@@ -667,12 +666,14 @@ def _build_report(
 
 
 def _write_tests(
-    config: Config, root: Path, base_sha: str, findings: Sequence[Finding]
+    config: Config, root: Path, base_sha: str, analysis: Analysis
 ) -> WrittenTests:
     # The report is still useful without the tests: warn and go on.
+    findings = analysis.findings
+    awaited = {f.report_name for f in analysis.checked if f.awaited}
     try:
         return write_tests(
-            root, Path(config.output_dir), findings, __version__, base_sha
+            root, Path(config.output_dir), findings, __version__, base_sha, awaited
         )
     except OSError as error:
         _print_problem("warning", f"could not write the reproducing tests: {error}")
@@ -832,7 +833,7 @@ def _finish(
 ) -> int:
     """Write the reproducing tests, print the report, return the exit code."""
     config = run.config
-    tests = _write_tests(config, run.root, run.base_sha, analysis.findings)
+    tests = _write_tests(config, run.root, run.base_sha, analysis)
     analysis = replace(analysis, findings=tests.findings)
     report = replace(
         _build_report(config, run.base_sha, intent, run.detection, analysis, llm_cases),

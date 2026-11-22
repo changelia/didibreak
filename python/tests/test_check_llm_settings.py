@@ -172,9 +172,9 @@ def test_only_skipped_functions_need_no_llm_settings(
     no_llm_settings: None,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    git_repository.write("app.py", "async def f(x):\n    return x\n")
+    git_repository.write("app.py", "def f(x):\n    yield x\n")
     git_repository.commit()
-    git_repository.write("app.py", "async def f(x):\n    return x + 1\n")
+    git_repository.write("app.py", "def f(x):\n    yield x + 1\n")
     monkeypatch.chdir(git_repository.path)
 
     assert main(["check"]) == EXIT_OK

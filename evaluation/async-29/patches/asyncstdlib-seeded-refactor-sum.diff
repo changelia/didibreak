@@ -1,0 +1,15 @@
+diff --git a/asyncstdlib/builtins.py b/asyncstdlib/builtins.py
+index d2d11bc..05b5ffa 100644
+--- a/asyncstdlib/builtins.py
++++ b/asyncstdlib/builtins.py
+@@ -373,8 +373,9 @@ async def sum(iterable: AnyIterable[Any], start: Any = 0) -> Any:
+     """
+     Sum of ``start`` and all elements in the (async) iterable
+     """
++    items = [item async for item in aiter(iterable)]
+     total = start
+-    async for item in aiter(iterable):
++    for item in items:
+         total += item
+     return total
+ 

@@ -1,0 +1,356 @@
+{
+  "scenario": {
+    "id": "asyncstdlib-replay-3879b3d",
+    "repo": "asyncstdlib",
+    "kind": "replay",
+    "commit": "3879b3dcdd17665b2634f77775167f9d19c0aac1",
+    "intent": "Refactor the builtins module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "3879b3dcdd17665b2634f77775167f9d19c0aac1",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the builtins module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 28.5,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,912 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 1,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.2.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "3879b3dcdd17665b2634f77775167f9d19c0aac1"
+    },
+    "intent": "Stated by the user: Refactor the builtins module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "4b7303aa70d2",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input now returns True instead of 1.",
+        "confidence": "high",
+        "args": [
+          "[1, True]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "1"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zo490gde/out/tests/test__min_max.py"
+      },
+      {
+        "id": "b0745c4e536b",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input now returns False instead of 0.",
+        "confidence": "high",
+        "args": [
+          "[0, False]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "0"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zo490gde/out/tests/test__min_max.py"
+      },
+      {
+        "id": "de3e385dcfbc",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input now returns 1 instead of 1.0.",
+        "confidence": "high",
+        "args": [
+          "[1.0, 1]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.float",
+          "repr": "1.0"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "1"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zo490gde/out/tests/test__min_max.py"
+      },
+      {
+        "id": "84e1e7468f5a",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input now returns (True,) instead of (1,).",
+        "confidence": "high",
+        "args": [
+          "[(1,), (True,)]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "(1,)"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "(True,)"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zo490gde/out/tests/test__min_max.py"
+      },
+      {
+        "id": "3b23e5b5dac4",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input now returns {2} instead of {1}.",
+        "confidence": "high",
+        "args": [
+          "[{1}, {2}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{1}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{2}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zo490gde/out/tests/test__min_max.py"
+      },
+      {
+        "id": "314b54e344e1",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input now returns {2, 3} instead of {1, 2}.",
+        "confidence": "high",
+        "args": [
+          "[{1, 2}, {2, 3}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{1, 2}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{2, 3}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zo490gde/out/tests/test__min_max.py"
+      },
+      {
+        "id": "e4fc455677c2",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input now returns {2, 4} instead of {1, 3}.",
+        "confidence": "high",
+        "args": [
+          "[{1, 3}, {2, 4}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{1, 3}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{2, 4}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zo490gde/out/tests/test__min_max.py"
+      },
+      {
+        "id": "9d64267ab607",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input now returns {2, 3, 4} instead of {1, 2, 3}.",
+        "confidence": "high",
+        "args": [
+          "[{1, 2, 3}, {2, 3, 4}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{1, 2, 3}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{2, 3, 4}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zo490gde/out/tests/test__min_max.py"
+      },
+      {
+        "id": "2dae83c83d96",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input now returns {'b'} instead of {'a'}.",
+        "confidence": "high",
+        "args": [
+          "[{'a'}, {'b'}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{'a'}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{'b'}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zo490gde/out/tests/test__min_max.py"
+      },
+      {
+        "id": "df3de271a85d",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input now returns {(2,)} instead of {(1,)}.",
+        "confidence": "high",
+        "args": [
+          "[{(1,)}, {(2,)}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{(1,)}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{(2,)}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zo490gde/out/tests/test__min_max.py"
+      },
+      {
+        "id": "c00fe6f34db5",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input now returns {2, 'b'} instead of {1, 'a'}.",
+        "confidence": "high",
+        "args": [
+          "[{1, 'a'}, {2, 'b'}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{1, 'a'}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{2, 'b'}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zo490gde/out/tests/test__min_max.py"
+      },
+      {
+        "id": "c1267a3f74fd",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input now returns {0, 2} instead of {0, 1}.",
+        "confidence": "high",
+        "args": [
+          "[{0, 1}, {0, 2}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{0, 1}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{0, 2}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zo490gde/out/tests/test__min_max.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "skipped": [
+        {
+          "function": "asyncstdlib/heapq.py::_KeyIter.__lt__",
+          "reason": "instance method"
+        }
+      ],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2014,
+      "output_tokens": 3074,
+      "cost_usd": 0.0017384
+    }
+  }
+}

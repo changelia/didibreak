@@ -163,9 +163,10 @@ def tree_import_root(tree: Path, path: str) -> str:
     return import_root(path, "" if folder == "." else folder)
 
 
-def _target(tree: Path, path: str, qualname: str) -> Target:
+def _target(tree: Path, path: str, function: ChangedFunction) -> Target:
     root = tree_import_root(tree, path)
-    return Target(tree, tree / root, module_name(path, root), qualname)
+    module = module_name(path, root)
+    return Target(tree, tree / root, module, function.qualname, function.awaited)
 
 
 def _run(
@@ -179,13 +180,11 @@ def _run(
     base_tree, current_tree = trees
     before = None
     if function.kind == "changed":
-        base = run_cases(
-            _target(base_tree, base_path, function.qualname), cases, settings
-        )
+        base = run_cases(_target(base_tree, base_path, function), cases, settings)
         if base.skip_reason is not None:
             return f"{base.skip_reason} (base version)"
         before = base.outcomes
-    current_target = _target(current_tree, function.file, function.qualname)
+    current_target = _target(current_tree, function.file, function)
     current = run_cases(current_target, cases, settings)
     if current.skip_reason is not None:
         return current.skip_reason
@@ -285,13 +284,11 @@ def _import_problem(
 ) -> str | None:
     base_tree, current_tree = trees
     if function.kind == "changed":
-        target = _target(base_tree, base_path, function.qualname)
+        target = _target(base_tree, base_path, function)
         reason = check_import(target, settings)
         if reason is not None:
             return f"{reason} (base version)"
-    return check_import(
-        _target(current_tree, function.file, function.qualname), settings
-    )
+    return check_import(_target(current_tree, function.file, function), settings)
 
 
 def check_imports(

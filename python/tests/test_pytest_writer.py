@@ -338,3 +338,48 @@ def test_generated_conftest_runs_tests_in_utc(tmp_path: Path) -> None:
     )
 
     assert run.returncode == 0, run.stdout
+
+
+ASYNC_SUBJECT = Subject(PHONE, "app.utils.phone", "normalize_phone", Path(), True)
+
+
+def test_an_async_function_is_called_with_asyncio_run() -> None:
+    text = render(finding(text_value("+995555123456")), subject=ASYNC_SUBJECT)
+
+    assert "import asyncio\n\nfrom app.utils.phone import normalize_phone\n" in text
+    assert "    result = asyncio.run(normalize_phone('995 555 12 34 56'))\n" in text
+
+
+def test_an_async_exception_is_raised_by_asyncio_run() -> None:
+    before = Outcome("exception", "builtins.ValueError", "ValueError()", None, "")
+
+    text = render(finding(before), subject=ASYNC_SUBJECT)
+
+    assert "import asyncio\n\nimport pytest\n\nfrom app.utils" in text
+    assert "        asyncio.run(normalize_phone('995 555 12 34 56'))\n" in text
+
+
+def test_a_sync_function_gets_no_asyncio_import() -> None:
+    assert "asyncio" not in render(finding(text_value("+995555123456")))
+
+
+def test_awaited_functions_get_async_tests_when_written(tmp_path: Path) -> None:
+    source = "async def normalize_phone(number):\n    return number.strip()\n"
+    folder = tmp_path / "app" / "utils"
+    folder.mkdir(parents=True)
+    (folder / "phone.py").write_text(source)
+    found = finding(text_value("995 555 12 34 56"), case=Case(("' 995 555 12 34 56'",)))
+
+    written = write_tests(
+        tmp_path, tmp_path / ".didibreak", [found], "0.1.0", "a1b", awaited={PHONE}
+    )
+    run = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"],
+        cwd=tmp_path / ".didibreak" / "tests",
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert written.files
+    assert run.returncode == 0, run.stdout

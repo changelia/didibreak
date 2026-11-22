@@ -1,0 +1,41 @@
+{
+  "description": "The base coroutine never finishes for a negative number of attempts and times out (pyproject.toml sets a 1 s timeout); the fix returns 0. The timed-out base gets no reproducing test.",
+  "intent": "stop waiting forever when attempts is negative",
+  "changed_functions": [
+    {
+      "function": "app/polling.py::wait_until_ready",
+      "kind": "changed"
+    }
+  ],
+  "skipped_functions": [],
+  "findings": [
+    {
+      "function": "app/polling.py::wait_until_ready",
+      "label": "expected",
+      "args": [
+        "-1"
+      ],
+      "kwargs": {},
+      "before": {
+        "kind": "timeout",
+        "type_name": "",
+        "repr": "<timed out after 1 s>"
+      },
+      "after": {
+        "kind": "return",
+        "type_name": "builtins.int",
+        "repr": "0"
+      }
+    }
+  ],
+  "same_behavior": [
+    {
+      "function": "app/polling.py::wait_until_ready",
+      "args": [
+        "3"
+      ],
+      "kwargs": {}
+    }
+  ],
+  "flaky_functions": []
+}

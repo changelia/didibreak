@@ -6,6 +6,7 @@ Each row says which entry points accept the input.
 """
 
 from collections.abc import Mapping
+from pathlib import Path
 
 import pytest
 
@@ -100,13 +101,14 @@ def finding(function: str, case: Case) -> Finding:
 
 
 CASE = Case(("1", "'a b'"), {"k": "[2]", "z": "None"})
+SUBJECT = pytest_writer.Subject("a.py::C.m", "a", "C.m", Path())
 
 
 def test_every_formatter_writes_the_arguments_the_same_way() -> None:
     assert cases.describe_call("C.m", CASE) == "m(1, 'a b', k=[2], z=None)"
     assert finding_call(finding("a.py::f", CASE)) == "a.py::f(1, 'a b', k=[2], z=None)"
     assert (
-        pytest_writer._call("C", finding("a.py::C.m", CASE), "C.m")
+        pytest_writer._call(SUBJECT, "C", finding("a.py::C.m", CASE))
         == "C.m(1, 'a b', k=[2], z=None)"
     )
     line = _finding_lines(finding("a.py::f", CASE), color=False)[0]

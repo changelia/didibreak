@@ -83,18 +83,20 @@ strings, numbers, booleans, `None`, and lists, tuples, dicts and sets of
 these. Parsers, formatters, validators, converters and small utility
 libraries are the sweet spot.
 
+`async def` functions are checked too: each case runs the coroutine with
+`asyncio.run`.
+
 **Currently skipped**, each listed in the report with its reason:
 
-- `async` functions;
 - instance methods (they need an object; `@staticmethod` and
   `@classmethod` are checked);
-- generators;
+- generators, including async generators;
 - functions with obvious I/O: files, network, subprocesses, databases;
 - functions that try to run commands, reach the network or change files
   outside a temporary folder while they run (a runtime guard stops them);
-- typical FastAPI and Django handlers: async endpoints are skipped, and
+- typical FastAPI and Django handlers: async endpoints are run, but
   views that take request objects or query the database get no useful
-  literal inputs.
+  literal inputs or are skipped as I/O.
 
 Details: [limitations.md](docs/limitations.md).
 

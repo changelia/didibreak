@@ -1,0 +1,327 @@
+{
+  "scenario": {
+    "id": "humanize-replay-08cf2c3",
+    "repo": "humanize",
+    "kind": "replay",
+    "commit": "08cf2c3026cfd7c553e397e1d91ea069eb2a4978",
+    "intent": "Refactor the number module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "5a3d51df4d1f5fb5600fb091890c5173114c93c5",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the number module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 19.5,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~7,633 input + ~7,200 output tokens, ~$0.0044 (limit $0.10)\n",
+  "report": {
+    "schema_version": 1,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.2.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "5a3d51df4d1f5fb5600fb091890c5173114c93c5"
+    },
+    "intent": "Stated by the user: Refactor the number module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "1d0a9779c62c",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this input now returns a fraction instead of the previous rounded integer.",
+        "confidence": "high",
+        "args": [
+          "0.9996"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t54wb8z9/out/tests/test_fractional.py"
+      },
+      {
+        "id": "c4f996b03e0e",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this input now returns a fraction instead of the previous rounded integer.",
+        "confidence": "high",
+        "args": [
+          "-0.9996"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-1'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t54wb8z9/out/tests/test_fractional.py"
+      },
+      {
+        "id": "59d7fbfeb5bb",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this input now returns a mixed fraction instead of the previous rounded integer.",
+        "confidence": "high",
+        "args": [
+          "1.9996"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'2'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1 1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t54wb8z9/out/tests/test_fractional.py"
+      },
+      {
+        "id": "984cce338b57",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this input now returns a mixed fraction instead of the previous rounded integer.",
+        "confidence": "high",
+        "args": [
+          "-1.9996"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-2'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-1 1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t54wb8z9/out/tests/test_fractional.py"
+      },
+      {
+        "id": "c5d5c2a7a983",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this input now returns a mixed fraction instead of the previous rounded integer.",
+        "confidence": "high",
+        "args": [
+          "2.9996"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'3'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'2 1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t54wb8z9/out/tests/test_fractional.py"
+      },
+      {
+        "id": "b049c1d62a57",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this input now returns a mixed fraction instead of the previous rounded integer.",
+        "confidence": "high",
+        "args": [
+          "-2.9996"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-3'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-2 1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t54wb8z9/out/tests/test_fractional.py"
+      },
+      {
+        "id": "b04ac14e4a8b",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this input now returns a mixed fraction instead of the previous rounded integer.",
+        "confidence": "high",
+        "args": [
+          "9.9996"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'10'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'9 1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t54wb8z9/out/tests/test_fractional.py"
+      },
+      {
+        "id": "b59a683cb226",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this input now returns a mixed fraction instead of the previous rounded integer.",
+        "confidence": "high",
+        "args": [
+          "-9.9996"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-10'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-9 1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t54wb8z9/out/tests/test_fractional.py"
+      },
+      {
+        "id": "be9cb3c3af97",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this input now returns a fraction instead of the previous rounded integer.",
+        "confidence": "high",
+        "args": [
+          "'0.9996'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t54wb8z9/out/tests/test_fractional.py"
+      },
+      {
+        "id": "800cbba1919c",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this input now returns a fraction instead of the previous rounded integer.",
+        "confidence": "high",
+        "args": [
+          "'-0.9996'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-1'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t54wb8z9/out/tests/test_fractional.py"
+      },
+      {
+        "id": "d559c9bbce7f",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this input now returns a mixed fraction instead of the previous rounded integer.",
+        "confidence": "high",
+        "args": [
+          "'4.9996'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'5'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'4 1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t54wb8z9/out/tests/test_fractional.py"
+      },
+      {
+        "id": "062e5d274b0f",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this input now returns a mixed fraction instead of the previous rounded integer.",
+        "confidence": "high",
+        "args": [
+          "'-4.9996'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-5'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-4 1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t54wb8z9/out/tests/test_fractional.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2576,
+      "output_tokens": 2218,
+      "cost_usd": 0.0013666
+    }
+  }
+}

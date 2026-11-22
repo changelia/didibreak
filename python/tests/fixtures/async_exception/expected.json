@@ -1,0 +1,48 @@
+{
+  "description": "A refactor of an async parser adds a range check: port 0 now raises ValueError inside the coroutine instead of returning 0. Invalid text raises ValueError in both versions.",
+  "intent": "refactor parse_port; behavior must not change",
+  "changed_functions": [
+    {
+      "function": "app/ports.py::parse_port",
+      "kind": "changed"
+    }
+  ],
+  "skipped_functions": [],
+  "findings": [
+    {
+      "function": "app/ports.py::parse_port",
+      "label": "unexpected",
+      "args": [
+        "'0'"
+      ],
+      "kwargs": {},
+      "before": {
+        "kind": "return",
+        "type_name": "builtins.int",
+        "repr": "0"
+      },
+      "after": {
+        "kind": "exception",
+        "type_name": "builtins.ValueError",
+        "repr": "ValueError('port out of range')"
+      }
+    }
+  ],
+  "same_behavior": [
+    {
+      "function": "app/ports.py::parse_port",
+      "args": [
+        "' 80 '"
+      ],
+      "kwargs": {}
+    },
+    {
+      "function": "app/ports.py::parse_port",
+      "args": [
+        "'http'"
+      ],
+      "kwargs": {}
+    }
+  ],
+  "flaky_functions": []
+}

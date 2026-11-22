@@ -103,7 +103,7 @@ def test_method_qualified_names_types_and_dedented_source() -> None:
     ]
     assert [(f.qualname, f.skip_reason) for f in detection.skipped] == [
         ("Phone.format", "instance method"),
-        ("Phone.fetch", "async function"),
+        ("Phone.fetch", "instance method"),
     ]
     assert functions[0].new_source.startswith("@staticmethod\ndef clean(number):")
     assert functions[0].line == 10

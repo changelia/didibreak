@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from fixture_repos import build_fixture_repository, fixture_names
+from fixture_repos import build_fixture_repository, fixture_names, fixture_timeout
 
 from didibreak import cli, pipeline
 from didibreak.cli import EXIT_ERROR, EXIT_FINDINGS, EXIT_INTERRUPTED, EXIT_OK, main
@@ -50,7 +50,7 @@ def test_findings_match_the_expected_file(case: str, tmp_path: Path) -> None:
     files = changed_python_files(root, base)
     detection = detect_changed_functions(cli.load_source_files(root, base, files), 10)
     cases = load_cases_file(cases_file(fixture.expected, tmp_path))
-    settings = HarnessSettings(python=sys.executable, timeout=5.0)
+    settings = HarnessSettings(python=sys.executable, timeout=fixture_timeout(case))
 
     analysis = analyze(root, base, detection.functions, {}, cases, settings)
 

@@ -1,0 +1,41 @@
+{
+  "description": "An async function changes exactly as the intent says: exclamation marks leave the slug.",
+  "intent": "remove exclamation marks from slugs",
+  "changed_functions": [
+    {
+      "function": "app/slugs.py::slugify_title",
+      "kind": "changed"
+    }
+  ],
+  "skipped_functions": [],
+  "findings": [
+    {
+      "function": "app/slugs.py::slugify_title",
+      "label": "expected",
+      "args": [
+        "'Hello World!'"
+      ],
+      "kwargs": {},
+      "before": {
+        "kind": "return",
+        "type_name": "builtins.str",
+        "repr": "'hello-world!'"
+      },
+      "after": {
+        "kind": "return",
+        "type_name": "builtins.str",
+        "repr": "'hello-world'"
+      }
+    }
+  ],
+  "same_behavior": [
+    {
+      "function": "app/slugs.py::slugify_title",
+      "args": [
+        "'Hello World'"
+      ],
+      "kwargs": {}
+    }
+  ],
+  "flaky_functions": []
+}

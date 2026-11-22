@@ -11,12 +11,25 @@ the Python package and `js-v*` for the JS/TS package.
 
 #### Added
 
+- `async def` functions are checked instead of skipped. Each case runs the
+  coroutine with `asyncio.run` in a new event loop, with the same timeout,
+  seed and comparison rules as other functions, and the reproducing tests
+  call it with `asyncio.run(...)` too. The runtime I/O guard stays on:
+  a subprocess, a connection or a file change outside the temporary folder
+  from inside a coroutine still skips the function with `blocked: <event>`.
+  A function that changed between `def` and `async def` is not awaited in
+  either version, so the change shows as a coroutine in the report.
 - A GitHub issue template "Skipped or wrong finding": it asks for the
   didibreak version, the function's signature and a short excerpt, the
   skip reason or the finding, and what you expected instead.
 
 #### Changed
 
+- The skip reason `async function` is gone. Async generators are skipped
+  as `async generator`, and the obvious-I/O list also covers network calls
+  from coroutines (`asyncio.open_connection`, `asyncio.start_server`, ...)
+  and async clients (`websockets`, `asyncpg`, `aiomysql`, `aiosqlite`,
+  `aiofiles`, `motor`, `aioboto3`, `aiobotocore`).
 - The README, the PyPI page and `docs/safety.md` no longer name a version
   in statements about the current release ("Currently skipped", "didibreak
   is alpha"), and the JavaScript / TypeScript package is described as

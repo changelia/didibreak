@@ -6,14 +6,18 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from fixture_repos import FIXTURES_DIR, fixture_names, load_expected
+from fixture_repos import (
+    FIXTURES_DIR,
+    fixture_names,
+    fixture_timeout,
+    is_awaited,
+    load_expected,
+)
 
 from didibreak.compare import NEW_FUNCTION_LABEL, Comparison, compare_cases
 from didibreak.functions import module_name
 from didibreak.harness import Case, HarnessSettings, Outcome, Target, run_cases
 from didibreak.testability import explicitly_raised, module_context
-
-SETTINGS = HarnessSettings(python=sys.executable, timeout=5.0)
 
 
 def copy_tree(name: str, version: str, destination: Path) -> Path:
@@ -26,10 +30,13 @@ def copy_tree(name: str, version: str, destination: Path) -> Path:
     return tree
 
 
-def run_version(tree: Path, function: str, cases: list[Case]) -> list[Outcome]:
+def run_version(
+    name: str, tree: Path, function: str, cases: list[Case]
+) -> list[Outcome]:
     path, qualname = function.split("::")
-    target = Target(tree, tree, module_name(path), qualname)
-    result = run_cases(target, cases, SETTINGS)
+    target = Target(tree, tree, module_name(path), qualname, is_awaited(name, function))
+    settings = HarnessSettings(python=sys.executable, timeout=fixture_timeout(name))
+    result = run_cases(target, cases, settings)
     assert result.skip_reason is None
     return list(result.outcomes)
 
@@ -61,9 +68,9 @@ def compare_fixture(
         before = (
             None
             if function in new
-            else run_version(before_tree, function, function_cases)
+            else run_version(name, before_tree, function, function_cases)
         )
-        after = run_version(after_tree, function, function_cases)
+        after = run_version(name, after_tree, function, function_cases)
         explicit = raised_types(after_tree, function)
         results[function] = (
             function_cases,

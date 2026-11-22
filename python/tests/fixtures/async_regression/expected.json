@@ -1,0 +1,59 @@
+{
+  "description": "An async formatter gains thousands separators as asked, but also loses the minus sign of negative amounts: the coroutine is awaited and the regression is found.",
+  "intent": "add thousands separators to prices",
+  "changed_functions": [
+    {
+      "function": "app/prices.py::format_price",
+      "kind": "changed"
+    }
+  ],
+  "skipped_functions": [],
+  "findings": [
+    {
+      "function": "app/prices.py::format_price",
+      "label": "unexpected",
+      "args": [
+        "-250"
+      ],
+      "kwargs": {},
+      "before": {
+        "kind": "return",
+        "type_name": "builtins.str",
+        "repr": "'$-2.50'"
+      },
+      "after": {
+        "kind": "return",
+        "type_name": "builtins.str",
+        "repr": "'$2.50'"
+      }
+    },
+    {
+      "function": "app/prices.py::format_price",
+      "label": "expected",
+      "args": [
+        "100000"
+      ],
+      "kwargs": {},
+      "before": {
+        "kind": "return",
+        "type_name": "builtins.str",
+        "repr": "'$1000.00'"
+      },
+      "after": {
+        "kind": "return",
+        "type_name": "builtins.str",
+        "repr": "'$1,000.00'"
+      }
+    }
+  ],
+  "same_behavior": [
+    {
+      "function": "app/prices.py::format_price",
+      "args": [
+        "250"
+      ],
+      "kwargs": {}
+    }
+  ],
+  "flaky_functions": []
+}

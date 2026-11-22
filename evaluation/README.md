@@ -29,6 +29,8 @@ changes (`rerun-21a/`). The task 21a results are at the end.
 | `../python/scripts/evaluate.py` | The runner and the summary |
 | `owner-spot-check.md` | 10 re-run findings (seed 22) with sources and labels, for the owner's review |
 | `rerun-37/` | Task 37 re-run after the runtime I/O guard: plan, reports and labels |
+| `rerun-29/` | Task 29 re-run after async functions are checked: plan, reports and labels |
+| `async-29/` | Task 29 measurement on an async library (asyncstdlib): plan, patches, reports, labels |
 
 ## Method
 
@@ -359,6 +361,101 @@ What the numbers say:
 Spend: $0.0650 in the saved reports, plus about $0.02 not in any report
 (the 20 variance runs and one debugging run). Total for all evaluation
 work so far: about $0.29 of the $5 budget.
+
+## Task 29: async functions (2026-11-22)
+
+Async functions (`async def`) are run with `asyncio.run` since task 29
+instead of being skipped. Both measurements ran at commit `09b00c9` of
+branch `task-29-async`, with the default model (`gpt-6-luna`), Python
+3.13, macOS, the same rubric. Labels of findings with the same inputs as in
+task 21a or task 37 were reused; the others were labelled by the model that
+ran the evaluation (agent labels, not independently checked).
+
+### Re-run of the task 21 plan (`rerun-29/`)
+
+| Repository | Runs | Checked | Skipped | Unexpected / unclear / expected / new_function | Real / labelled unexpected | Precision | Cost |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| humanize | 8 | 7 | 1 | 56 / 0 / 4 / 0 | 56 / 56 | 100% | $0.0115 |
+| python-slugify | 2 | 1 | 1 | 12 / 0 / 0 / 0 | 12 / 12 | 100% | $0.0027 |
+| more-itertools | 6 | 6 | 0 | 34 / 0 / 0 / 11 | 26 / 34 | 76% | $0.0093 |
+| boltons | 7 | 5 | 2 | 22 / 0 / 2 / 1 | 22 / 22 | 100% | $0.0146 |
+| validators | 7 | 6 | 1 | 23 / 0 / 0 / 0 | 23 / 23 | 100% | $0.0098 |
+| packaging | 5 | 3 | 0 | 19 / 0 / 4 / 0 | 19 / 19 | 100% | $0.0041 |
+| sqlparse | 3 | 2 | 1 | 12 / 0 / 0 / 0 | 0 / 12 | 0% | $0.0028 |
+| **All** | 38 | 30 | 6 | 178 / 0 / 10 / 12 | 158 / 178 | 89% | $0.0547 |
+
+| Skip reason | Task 37 (before) | Task 29 (after) |
+| --- | --- | --- |
+| no valid cases | 3 | 2 |
+| generator | 2 | 2 |
+| instance method | 1 | 1 |
+| import failed | 1 | 1 |
+| `async function` / `blocked:` | 0 / 0 | 0 / 0 |
+| **All** | 7 | 6 |
+
+- **The release gate still holds: 89% (158 / 178)** of `unexpected`
+  findings are real (gate 70%, baseline 87%). Four `exactly_n` findings
+  with a negative integer count are labelled real but borderline; counted
+  as false alarms, precision is 86.5% (154 / 178). All 20 false alarms are
+  again *out of contract*, in unannotated functions: sqlparse
+  `remove_quotes` 12 (bytes for a string), more-itertools `exactly_n` 5
+  (float counts) and `nth_permutation` 3 (an index that is `None`, a
+  string or a list).
+- **Skip counts did not move because of async:** these libraries have no
+  changed `async def` function in any scenario, so no skip was removed and
+  none added. The one fewer skip is `no valid cases` (2 instead of 3, other
+  functions this time: validators `cron` and python-slugify
+  `smart_truncate`), the model variance measured in task 37.
+- Replays found: 14 of 22 (13 in task 37). 61 LLM calls, 74,009 input and
+  94,917 output tokens; a run that checked a function took 23.7 s median
+  and 147.6 s at most.
+
+### An async library: asyncstdlib (`async-29/`)
+
+The evaluation libraries have almost no async code, so a library made of
+`async def` functions was added: [asyncstdlib](https://github.com/maxfischer2781/asyncstdlib)
+(async versions of `min`, `max`, `sorted`, `sum`, `dict`, ..., which also
+take plain lists, so literals reach them). Chosen because its functions
+take literal-friendly arguments and its history has behavior fixes in
+`async def` functions; application code (FastAPI handlers that take
+requests and sessions) would mostly get `no valid cases` or obvious I/O
+skips and says less about the comparison. 10 scenarios at `0f01ce7`:
+
+- 6 replays of real commits: `3879b3d` (`max` returned the last of equal
+  items, a bug fix), `fa54340`, `fb1dca4`, `730c981` (min/max and sorted
+  changes with no visible effect on literals), `b537d07` and `d5363de`
+  (`heapq.merge` and `map`, async generators);
+- 4 seeded changes: refactors of `sum` and of `all`/`any` that keep
+  behavior, `sorted()` that should put `None` last but also drops
+  duplicates, and `dict()` that should accept a mapping but also stops
+  letting keywords override pairs.
+
+| Repository | Runs | Checked | Skipped | Unexpected / unclear / expected / new_function | Real / labelled unexpected | Precision | Cost |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| asyncstdlib | 10 | 9 | 3 | 29 / 0 / 7 / 0 | 29 / 29 | 100% | $0.0391 |
+
+| Skip reason | Count |
+| --- | --- |
+| async generator | 2 |
+| instance method | 1 |
+
+- **All 9 checked functions are `async def`**; before task 29 all of them
+  would have been skipped as `async function` (0 checked, 12 skipped).
+- The reintroduced `max` bug was found: 12 findings such as
+  `_min_max([1, True], None, True)` returning `True` instead of `1`, and
+  sets that are not subsets of each other returning the later one.
+- Both seeded mistakes were found (6 `dict` and 11 `sorted` findings, one
+  of them borderline: with `reverse=True`, `None` comes first), and the
+  intended parts were labelled `expected` (7 findings).
+- The two refactors and the three replays without a visible change gave
+  **no finding**: no false alarm on async code in this set.
+- One run (`sum` refactor) took 297 s and $0.025, six times its estimate:
+  the model's replies were cut off and retried (4 calls, 49,434 output
+  tokens); `max_cost` (0.10) was not reached.
+
+Spend for task 29: $0.0547 (re-run) + $0.0391 (asyncstdlib) + $0.0008
+(live run) = about $0.095. Total for all evaluation work so far: about
+$0.38 of the $5 budget.
 
 ## Reproduce
 
