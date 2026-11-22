@@ -31,6 +31,8 @@ changes (`rerun-21a/`). The task 21a results are at the end.
 | `rerun-37/` | Task 37 re-run after the runtime I/O guard: plan, reports and labels |
 | `rerun-29/` | Task 29 re-run after async functions are checked: plan, reports and labels |
 | `async-29/` | Task 29 measurement on an async library (asyncstdlib): plan, patches, reports, labels |
+| `rerun-30/` | Task 30 re-run after instance methods are checked: plan, reports and labels |
+| `methods-30/` | Task 30 measurement on a class-heavy library (boltons): plan, patches, reports, labels |
 
 ## Method
 
@@ -456,6 +458,119 @@ skips and says less about the comparison. 10 scenarios at `0f01ce7`:
 Spend for task 29: $0.0547 (re-run) + $0.0391 (asyncstdlib) + $0.0008
 (live run) = about $0.095. Total for all evaluation work so far: about
 $0.38 of the $5 budget.
+
+## Task 30: instance methods (2026-11-22)
+
+Instance methods are run since task 30: each case builds the instance from
+literal constructor arguments, calls the method, and compares the result
+and the instance's state after the call. Both measurements ran at commit
+`3cb44c2` of branch `task-30-methods`, with the default model
+(`gpt-6-luna`), Python 3.13, macOS, the same rubric. Labels of findings
+with the same inputs as in an earlier run were reused; the others are
+agent labels, not independently checked.
+
+### Re-run of the task 21 plan (`rerun-30/`)
+
+| Repository | Runs | Checked | Skipped | Unexpected / unclear / expected / new_function | Real / labelled unexpected | Precision | Cost |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| humanize | 8 | 6 | 2 | 48 / 1 / 2 / 0 | 48 / 48 | 100% | $0.0267 |
+| python-slugify | 2 | 2 | 0 | 12 / 0 / 0 / 0 | 12 / 12 | 100% | $0.0032 |
+| more-itertools | 6 | 6 | 0 | 35 / 0 / 0 / 8 | 23 / 35 | 66% | $0.0101 |
+| boltons | 7 | 3 | 4 | 10 / 0 / 1 / 0 | 10 / 10 | 100% | $0.0053 |
+| validators | 7 | 7 | 0 | 35 / 0 / 0 / 0 | 35 / 35 | 100% | $0.0099 |
+| packaging | 5 | 3 | 0 | 19 / 0 / 4 / 0 | 19 / 19 | 100% | $0.0041 |
+| sqlparse | 3 | 3 | 0 | 12 / 0 / 0 / 0 | 0 / 12 | 0% | $0.0055 |
+| **All** | 38 | 30 | 6 | 171 / 1 / 7 / 8 | 147 / 171 | 86% | $0.0648 |
+
+| Skip reason | Task 29 (before) | Task 30 (after) |
+| --- | --- | --- |
+| no valid cases | 2 | 3 |
+| generator | 2 | 2 |
+| instance method | 1 | 0 |
+| import failed | 1 | 1 |
+| **All** | 6 | 6 |
+
+- **The release gate still holds: 86% (147 / 171)** of `unexpected`
+  findings are real (gate 70%, baseline 87%); 83% if five borderline
+  negative-count findings in more-itertools `exactly_n` are counted as
+  false alarms. All 24 false alarms are *out of contract*, in unannotated
+  functions, as in every earlier run: sqlparse `remove_quotes` 12, and
+  float counts or non-integer indexes in more-itertools `exactly_n` 6 and
+  `nth_permutation` 6.
+- The one instance method of the plan (sqlparse
+  `NameAliasMixin.get_real_name`, replay `f66d12c`) is now checked instead
+  of skipped. It got 1 case and no finding: the bug needs parsed tokens,
+  which literals cannot build. The `no valid cases` skips (humanize
+  `metric`, boltons `singularize`, `ellipsize`) are the model variance
+  measured in task 37.
+- Replays found: 13 of 22 (14 in task 29). 64 LLM calls, 81,508 input and
+  113,971 output tokens; median 27.8 s, at most 215.7 s.
+
+### A class-heavy library: boltons (`methods-30/`)
+
+boltons' container and statistics classes (`IndexedSet`,
+`OrderedMultiDict`, `OneToOne`, `Stats`, `BarrelList`, `_ComplementSet`)
+are built from plain lists and dicts, so literals can build them, their
+methods change `self`, and their history has many fixes in methods. 15
+scenarios at `d31d821`:
+
+- 11 replays of real fixes in these classes: `8a49b74` (`update_extend`
+  with itself), `1cdc0e9` (`Stats` histograms with zero spread),
+  `a180020` (`IndexedSet.update` with several iterables), `a1ea103`
+  (`addlist` with an iterator), `ec1ff9f` (`_ComplementSet` comparisons),
+  `d0a284f` (`IndexedSet` out-of-range indexes), `609cabe`
+  (`iter_slice` after removals), `c463d16` (`OrderedMultiDict.__eq__`),
+  `f9c4f30` (`BarrelList.sort` with more than one internal list),
+  `6cac49c` (`OneToOne.update` with an empty iterable), `8177b93`
+  (`addlist` with an empty list, `poplast` with a default);
+- 4 seeded changes: refactors of `IndexedSet.add` and
+  `OrderedMultiDict.getlist` that keep behavior; a "faster"
+  `IndexedSet.discard` that forgets to compact the set (a change in the
+  state only); `Stats.get_quantile` that should accept percentages but
+  also turns `1` (the maximum) into 1%.
+
+| Repository | Runs | Checked | Skipped | Unexpected / unclear / expected / new_function | Real / labelled unexpected | Precision | Cost |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| boltons | 15 | 16 | 5 | 91 / 0 / 9 / 0 | 69 / 91 | 76% | $0.0574 |
+
+| Skip reason | Count |
+| --- | --- |
+| dunder method | 5 (`__eq__` twice, `__le__`, `__ge__`, `__getitem__`) |
+
+- **All 16 checked functions are instance methods**; before task 30 all
+  of them, and the 5 dunder methods, would have been skipped as
+  `instance method` (0 checked, 21 skipped).
+- **No case was dropped for construction** (`construction_dropped` 0 in
+  every run): the LLM's constructor arguments built every instance.
+- **Found:** the reintroduced bugs in `Stats._get_bin_bounds` (12
+  findings, `ZeroDivisionError`), `OneToOne.update` (12,
+  `UnboundLocalError`), `poplast` with a default (12), `IndexedSet.update`
+  (11; for hashable arguments the result is `None` in both versions and
+  the change is only in the state: the iterables are added as items),
+  `IndexedSet._get_real_index` (9) and `iter_slice` (3); and the seeded
+  `discard` mistake (9, state only) and `get_quantile(1)` (1).
+- **Not found:** `update_extend` with itself (a literal cannot be the
+  instance itself), `addlist` with an iterator (literals are never
+  iterators), `BarrelList.sort` with more than one internal list (needs
+  more than 1,520 items, longer than an argument may be), the three
+  dunder-method fixes (skipped by design). The two refactors gave no
+  finding.
+- **Precision 76% (69 / 91), above the gate.** The 22 false alarms: 16
+  `addlist` findings where the value is not an iterable (`0`, `None`,
+  `False`; out of contract), 3 float indexes, 1 unhashable item for
+  `discard`, `get_quantile(True)` (a bool), and `get_quantile('50')`,
+  which the intent asks for (a labelling mistake by the model).
+- Two runs (`f9c4f30`, `getlist` refactor) took more than 200 s and
+  $0.017 each, four times their estimate: cut-off model replies retried,
+  as in task 29; `max_cost` was not reached.
+
+Live run on the `method_state_regression` fixture (default model): 12
+cases, 9 `unexpected` findings with a different state and the same
+result (`None`), 1 `expected`, 2 calls, $0.0010.
+
+Spend for task 30: $0.0648 (re-run) + $0.0574 (boltons) + $0.0010 (live
+run) = about $0.12. Total for all evaluation work so far: about $0.52 of
+the $5 budget.
 
 ## Reproduce
 

@@ -1,0 +1,20 @@
+diff --git a/boltons/setutils.py b/boltons/setutils.py
+index 3da9c37..c803fd1 100644
+--- a/boltons/setutils.py
++++ b/boltons/setutils.py
+@@ -266,10 +266,11 @@ class IndexedSet(MutableSet):
+ 
+     def discard(self, item):
+         "discard(item) -> discard item from the set (does not raise)"
+-        try:
+-            self.remove(item)
+-        except KeyError:
+-            pass
++        if item not in self.item_index_map:
++            return
++        didx = self.item_index_map.pop(item)
++        self.item_list[didx] = _MISSING
++        self._add_dead(didx)
+ 
+     def clear(self):
+         "clear() -> empty the set"
