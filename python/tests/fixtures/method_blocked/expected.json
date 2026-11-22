@@ -1,0 +1,14 @@
+{
+  "description": "Report.publish starts a process through importlib, which the static I/O rules do not see; the runtime I/O guard stops it and the method is skipped with blocked: subprocess.Popen. tests/test_check_methods_fixtures.py runs it with its own cases.",
+  "intent": "publish titles in upper case",
+  "changed_functions": [
+    {
+      "function": "app/report.py::Report.publish",
+      "kind": "changed"
+    }
+  ],
+  "skipped_functions": [],
+  "findings": [],
+  "same_behavior": [],
+  "flaky_functions": []
+}

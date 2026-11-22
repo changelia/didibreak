@@ -6,13 +6,18 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from fixture_repos import build_fixture_repository, fixture_names, fixture_timeout
+from fixture_repos import (
+    build_fixture_repository,
+    documented_call,
+    fixture_names,
+    fixture_timeout,
+)
 
 from didibreak import cli, pipeline
 from didibreak.cli import EXIT_ERROR, EXIT_FINDINGS, EXIT_INTERRUPTED, EXIT_OK, main
 from didibreak.functions import detect_changed_functions
 from didibreak.gitdiff import changed_python_files, resolve_base
-from didibreak.harness import HarnessSettings, Outcome
+from didibreak.harness import Case, HarnessSettings, Outcome
 from didibreak.pipeline import UNLABELLED, analyze, load_cases_file
 
 CASES = fixture_names()
@@ -21,8 +26,9 @@ CASES = fixture_names()
 def cases_file(expected: dict[str, Any], destination: Path) -> Path:
     """All documented cases of a fixture, in the --cases-file format."""
     groups = ("findings", "same_behavior", "flaky_functions")
+    keys = ("function", "args", "kwargs", "init_args", "init_kwargs")
     cases = [
-        {"function": item["function"], "args": item["args"], "kwargs": item["kwargs"]}
+        {key: item[key] for key in keys if key in item}
         for group in groups
         for item in expected[group]
     ]
@@ -34,7 +40,17 @@ def cases_file(expected: dict[str, Any], destination: Path) -> Path:
 def shape(outcome: Outcome | None) -> dict[str, str] | None:
     if outcome is None:
         return None
-    return {"kind": outcome.kind, "type_name": outcome.type_name, "repr": outcome.repr}
+    shown = {"kind": outcome.kind, "type_name": outcome.type_name, "repr": outcome.repr}
+    if outcome.state_repr is not None:
+        shown["state"] = outcome.state_repr
+    return shown
+
+
+def constructor(case: Case) -> dict[str, object]:
+    """Constructor arguments of a method case, as in expected.json."""
+    if case.init_args is None:
+        return {}
+    return {"init_args": list(case.init_args), "init_kwargs": dict(case.init_kwargs)}
 
 
 def expected_label(label: str) -> str:
@@ -58,6 +74,7 @@ def test_findings_match_the_expected_file(case: str, tmp_path: Path) -> None:
         {
             "function": finding.function,
             "label": finding.label,
+            **constructor(finding.case),
             "args": list(finding.case.args),
             "kwargs": dict(finding.case.kwargs),
             "before": shape(finding.before),
@@ -96,7 +113,7 @@ def test_check_exit_code_and_listing(
     assert code == exit_code_without_intent(fixture.expected)
     err = "".join(capsys.readouterr())
     for finding in fixture.expected["findings"]:
-        assert f"{finding['function']}({', '.join(finding['args'])})" in err
+        assert f"{documented_call(finding)}" in err
     assert fixture.repository.status() == status  # working tree untouched
 
 

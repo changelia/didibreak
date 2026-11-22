@@ -7,7 +7,12 @@ from typing import Any
 
 import httpx
 import pytest
-from fixture_repos import build_fixture_repository, fixture_names
+from fixture_repos import (
+    build_fixture_repository,
+    documented_call,
+    documented_cases,
+    fixture_names,
+)
 
 from didibreak import cli, llm
 from didibreak.cli import EXIT_ERROR, EXIT_FINDINGS, EXIT_OK, main
@@ -15,16 +20,6 @@ from didibreak.config import Config
 from didibreak.report.text import counted
 
 MALICIOUS = "__import__('os').system('echo pwned')"
-
-
-def documented_cases(expected: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
-    by_function: dict[str, list[dict[str, Any]]] = {}
-    for group in ("findings", "same_behavior", "flaky_functions"):
-        for item in expected[group]:
-            pairs = [{"name": k, "value": v} for k, v in item["kwargs"].items()]
-            case = {"args": item["args"], "kwargs": pairs, "rationale": "fixture"}
-            by_function.setdefault(item["function"], []).append(case)
-    return by_function
 
 
 def install_fake_llm(
@@ -90,7 +85,7 @@ def test_llm_cases_reproduce_the_documented_findings(
     assert code == (EXIT_FINDINGS if failing else EXIT_OK)
     err = "".join(capsys.readouterr())
     for finding in fixture.expected["findings"]:
-        assert f"{finding['function']}({', '.join(finding['args'])})" in err
+        assert f"{documented_call(finding)}" in err
     if asked:
         assert f"LLM: {counted(len(asked), 'call')} ·" in err
         assert f"{120 * len(asked)} output tokens ({80 * len(asked)} reasoning)" in err
