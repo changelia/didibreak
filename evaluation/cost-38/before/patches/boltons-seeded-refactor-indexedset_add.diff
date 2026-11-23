@@ -1,0 +1,18 @@
+diff --git a/boltons/setutils.py b/boltons/setutils.py
+index 3da9c37..a9a5566 100644
+--- a/boltons/setutils.py
++++ b/boltons/setutils.py
+@@ -250,9 +250,10 @@ class IndexedSet(MutableSet):
+     # set operations
+     def add(self, item):
+         "add(item) -> add item to the set"
+-        if item not in self.item_index_map:
+-            self.item_index_map[item] = len(self.item_list)
+-            self.item_list.append(item)
++        if item in self.item_index_map:
++            return
++        self.item_index_map[item] = len(self.item_list)
++        self.item_list.append(item)
+ 
+     def remove(self, item):
+         "remove(item) -> remove item from the set, raises if not present"

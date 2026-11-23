@@ -1,0 +1,288 @@
+{
+  "scenario": {
+    "id": "boltons-seeded-feature-indexedset_discard",
+    "repo": "boltons",
+    "kind": "seeded",
+    "commit": "d31d821d56c8f7756af9c30a864077f2e5855321",
+    "intent": "Speed up IndexedSet.discard by not raising and catching KeyError.",
+    "patch": "patches/boltons-seeded-feature-indexedset_discard.diff"
+  },
+  "base_sha": "d31d821d56c8f7756af9c30a864077f2e5855321",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Speed up IndexedSet.discard by not raising and catching KeyError.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 24.4,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,210 input + ~7,200 output tokens, ~$0.0041 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.3.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "d31d821d56c8f7756af9c30a864077f2e5855321"
+    },
+    "intent": "Stated by the user: Speed up IndexedSet.discard by not raising and catching KeyError.",
+    "findings": [
+      {
+        "id": "903be080226a",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The stated intent concerns avoiding KeyError handling for speed, not changing the set\u2019s internal state after discarding an item.",
+        "confidence": "low",
+        "args": [
+          "'present'"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "['present']"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[0, 1]], 'item_index_map': {}, 'item_list': [_MISSING]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-rodnvyn8/out/tests/test_IndexedSet_discard.py"
+      },
+      {
+        "id": "59ee2e4a8c39",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The stated intent concerns avoiding KeyError handling for speed, not changing compaction or internal storage state after discarding an item.",
+        "confidence": "low",
+        "args": [
+          "'repeat'"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "['repeat', 'other', 'repeat']"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 2, '_compactions': 1, 'dead_indices': [], 'item_index_map': {'other': 0}, 'item_list': ['other']}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[0, 1]], 'item_index_map': {'other': 1}, 'item_list': [_MISSING, 'other']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-rodnvyn8/out/tests/test_IndexedSet_discard.py"
+      },
+      {
+        "id": "2fd86fce2524",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The stated intent concerns avoiding KeyError handling for speed, not changing compaction or internal storage state after discarding an item.",
+        "confidence": "low",
+        "args": [
+          "'\u96ea\u2603\ufe0f'"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "['\u96ea\u2603\ufe0f', 'snow']"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 2, '_compactions': 1, 'dead_indices': [], 'item_index_map': {'snow': 0}, 'item_list': ['snow']}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[0, 1]], 'item_index_map': {'snow': 1}, 'item_list': [_MISSING, 'snow']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-rodnvyn8/out/tests/test_IndexedSet_discard.py"
+      },
+      {
+        "id": "7fb2d5b163c8",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The stated intent concerns avoiding KeyError handling for speed, not changing compaction or internal storage state after discarding an item.",
+        "confidence": "low",
+        "args": [
+          "-999999999999999999999999999999"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[-999999999999999999999999999999, 0]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 2, '_compactions': 1, 'dead_indices': [], 'item_index_map': {0: 0}, 'item_list': [0]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[0, 1]], 'item_index_map': {0: 1}, 'item_list': [_MISSING, 0]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-rodnvyn8/out/tests/test_IndexedSet_discard.py"
+      },
+      {
+        "id": "89b05aa833c7",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The stated intent concerns avoiding KeyError handling for speed, not changing compaction or internal storage state after discarding an item.",
+        "confidence": "low",
+        "args": [
+          "True"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[1, 2]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 2, '_compactions': 1, 'dead_indices': [], 'item_index_map': {2: 0}, 'item_list': [2]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[0, 1]], 'item_index_map': {2: 1}, 'item_list': [_MISSING, 2]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-rodnvyn8/out/tests/test_IndexedSet_discard.py"
+      },
+      {
+        "id": "8a094f3005aa",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The stated intent concerns avoiding KeyError handling for speed, not changing compaction or internal storage state after discarding an item.",
+        "confidence": "low",
+        "args": [
+          "0"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[False, 1]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 2, '_compactions': 1, 'dead_indices': [], 'item_index_map': {1: 0}, 'item_list': [1]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[0, 1]], 'item_index_map': {1: 1}, 'item_list': [_MISSING, 1]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-rodnvyn8/out/tests/test_IndexedSet_discard.py"
+      },
+      {
+        "id": "5069ff5f3454",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The stated intent concerns avoiding KeyError handling for speed, not changing compaction or internal storage state after discarding an item.",
+        "confidence": "low",
+        "args": [
+          "('nested', (1, 2))"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[('nested', (1, 2)), ('other',)]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 2, '_compactions': 1, 'dead_indices': [], 'item_index_map': {('other',): 0}, 'item_list': [('other',)]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[0, 1]], 'item_index_map': {('other',): 1}, 'item_list': [_MISSING, ('other',)]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-rodnvyn8/out/tests/test_IndexedSet_discard.py"
+      },
+      {
+        "id": "f78c251a1a4f",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The stated intent concerns avoiding KeyError handling for speed, not changing compaction or internal storage state after discarding an item.",
+        "confidence": "low",
+        "args": [
+          "b'\\x00\\xff'"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[b'\\x00\\xff', b'plain']"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 2, '_compactions': 1, 'dead_indices': [], 'item_index_map': {b'plain': 0}, 'item_list': [b'plain']}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[0, 1]], 'item_index_map': {b'plain': 1}, 'item_list': [_MISSING, b'plain']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-rodnvyn8/out/tests/test_IndexedSet_discard.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 8,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2316,
+      "output_tokens": 2420,
+      "cost_usd": 0.0014416
+    }
+  }
+}

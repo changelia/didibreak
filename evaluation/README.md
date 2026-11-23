@@ -33,6 +33,8 @@ changes (`rerun-21a/`). The task 21a results are at the end.
 | `async-29/` | Task 29 measurement on an async library (asyncstdlib): plan, patches, reports, labels |
 | `rerun-30/` | Task 30 re-run after instance methods are checked: plan, reports and labels |
 | `methods-30/` | Task 30 measurement on a class-heavy library (boltons): plan, patches, reports, labels |
+| `rerun-38/` | Task 38 re-run after constructor findings, the reply cap and the second case request: plan, reports and labels |
+| `cost-38/` | Task 38 estimate vs actual cost on the asyncstdlib and boltons scenarios, before and after the change: plans, patches, reports (findings not labelled) |
 
 ## Method
 
@@ -584,3 +586,83 @@ $ uv run python scripts/evaluate.py summarize ../evaluation/plan.json
 
 `<python>` is an interpreter with the libraries' runtime dependencies
 (only `text-unidecode` for python-slugify). Saved reports are not run again.
+
+## Task 38: constructors, reply cap and a second case request (2026-11-23)
+
+Task 38 reports a constructor that fails in one version only as a
+`Class.__init__` finding, checks a changed `__init__` by building the
+instance, caps case-generation replies at 700 output tokens per requested
+case (8,400 for 12 cases, was 16,000), and asks once more when a reply has
+no valid case. Default model (`gpt-6-luna`), Python 3.13, macOS, the same
+rubric. Labels of findings with the same inputs as in an earlier run were
+reused (74); the other 122 are agent labels, not independently checked.
+
+### Re-run of the task 21 plan (`rerun-38/`, commit `48921a8`)
+
+| Repository | Runs | Checked | Skipped | Unexpected / unclear / expected / new_function | Real / labelled unexpected | Precision | Cost |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| humanize | 8 | 7 | 1 | 58 / 0 / 5 / 0 | 58 / 58 | 100% | $0.0125 |
+| python-slugify | 2 | 2 | 0 | 12 / 0 / 0 / 0 | 12 / 12 | 100% | $0.0037 |
+| more-itertools | 6 | 6 | 0 | 36 / 0 / 0 / 7 | 31 / 36 | 86% | $0.0103 |
+| boltons | 7 | 5 | 2 | 22 / 0 / 2 / 1 | 22 / 22 | 100% | $0.0069 |
+| validators | 7 | 7 | 0 | 42 / 0 / 0 / 0 | 42 / 42 | 100% | $0.0104 |
+| packaging | 5 | 3 | 0 | 14 / 0 / 4 / 0 | 14 / 14 | 100% | $0.0087 |
+| sqlparse | 3 | 3 | 0 | 12 / 0 / 0 / 0 | 0 / 12 | 0% | $0.0046 |
+| **All** | 38 | 33 | 3 | 196 / 0 / 11 / 8 | 179 / 196 | 91% | $0.0572 |
+
+| Skip reason | Task 30 | Task 38 |
+| --- | --- | --- |
+| no valid cases | 3 | 0 |
+| generator | 2 | 2 |
+| import failed | 1 | 1 |
+| **All** | 6 | 3 |
+
+- **The release gate holds: 91% (179 / 196)** of `unexpected` findings are
+  real (gate 70%); 88% if the five negative-count findings in
+  more-itertools `exactly_n` are counted as false alarms. The 17 false
+  alarms are *out of contract* as before: sqlparse `remove_quotes` with a
+  value that is not a string 12, more-itertools `exactly_n` with a float
+  count 5.
+- **No function was lost to `no valid cases`** (3 in task 30, 2 in task
+  29): the second request did its job, and those functions were checked.
+  Replays found: 15 of 22 (13 in task 30). 67 LLM calls, 85,690 input and
+  97,977 output tokens; median 25.4 s, at most 83.5 s.
+- No constructor finding: the plan has no class whose construction
+  changed.
+
+### Estimate vs actual cost (`cost-38/`)
+
+The 25 asyncstdlib (task 29) and boltons (task 30) scenarios, run twice:
+`before/` at `bb7af7d` (constructor findings, without the cap and the
+second request) and `after/` at `48921a8`. 21 runs per side made LLM
+calls; the others stop before any (import failures, no testable change).
+
+| | Before | After |
+| --- | --- | --- |
+| Actual / estimated cost, all runs | $0.0738 / $0.1043 (0.71) | $0.0706 / $0.1043 (0.68) |
+| Most expensive run against its estimate | 3.9 times (`boltons-replay-f9c4f30`, $0.0162) | 2.3 times (`boltons-seeded-refactor-indexedset_add`, $0.0094) |
+| Runs above 2 times their estimate | 2 | 2 |
+
+- **What made runs expensive** (tasks 29 and 30: 4 to 6 times): a reply
+  that ran away to the output cap, then its retry ran away too. In 150
+  earlier runs a normal case-generation reply used at most about 4,100
+  output tokens (median 1,300); the cut-off ones used exactly 16,000.
+  Such replies are model variance. Before, 3 of 21 runs used 19,400 to
+  32,000 output tokens (one lost a function to two cut-off replies);
+  after, the same scenario lost its function again, now at 16,800 tokens,
+  and two other runs used 13,000 to 18,100. A report gives only the run's
+  total, so single cut-offs cannot be counted exactly.
+- **Chosen approach: a smaller cap, not a larger one.** A larger cap
+  would only let runaway replies cost more; it would not make them
+  usable. With 8,400 tokens the same `f9c4f30` run (both replies cut
+  off) cost $0.0086 instead of $0.0162. An expected retry share in the
+  estimate was not added: over all runs the estimate is already above
+  the actual cost (0.68), the per-case output estimate (180 tokens) sits
+  above what replies use, and a share would not help the single runs
+  that go over. Every request's cap also stays within what is left of
+  `max_tokens` and `max_cost`, so the limits hold even then.
+- The second case request is included in "after": it is checked against
+  both limits before it is sent.
+- Cost of task 38 measurements: rerun $0.0572, cost runs $0.0738 +
+  $0.0706, live run $0.0008.
+

@@ -1,0 +1,430 @@
+{
+  "scenario": {
+    "id": "boltons-replay-609cabe",
+    "repo": "boltons",
+    "kind": "replay",
+    "commit": "609cabe932a1ea1423b24568644945abb1b8bb84",
+    "intent": "Refactor the setutils module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "609cabe932a1ea1423b24568644945abb1b8bb84",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the setutils module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 40.3,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,730 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.3.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "609cabe932a1ea1423b24568644945abb1b8bb84"
+    },
+    "intent": "Stated by the user: Refactor the setutils module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "276558d0a73a",
+        "function": "boltons/setutils.py::IndexedSet.iter_slice",
+        "label": "unexpected",
+        "reason": "The refactor is stated to preserve behavior, but this call now raises ValueError instead of returning an iterator.",
+        "confidence": "high",
+        "args": [
+          "-4",
+          "2"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[10, 20, 30]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "itertools.islice",
+          "repr": "<itertools.islice object at 0x10532e840>",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {10: 0, 20: 1, 30: 2}, 'item_list': [10, 20, 30]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('Indices for islice() must be None or an integer: 0 <= x <= sys.maxsize.')",
+          "message": "Indices for islice() must be None or an integer: 0 <= x <= sys.maxsize.",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {10: 0, 20: 1, 30: 2}, 'item_list': [10, 20, 30]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-bzanckuy/out/tests/test_IndexedSet_iter_slice.py"
+      },
+      {
+        "id": "20fbfedf5440",
+        "function": "boltons/setutils.py::IndexedSet.iter_slice",
+        "label": "unexpected",
+        "reason": "The refactor is stated to preserve behavior, but this call now raises ValueError instead of returning an iterator.",
+        "confidence": "high",
+        "args": [
+          "1",
+          "-4"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "['a', 'b', 'c']"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "itertools.islice",
+          "repr": "<itertools.islice object at 0x10532e930>",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'a': 0, 'b': 1, 'c': 2}, 'item_list': ['a', 'b', 'c']}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('Stop argument for islice() must be None or an integer: 0 <= x <= sys.maxsize.')",
+          "message": "Stop argument for islice() must be None or an integer: 0 <= x <= sys.maxsize.",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'a': 0, 'b': 1, 'c': 2}, 'item_list': ['a', 'b', 'c']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-bzanckuy/out/tests/test_IndexedSet_iter_slice.py"
+      },
+      {
+        "id": "bd2c5392040b",
+        "function": "boltons/setutils.py::IndexedSet.iter_slice",
+        "label": "unexpected",
+        "reason": "The refactor is stated to preserve behavior, but this call now raises ValueError instead of returning an iterator.",
+        "confidence": "high",
+        "args": [
+          "-1",
+          "None"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "itertools.islice",
+          "repr": "<itertools.islice object at 0x10532e8e0>",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('Indices for islice() must be None or an integer: 0 <= x <= sys.maxsize.')",
+          "message": "Indices for islice() must be None or an integer: 0 <= x <= sys.maxsize.",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-bzanckuy/out/tests/test_IndexedSet_iter_slice.py"
+      },
+      {
+        "id": "1c4770cc07ab",
+        "function": "boltons/setutils.py::IndexedSet.iter_slice",
+        "label": "unexpected",
+        "reason": "The refactor is stated to preserve behavior, but this call now raises ValueError instead of returning an iterator.",
+        "confidence": "high",
+        "args": [
+          "None",
+          "-1"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "itertools.islice",
+          "repr": "<itertools.islice object at 0x10532e840>",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('Stop argument for islice() must be None or an integer: 0 <= x <= sys.maxsize.')",
+          "message": "Stop argument for islice() must be None or an integer: 0 <= x <= sys.maxsize.",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-bzanckuy/out/tests/test_IndexedSet_iter_slice.py"
+      },
+      {
+        "id": "34edc555d280",
+        "function": "boltons/setutils.py::IndexedSet.iter_slice",
+        "label": "unexpected",
+        "reason": "The refactor is stated to preserve behavior, but this call now raises ValueError instead of returning an iterator.",
+        "confidence": "high",
+        "args": [
+          "-2",
+          "0"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[7]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "itertools.islice",
+          "repr": "<itertools.islice object at 0x10532e840>",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {7: 0}, 'item_list': [7]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('Indices for islice() must be None or an integer: 0 <= x <= sys.maxsize.')",
+          "message": "Indices for islice() must be None or an integer: 0 <= x <= sys.maxsize.",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {7: 0}, 'item_list': [7]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-bzanckuy/out/tests/test_IndexedSet_iter_slice.py"
+      },
+      {
+        "id": "7ad7419bca2b",
+        "function": "boltons/setutils.py::IndexedSet.iter_slice",
+        "label": "unexpected",
+        "reason": "The refactor is stated to preserve behavior, but this call now raises ValueError instead of returning an iterator.",
+        "confidence": "high",
+        "args": [
+          "0",
+          "-5"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[1, 2, 3, 4]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "itertools.islice",
+          "repr": "<itertools.islice object at 0x10532e8e0>",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2, 4: 3}, 'item_list': [1, 2, 3, 4]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('Stop argument for islice() must be None or an integer: 0 <= x <= sys.maxsize.')",
+          "message": "Stop argument for islice() must be None or an integer: 0 <= x <= sys.maxsize.",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2, 4: 3}, 'item_list': [1, 2, 3, 4]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-bzanckuy/out/tests/test_IndexedSet_iter_slice.py"
+      },
+      {
+        "id": "53186ee9bdb3",
+        "function": "boltons/setutils.py::IndexedSet.iter_slice",
+        "label": "unexpected",
+        "reason": "The refactor is stated to preserve behavior, but this call now raises ValueError instead of returning an iterator.",
+        "confidence": "high",
+        "args": [
+          "-5",
+          "3",
+          "-1"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[1, 2, 3, 4]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "itertools.islice",
+          "repr": "<itertools.islice object at 0x10532ea70>",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2, 4: 3}, 'item_list': [1, 2, 3, 4]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('Indices for islice() must be None or an integer: 0 <= x <= sys.maxsize.')",
+          "message": "Indices for islice() must be None or an integer: 0 <= x <= sys.maxsize.",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2, 4: 3}, 'item_list': [1, 2, 3, 4]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-bzanckuy/out/tests/test_IndexedSet_iter_slice.py"
+      },
+      {
+        "id": "bbad5cf9c347",
+        "function": "boltons/setutils.py::IndexedSet.iter_slice",
+        "label": "unexpected",
+        "reason": "The refactor is stated to preserve behavior, but this call now raises ValueError instead of returning an iterator.",
+        "confidence": "high",
+        "args": [
+          "2",
+          "-5",
+          "-1"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[2, 4, 6, 8]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "itertools.islice",
+          "repr": "<itertools.islice object at 0x10532fec0>",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {2: 0, 4: 1, 6: 2, 8: 3}, 'item_list': [2, 4, 6, 8]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('Stop argument for islice() must be None or an integer: 0 <= x <= sys.maxsize.')",
+          "message": "Stop argument for islice() must be None or an integer: 0 <= x <= sys.maxsize.",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {2: 0, 4: 1, 6: 2, 8: 3}, 'item_list': [2, 4, 6, 8]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-bzanckuy/out/tests/test_IndexedSet_iter_slice.py"
+      },
+      {
+        "id": "571aa6b49f75",
+        "function": "boltons/setutils.py::IndexedSet.iter_slice",
+        "label": "unexpected",
+        "reason": "The refactor is stated to preserve behavior, but this call now raises ValueError instead of returning an iterator.",
+        "confidence": "high",
+        "args": [
+          "-6",
+          "-7",
+          "2"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[11, 22, 33, 44, 55]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "itertools.islice",
+          "repr": "<itertools.islice object at 0x1053904f0>",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {11: 0, 22: 1, 33: 2, 44: 3, 55: 4}, 'item_list': [11, 22, 33, 44, 55]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('Indices for islice() must be None or an integer: 0 <= x <= sys.maxsize.')",
+          "message": "Indices for islice() must be None or an integer: 0 <= x <= sys.maxsize.",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {11: 0, 22: 1, 33: 2, 44: 3, 55: 4}, 'item_list': [11, 22, 33, 44, 55]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-bzanckuy/out/tests/test_IndexedSet_iter_slice.py"
+      },
+      {
+        "id": "b0046047e9ad",
+        "function": "boltons/setutils.py::IndexedSet.iter_slice",
+        "label": "unexpected",
+        "reason": "The refactor is stated to preserve behavior, but this call now raises ValueError instead of returning an iterator.",
+        "confidence": "high",
+        "args": [
+          "-999",
+          "None",
+          "-2"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[3, 6]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "itertools.islice",
+          "repr": "<itertools.islice object at 0x1053905e0>",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {3: 0, 6: 1}, 'item_list': [3, 6]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('Indices for islice() must be None or an integer: 0 <= x <= sys.maxsize.')",
+          "message": "Indices for islice() must be None or an integer: 0 <= x <= sys.maxsize.",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {3: 0, 6: 1}, 'item_list': [3, 6]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-bzanckuy/out/tests/test_IndexedSet_iter_slice.py"
+      },
+      {
+        "id": "fb3312f5d8ef",
+        "function": "boltons/setutils.py::IndexedSet.iter_slice",
+        "label": "unexpected",
+        "reason": "The refactor is stated to preserve behavior, but this call now raises ValueError instead of returning an iterator.",
+        "confidence": "high",
+        "args": [
+          "None",
+          "-4",
+          "-1"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[5, 10, 15]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "itertools.islice",
+          "repr": "<itertools.islice object at 0x1053906d0>",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {5: 0, 10: 1, 15: 2}, 'item_list': [5, 10, 15]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('Stop argument for islice() must be None or an integer: 0 <= x <= sys.maxsize.')",
+          "message": "Stop argument for islice() must be None or an integer: 0 <= x <= sys.maxsize.",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {5: 0, 10: 1, 15: 2}, 'item_list': [5, 10, 15]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-bzanckuy/out/tests/test_IndexedSet_iter_slice.py"
+      },
+      {
+        "id": "b2590f36aa63",
+        "function": "boltons/setutils.py::IndexedSet.iter_slice",
+        "label": "unexpected",
+        "reason": "The refactor is stated to preserve behavior, but this call now raises ValueError instead of returning an iterator.",
+        "confidence": "high",
+        "args": [
+          "-5",
+          "-5",
+          "1"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[9, 8, 7, 6]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "itertools.islice",
+          "repr": "<itertools.islice object at 0x105390860>",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {9: 0, 8: 1, 7: 2, 6: 3}, 'item_list': [9, 8, 7, 6]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('Stop argument for islice() must be None or an integer: 0 <= x <= sys.maxsize.')",
+          "message": "Stop argument for islice() must be None or an integer: 0 <= x <= sys.maxsize.",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {9: 0, 8: 1, 7: 2, 6: 3}, 'item_list': [9, 8, 7, 6]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-bzanckuy/out/tests/test_IndexedSet_iter_slice.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 3529,
+      "output_tokens": 4364,
+      "cost_usd": 0.0025348999999999997
+    }
+  }
+}
