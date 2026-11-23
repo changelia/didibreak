@@ -144,6 +144,8 @@ def test_the_required_cases_exist() -> None:
         "dataclass_method",
         "constructor_change",
         "method_blocked",
+        "constructor_rejects",
+        "constructor_rejection_intended",
     }
 
 

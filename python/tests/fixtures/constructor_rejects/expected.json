@@ -1,0 +1,55 @@
+{
+  "description": "The constructor's error message is reworded, but the check also changes from < 0 to <= 0, so Order(0) is now rejected. A constructor that fails in one version only is a finding on Order.__init__ (task 38).",
+  "intent": "make the error for a negative quantity clearer",
+  "changed_functions": [
+    {
+      "function": "app/order.py::Order.__init__",
+      "kind": "changed"
+    }
+  ],
+  "skipped_functions": [],
+  "findings": [
+    {
+      "function": "app/order.py::Order.__init__",
+      "label": "unexpected",
+      "init_args": [
+        "0"
+      ],
+      "init_kwargs": {},
+      "args": [],
+      "kwargs": {},
+      "before": {
+        "kind": "return",
+        "type_name": "app.order.Order",
+        "repr": "Order(0)",
+        "state": "{'quantity': 0}"
+      },
+      "after": {
+        "kind": "exception",
+        "type_name": "builtins.ValueError",
+        "repr": "ValueError('quantity must not be negative, got 0')"
+      }
+    }
+  ],
+  "same_behavior": [
+    {
+      "function": "app/order.py::Order.__init__",
+      "init_args": [
+        "-1"
+      ],
+      "init_kwargs": {},
+      "args": [],
+      "kwargs": {}
+    },
+    {
+      "function": "app/order.py::Order.__init__",
+      "init_args": [
+        "3"
+      ],
+      "init_kwargs": {},
+      "args": [],
+      "kwargs": {}
+    }
+  ],
+  "flaky_functions": []
+}

@@ -1,0 +1,46 @@
+{
+  "description": "The constructor now rejects empty user names, as the intent asks: Username('') is a finding on Username.__init__ labelled expected (task 38).",
+  "intent": "reject empty user names",
+  "changed_functions": [
+    {
+      "function": "app/users.py::Username.__init__",
+      "kind": "changed"
+    }
+  ],
+  "skipped_functions": [],
+  "findings": [
+    {
+      "function": "app/users.py::Username.__init__",
+      "label": "expected",
+      "init_args": [
+        "''"
+      ],
+      "init_kwargs": {},
+      "args": [],
+      "kwargs": {},
+      "before": {
+        "kind": "return",
+        "type_name": "app.users.Username",
+        "repr": "Username('')",
+        "state": "{'name': ''}"
+      },
+      "after": {
+        "kind": "exception",
+        "type_name": "builtins.ValueError",
+        "repr": "ValueError('a user name cannot be empty')"
+      }
+    }
+  ],
+  "same_behavior": [
+    {
+      "function": "app/users.py::Username.__init__",
+      "init_args": [
+        "' ada '"
+      ],
+      "init_kwargs": {},
+      "args": [],
+      "kwargs": {}
+    }
+  ],
+  "flaky_functions": []
+}
