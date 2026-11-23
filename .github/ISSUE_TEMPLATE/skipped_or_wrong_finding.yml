@@ -14,7 +14,7 @@ body:
     attributes:
       label: didibreak version
       description: Output of `didibreak --version`.
-      placeholder: didibreak 0.3.0
+      placeholder: didibreak 0.4.0
     validations:
       required: true
   - type: dropdown
