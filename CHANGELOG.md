@@ -18,17 +18,25 @@ the Python package and `js-v*` for the JS/TS package.
   on it. The instance's state after the call (`__dict__` and slots) is
   compared too, so a method that returns `None` but changes `self`
   differently is a finding. Reproducing tests build the instance and
-  assert its state. A case whose instance cannot be built in one version
-  or both is dropped and counted; when none is left the method is
+  assert its state. A case whose instance cannot be built in either
+  version is dropped and counted; when none is left the method is
   skipped (`construction failed: <type>` or `constructor changed: ...`).
-  Properties, dunder methods and methods of classes that do I/O while
-  they are built stay skipped.
+  Properties, dunder methods other than `__init__` and methods of
+  classes that do I/O while they are built stay skipped.
+- A constructor that fails in one version only is a finding on
+  `Class.__init__`, labelled against the intent like any other: for
+  example `Order(0)` that the base built and the change now rejects. A
+  changed `__init__` is checked itself by building the instance from
+  constructor arguments; its outcome is the exception or the instance's
+  state right after it was built. The reproducing test builds the
+  instance (`pytest.raises` when the base raised, else type and state).
 
 #### Changed
 
 - The skip reason `instance method` is gone; new reasons are `property`,
-  `dunder method`, `construction failed: <type>` and `constructor
-  changed: no constructor arguments work in both versions`.
+  `dunder method` (not for `__init__`), `construction failed: <type>`
+  and `constructor changed: no constructor arguments work in both
+  versions`.
 
 - The JSON report is `schema_version: 2`. It only adds keys to version 1:
   `init_args` and `init_kwargs` on findings of instance methods, `state`

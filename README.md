@@ -90,8 +90,9 @@ compares the instance's attributes after the call as well as the result.
 
 **Currently skipped**, each listed in the report with its reason:
 
-- properties, dunder methods (`__eq__`, `__repr__`, ...) and methods of
-  classes that do obvious I/O while they are built;
+- properties, dunder methods (`__eq__`, `__repr__`, ...; a changed
+  `__init__` is checked by building the instance) and methods of classes
+  that do obvious I/O while they are built;
 - methods whose class cannot be built from literal constructor arguments
   in both versions;
 - generators, including async generators;

@@ -138,7 +138,7 @@
         "construction_dropped": {
           "type": "integer",
           "minimum": 0,
-          "description": "Method cases dropped because the instance could not be built in one version or both."
+          "description": "Method cases dropped because the instance could not be built in either version; a case built in one version only is a Class.__init__ finding."
         },
         "skipped": {
           "type": "array",

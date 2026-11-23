@@ -8,7 +8,8 @@ How your code is executed and isolated, and what is not covered.
 ## Which functions are never executed
 
 Before running anything, didibreak skips functions it cannot run safely:
-generators (async generators too), properties, dunder methods, functions
+generators (async generators too), properties, dunder methods other than
+`__init__`, functions
 with obvious I/O (files, processes, network, databases), and methods of
 classes that do obvious I/O while they are built (in `__new__`, `__init__`,
 `__post_init__`, what they call in the module, or the class body). Async
