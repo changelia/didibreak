@@ -10,10 +10,9 @@ Colors only when the caller asks for them.
 
 from collections.abc import Sequence
 
-from didibreak.arguments import format_call
-from didibreak.compare import Finding
+from didibreak.compare import Finding, state_changed
 from didibreak.functions import Detection
-from didibreak.harness import Outcome
+from didibreak.harness import Outcome, case_call
 from didibreak.report import Report, SkippedItem
 from didibreak.terminal import printable
 
@@ -78,14 +77,19 @@ def _describe(outcome: Outcome | None) -> str:
 def _finding_lines(finding: Finding, color: bool) -> list[str]:
     heading = (finding.label or "").upper().replace("_", "-")
     label = _paint(f"{heading:<{_INDENT}}", finding.label or "unclear", color)
-    call = printable(
-        format_call(finding.function, finding.case.args, finding.case.kwargs)
-    )
+    call = printable(case_call(finding.function, finding.case))
     lines = [
         f"  {label}{call}",
         f"  {'':<{_INDENT}}before {_describe(finding.before)} → "
         f"after {_describe(finding.after)}",
     ]
+    before, after = finding.before, finding.after
+    if before is not None and state_changed(before, after):
+        # Task 30: the result can be the same while the instance changed.
+        lines.append(
+            f"  {'':<{_INDENT}}state before {printable(before.state_repr or '')} → "
+            f"after {printable(after.state_repr or '')}"
+        )
     if finding.reason:
         lines.append(f"  {'':<{_INDENT}}{printable(finding.reason)}")
     return lines
@@ -144,6 +148,11 @@ def results_text(report: Report, color: bool = False, llm: bool = True) -> str:
     if report.test_files:
         lines.append(f"Reproducing tests: {', '.join(report.test_files)}")
     lines += [_item_line("no test", item) for item in report.no_tests]
+    if report.construction_dropped:
+        lines.append(
+            f"{report.construction_dropped} method cases dropped "
+            "(the instance could not be built in both versions)"
+        )
     if report.type_mismatch_dropped:
         lines.append(
             f"{report.type_mismatch_dropped} findings dropped "

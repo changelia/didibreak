@@ -8,25 +8,23 @@ from typing import Any
 
 import httpx
 import pytest
-from fixture_repos import build_fixture_repository, fixture_names, load_expected
+from fixture_repos import (
+    build_fixture_repository,
+    documented_call,
+    documented_cases,
+    entry_case,
+    fixture_names,
+    load_expected,
+)
 
 from didibreak import cli, llm
+from didibreak.cases import describe_call
 from didibreak.cli import CASES_FILE_REASON, EXIT_FINDINGS, EXIT_OK, main
 from didibreak.config import Config
 from didibreak.intent import NO_INTENT_REASON
 
-LINE = re.compile(r"^- finding_id (\w+): \w+\((.*)\) in (\S+) -> ", re.MULTILINE)
+LINE = re.compile(r"^- finding_id (\w+): (.*?) in (\S+) -> ", re.MULTILINE)
 WITH_INTENT = [name for name in fixture_names() if load_expected(name)["intent"]]
-
-
-def documented_cases(expected: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
-    by_function: dict[str, list[dict[str, Any]]] = {}
-    for group in ("findings", "same_behavior", "flaky_functions"):
-        for item in expected[group]:
-            pairs = [{"name": k, "value": v} for k, v in item["kwargs"].items()]
-            case = {"args": item["args"], "kwargs": pairs, "rationale": "fixture"}
-            by_function.setdefault(item["function"], []).append(case)
-    return by_function
 
 
 def completion(data: object) -> httpx.Response:
@@ -47,7 +45,11 @@ def install(
     """Fake provider for cases and labels; returns the labelling prompts."""
     cases = documented_cases(expected)
     labels = {
-        (f["function"], ", ".join(f["args"])): f["label"] for f in expected["findings"]
+        (
+            f["function"],
+            describe_call(f["function"].partition("::")[2], entry_case(f)),
+        ): f["label"]
+        for f in expected["findings"]
     }
     label_prompts: list[str] = []
 
@@ -100,9 +102,7 @@ def test_labels_and_exit_codes_follow_the_documented_intent(
     err = "".join(capsys.readouterr())
     for finding in findings:
         heading = finding["label"].upper().replace("_", "-")
-        assert (
-            f"{heading:<13}{finding['function']}({', '.join(finding['args'])})" in err
-        )
+        assert f"{heading:<13}{documented_call(finding)}" in err
     to_label = [f for f in findings if f["label"] != "new_function"]
     assert len(label_prompts) == (1 if to_label else 0)
     if to_label:

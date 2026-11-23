@@ -1,0 +1,154 @@
+{
+  "scenario": {
+    "id": "humanize-replay-ca892b3",
+    "repo": "humanize",
+    "kind": "replay",
+    "commit": "ca892b368a535a79cc5e2181d052245b94fd6652",
+    "intent": "Refactor the number module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "f618e5748e6db3783f0f1610bbf1ff6c57058ca5",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the number module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 25.4,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~8,402 input + ~7,200 output tokens, ~$0.0044 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.3.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "f618e5748e6db3783f0f1610bbf1ff6c57058ca5"
+    },
+    "intent": "Stated by the user: Refactor the number module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "fff085bbc5f4",
+        "function": "src/humanize/number.py::intword",
+        "label": "unexpected",
+        "reason": "The change alters the output for this input, contrary to the stated intent that behavior must not change.",
+        "confidence": "high",
+        "args": [
+          "'999999999999999999999999'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1.0 septillion'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1000.0 sextillion'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4d5b1dh/out/tests/test_intword.py"
+      },
+      {
+        "id": "003b85a55584",
+        "function": "src/humanize/number.py::intword",
+        "label": "unexpected",
+        "reason": "The change alters the output for this input, contrary to the stated intent that behavior must not change.",
+        "confidence": "high",
+        "args": [
+          "'999999999999999999999999999'",
+          "'%0.3f'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1.000 octillion'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1000.000 septillion'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4d5b1dh/out/tests/test_intword.py"
+      },
+      {
+        "id": "3de79c0001bc",
+        "function": "src/humanize/number.py::intword",
+        "label": "unexpected",
+        "reason": "The change alters the output for this input, contrary to the stated intent that behavior must not change.",
+        "confidence": "high",
+        "args": [
+          "'999999999999999999999999999999'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1.0 nonillion'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1000.0 octillion'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4d5b1dh/out/tests/test_intword.py"
+      },
+      {
+        "id": "d395fac52433",
+        "function": "src/humanize/number.py::intword",
+        "label": "unexpected",
+        "reason": "The change alters the output for this input, contrary to the stated intent that behavior must not change.",
+        "confidence": "high",
+        "args": [
+          "'999999999999999999999999999999999'",
+          "'%0.3f'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1.000 decillion'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1000.000 nonillion'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4d5b1dh/out/tests/test_intword.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 4,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2629,
+      "output_tokens": 2605,
+      "cost_usd": 0.0015654
+    }
+  }
+}

@@ -8,9 +8,12 @@ How your code is executed and isolated, and what is not covered.
 ## Which functions are never executed
 
 Before running anything, didibreak skips functions it cannot run safely:
-instance methods, generators (async generators too), and functions with
-obvious I/O (files, processes, network, databases). Async functions are
-run, under the same rules and the same guard. The full list of rules and I/O names is in
+generators (async generators too), properties, dunder methods, functions
+with obvious I/O (files, processes, network, databases), and methods of
+classes that do obvious I/O while they are built (in `__new__`, `__init__`,
+`__post_init__`, what they call in the module, or the class body). Async
+functions and instance methods are run, under the same rules and the same
+guard. The full list of rules and I/O names is in
 [limitations.md](limitations.md#functions-that-are-skipped). These rules read
 the source; they are a fast first filter. What they miss is run under the
 [runtime I/O guard](#the-runtime-io-guard).
@@ -64,6 +67,11 @@ starts a process (`asyncio.create_subprocess_exec`), opens a connection
 (`asyncio.open_connection`), looks up a name (the loop does that in a
 worker thread, which the guard also covers) or writes outside the
 temporary folder is skipped with `blocked: <event>`.
+
+For an instance method, building the instance from the case's constructor
+arguments is part of the case: it runs under the guard and the timeout, so
+a constructor that writes a file, opens a connection or starts a process
+skips the method with `blocked: <event>`.
 
 Reading files is allowed. The full list of audit events is
 `BLOCKED_EVENTS` in

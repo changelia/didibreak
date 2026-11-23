@@ -7,17 +7,18 @@ into the package at build time). Every proposed argument must pass
 """
 
 import ast
+import copy
 import textwrap
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from importlib import resources
 from string import Template
 from typing import Any
 
-from didibreak.arguments import case_problem, format_call, normalized_case
+from didibreak.arguments import case_problem, normalized_case
 from didibreak.compare import finding_id
 from didibreak.functions import ChangedFunction
-from didibreak.harness import Case, Outcome
+from didibreak.harness import Case, Outcome, case_call
 from didibreak.llm.common import Message
 
 PROMPT_FILE = "case_generation.md"
@@ -38,8 +39,25 @@ NEW_TASK = (
     "which it raises an unexpected exception or does not finish."
 )
 NO_OLD_SOURCE = "(none: new function)"
+# Instance methods (task 30): each case also builds the instance.
+METHOD_TASK = (
+    " This is an instance method: each case builds an instance with "
+    '"init_args" and "init_kwargs" and then calls the method on it with '
+    '"args" and "kwargs". The state of the instance after the call is '
+    "compared too, so a different attribute value is a difference."
+)
+NOT_A_METHOD = "(none: not an instance method)"
 
 CASES_SCHEMA_NAME = "didibreak_cases"
+_PAIRS: dict[str, Any] = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {"name": {"type": "string"}, "value": {"type": "string"}},
+        "required": ["name", "value"],
+        "additionalProperties": False,
+    },
+}
 # Strict structured output needs additionalProperties false on every object,
 # so keyword arguments are name/value pairs (task 12, accepted by the owner).
 CASES_SCHEMA: dict[str, Any] = {
@@ -73,6 +91,46 @@ CASES_SCHEMA: dict[str, Any] = {
     "required": ["cases"],
     "additionalProperties": False,
 }
+
+
+METHOD_CASES_SCHEMA_NAME = "didibreak_method_cases"
+METHOD_CASES_SCHEMA: dict[str, Any] = copy.deepcopy(CASES_SCHEMA)
+_method_case = METHOD_CASES_SCHEMA["properties"]["cases"]["items"]
+_method_case["properties"]["init_args"] = {"type": "array", "items": {"type": "string"}}
+_method_case["properties"]["init_kwargs"] = _PAIRS
+_method_case["required"] = ["init_args", "init_kwargs", "args", "kwargs", "rationale"]
+
+
+def is_method(function: ChangedFunction) -> bool:
+    """Whether the function is an instance method, whose cases build an instance."""
+    return function.function_type == "method"
+
+
+def cases_schema(function: ChangedFunction) -> tuple[dict[str, Any], str]:
+    """The reply schema and its name for one function's cases."""
+    if is_method(function):
+        return METHOD_CASES_SCHEMA, METHOD_CASES_SCHEMA_NAME
+    return CASES_SCHEMA, CASES_SCHEMA_NAME
+
+
+def _task(function: ChangedFunction) -> str:
+    task = NEW_TASK if function.old_source is None else CHANGED_TASK
+    return task + METHOD_TASK if is_method(function) else task
+
+
+def constructor_text(function: ChangedFunction) -> str:
+    """How the instance is built, for the ``$constructor`` placeholder."""
+    if not is_method(function) or function.constructor is None:
+        return NOT_A_METHOD
+    text = f"New version:\n```python\n{function.constructor}\n```"
+    old = function.base_constructor
+    if old is not None and old != function.constructor:
+        text += (
+            f"\nOld version:\n```python\n{old}\n```\n"
+            "The constructor changed: give constructor arguments that both "
+            "versions accept."
+        )
+    return text
 
 
 @dataclass(frozen=True)
@@ -149,12 +207,12 @@ def build_messages(
     Raises:
         KeyError: The template uses a placeholder this function does not fill.
     """
-    is_new = function.old_source is None
     user = Template(template.user).substitute(
         function=function.report_name,
         signature=signature(function.new_source),
         docstring=docstring(function.new_source),
-        task=NEW_TASK if is_new else CHANGED_TASK,
+        task=_task(function),
+        constructor=constructor_text(function),
         old_source=(function.old_source or NO_OLD_SOURCE).rstrip(),
         new_source=function.new_source.rstrip(),
         count=count,
@@ -172,8 +230,9 @@ class CaseRun:
 
 
 def describe_call(qualname: str, case: Case) -> str:
-    """``name(arg, key=value)`` as written in the case."""
-    return format_call(qualname.rsplit(".", 1)[-1], case.args, case.kwargs)
+    """``name(arg, key=value)``, or ``Class(...).name(...)`` for a method case."""
+    name = qualname if case.is_method_case else qualname.rsplit(".", 1)[-1]
+    return case_call(name, case)
 
 
 def describe_outcome(outcome: Outcome) -> str:
@@ -184,6 +243,8 @@ def describe_outcome(outcome: Outcome) -> str:
         text = "timed out"
     else:
         text = outcome.repr[:OUTCOME_TEXT_LIMIT]
+    if outcome.state_repr is not None:
+        text += f"; state after the call {outcome.state_repr[:OUTCOME_TEXT_LIMIT]}"
     return text if outcome.stable else f"{text} (not repeatable)"
 
 
@@ -219,12 +280,12 @@ def build_refinement_messages(
     Returns:
         System and user messages.
     """
-    is_new = function.old_source is None
     user = Template(template.user).substitute(
         function=function.report_name,
         signature=signature(function.new_source),
         docstring=docstring(function.new_source),
-        task=NEW_TASK if is_new else CHANGED_TASK,
+        task=_task(function),
+        constructor=constructor_text(function),
         old_source=(function.old_source or NO_OLD_SOURCE).rstrip(),
         new_source=function.new_source.rstrip(),
         previous=_previous_lines(function.qualname, previous),
@@ -263,23 +324,39 @@ def _keyword_arguments(pairs: object) -> dict[str, object] | None:
     return kwargs
 
 
-def _case(item: object) -> Case | None:
-    if not isinstance(item, dict):
-        return None
-    args = item.get("args")
-    kwargs = _keyword_arguments(item.get("kwargs", []))
+def _arguments(
+    args: object, pairs: object
+) -> tuple[tuple[str, ...], dict[str, str]] | None:
+    kwargs = _keyword_arguments(pairs)
     if not isinstance(args, list) or kwargs is None:
         return None
     if case_problem(args, kwargs) is not None:
         return None
-    rationale = item.get("rationale")
-    positional, keywords = normalized_case(
+    return normalized_case(
         [str(a) for a in args], {name: str(value) for name, value in kwargs.items()}
     )
-    return Case(positional, keywords, rationale if isinstance(rationale, str) else "")
 
 
-def accept_cases(data: Mapping[str, Any], count: int, function: str) -> CaseBatch:
+def _case(item: object, method: bool) -> Case | None:
+    if not isinstance(item, dict):
+        return None
+    call = _arguments(item.get("args"), item.get("kwargs", []))
+    if call is None:
+        return None
+    rationale = item.get("rationale")
+    case = Case(*call, rationale if isinstance(rationale, str) else "")
+    if not method:
+        return case
+    # The constructor arguments obey the same rule (task 30).
+    init = _arguments(item.get("init_args"), item.get("init_kwargs", []))
+    if init is None:
+        return None
+    return replace(case, init_args=init[0], init_kwargs=init[1])
+
+
+def accept_cases(
+    data: Mapping[str, Any], count: int, function: str, method: bool = False
+) -> CaseBatch:
     """Validate and deduplicate the cases of one LLM reply.
 
     Args:
@@ -287,6 +364,8 @@ def accept_cases(data: Mapping[str, Any], count: int, function: str) -> CaseBatc
         count: Cases requested; later ones are ignored.
         function: Report name; duplicates are found with the finding id, so
             ``'a'`` and ``"a"`` are the same argument.
+        method: The reply has constructor arguments (METHOD_CASES_SCHEMA);
+            a case whose constructor argument is not a literal is invalid.
 
     Returns:
         The accepted cases and the number of invalid ones.
@@ -297,7 +376,7 @@ def accept_cases(data: Mapping[str, Any], count: int, function: str) -> CaseBatc
     for item in data.get("cases", []):
         if len(accepted) == count:
             break
-        case = _case(item)
+        case = _case(item, method)
         if case is None:
             invalid += 1
             continue

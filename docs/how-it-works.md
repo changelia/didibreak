@@ -11,10 +11,11 @@ One `didibreak check` run:
    versions of each changed file are parsed, and a function counts as
    changed when its code changes (formatting, comments and docstrings are
    ignored). New functions are found too; removed ones are listed.
-2. **Skip what cannot be run.** Instance methods, generators (async
-   generators too) and functions with obvious I/O are skipped with a
-   reason ([limitations.md](limitations.md#functions-that-are-skipped)).
-   Async functions are run ([Async functions](#async-functions)). Each
+2. **Skip what cannot be run.** Generators (async generators too),
+   properties, dunder methods and functions with obvious I/O are skipped
+   with a reason ([limitations.md](limitations.md#functions-that-are-skipped)).
+   Async functions ([Async functions](#async-functions)) and instance
+   methods ([Instance methods](#instance-methods)) are run. Each
    remaining module is imported once in both versions, so a module that
    cannot be imported costs no tokens.
 3. **Estimate the cost** and stop at `max_cost`
@@ -169,6 +170,35 @@ A function that changed between `def` and `async def` is called without
 now get a coroutine (or no longer do), a `builtins.coroutine` on one side
 and the value on the other.
 Reproducing tests call async functions with `asyncio.run(...)` as well.
+
+### Instance methods
+
+For an instance method the LLM proposes constructor arguments with each
+case, as Python literals under the same rule as the call's arguments. The
+prompt shows how the class is built (its `__init__`, `__new__`,
+`__post_init__` or dataclass fields), both versions when that changed.
+Each case builds a new instance from its constructor arguments, calls the
+method on it, and records two things: the result (returned value,
+exception or timeout) and the instance's **state after the call**, every
+attribute in its `__dict__` and its `__slots__`.
+
+- The state is compared with the value rules below, attribute by
+  attribute. An attribute that cannot be compared by value (an open lock,
+  a client object) is compared by its type. A different state is a
+  finding even when the result is the same: most methods that change
+  `self` return `None`. The state is recorded after an exception too.
+- Building the instance runs under the same timeout and runtime I/O guard
+  as the call. A case whose instance cannot be built in one version or
+  both is dropped and counted (`construction_dropped`); a method with no
+  case left is skipped with `construction failed: <type>`, or with
+  `constructor changed: ...` when the constructor changed and no
+  arguments built both versions.
+- An async method is awaited as an async function.
+- The text report prints the case as `Account(100).deposit(-50)` and adds
+  a `state before … → after …` line when the instance changed; the JSON
+  report has `init_args`, `init_kwargs` and `state`
+  ([output-format.md](output-format.md#json-report)). Reproducing tests
+  build the instance and assert its state after the call.
 
 ### Comparing values
 

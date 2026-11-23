@@ -1,16 +1,18 @@
 """Testability rules: which changed functions cannot be tested safely, and why.
 
 Pure functions over a module's source. The categories come from task 07:
-instance methods, generators (async generators too) and obvious I/O; async
-functions are run since task 29. These rules are the static safety
-boundary: a function that matches is never executed.
+generators (async generators too) and obvious I/O; async functions are run
+since task 29, and instance methods since task 30, except properties,
+dunder methods and methods of classes that do I/O while they are built.
+These rules are the static safety boundary: a function that matches is
+never executed.
 Names are resolved through the module's imports and aliases, so
 ``from subprocess import run`` and ``import shutil as sh`` are recognized.
 """
 
 import ast
 from collections.abc import Iterator, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from fnmatch import fnmatchcase
 
 # Everything treated as obvious I/O, in one place (documented in limitations.md).
@@ -132,7 +134,13 @@ OBVIOUS_IO = {
 }
 
 ASYNC_GENERATOR_REASON = "async generator"
-INSTANCE_METHOD_REASON = "instance method"
+PROPERTY_REASON = "property"
+DUNDER_REASON = "dunder method"
+# Methods that run while an instance is built: I/O in them skips every
+# method of the class (task 30).
+CONSTRUCTION_METHODS = ("__new__", "__init__", "__post_init__")
+# Decorators that make a method a property; ``x.setter`` and the like too.
+PROPERTY_DECORATORS = ("property", "cached_property", "functools.cached_property")
 GENERATOR_REASON = "generator"
 IO_REASON_PREFIX = "obvious I/O: "
 
@@ -149,11 +157,13 @@ class ModuleContext:
         functions: Module-level functions and methods of module-level classes
             by qualified name (``name`` or ``Class.name``).
         classes: Names of module-level classes.
+        class_nodes: The module-level class definitions by name (task 30).
     """
 
     aliases: Mapping[str, str]
     functions: Mapping[str, _FunctionNode]
     classes: frozenset[str] = frozenset()
+    class_nodes: Mapping[str, ast.ClassDef] = field(default_factory=dict)
 
 
 def _import_aliases(statements: list[ast.stmt]) -> dict[str, str]:
@@ -195,19 +205,20 @@ def module_context(source: str) -> ModuleContext:
     """
     tree = ast.parse(source)
     functions: dict[str, _FunctionNode] = {}
-    classes: set[str] = set()
+    class_nodes: dict[str, ast.ClassDef] = {}
     for node in tree.body:
         if isinstance(node, _FunctionNode):
             functions[node.name] = node
         elif isinstance(node, ast.ClassDef):
-            classes.add(node.name)
+            class_nodes[node.name] = node
             for member in node.body:
                 if isinstance(member, _FunctionNode):
                     functions[f"{node.name}.{member.name}"] = member
     return ModuleContext(
         aliases=_import_aliases(tree.body),
         functions=functions,
-        classes=frozenset(classes),
+        classes=frozenset(class_nodes),
+        class_nodes=class_nodes,
     )
 
 
@@ -450,9 +461,12 @@ def skip_reason(
 ) -> str | None:
     """Return why a function cannot be tested, or None if it can.
 
-    The first matching rule wins: instance method, generator (``async
-    generator`` for one defined with ``async def``), I/O. Other async
-    functions are tested: the harness awaits them (task 29).
+    The first matching rule wins: for an instance method, property,
+    dunder method and I/O while the class is built; then for every
+    function, generator (``async generator`` for one defined with ``async
+    def``) and I/O. Other async functions are tested: the harness awaits
+    them (task 29), and instance methods are called on an instance built
+    from literal constructor arguments (task 30).
 
     Args:
         context: The module version the function belongs to.
@@ -463,12 +477,74 @@ def skip_reason(
     Returns:
         A short user-readable reason, or None.
     """
-    if function_type == "method":
-        return INSTANCE_METHOD_REASON
     function = context.functions.get(qualname)
     if function is None:
         return None
+    if function_type == "method":
+        reason = _method_reason(context, qualname, function)
+        if reason is not None:
+            return reason
     if is_generator(function):
         return ASYNC_GENERATOR_REASON if is_async else GENERATOR_REASON
     found = find_io_through_calls(qualname, context)
+    return None if found is None else f"{IO_REASON_PREFIX}{found}"
+
+
+def _is_property(function: _FunctionNode) -> bool:
+    for decorator in function.decorator_list:
+        name = _dotted_name(decorator)
+        if name in PROPERTY_DECORATORS:
+            return True
+        if name is not None and name.rpartition(".")[2] in (
+            "setter",
+            "getter",
+            "deleter",
+        ):
+            return True
+    return False
+
+
+def class_io(class_name: str, context: ModuleContext) -> str | None:
+    """Obvious I/O that runs while an instance of a class is built.
+
+    Looks at ``__new__``, ``__init__`` and ``__post_init__`` (and the
+    same-module functions they call) and at the class body outside its
+    methods, such as a class attribute set from a call.
+
+    Args:
+        class_name: A module-level class.
+        context: Its module.
+
+    Returns:
+        ``name (in Class.__init__)`` or ``name (in the class body)``, or None.
+    """
+    for method in CONSTRUCTION_METHODS:
+        qualname = f"{class_name}.{method}"
+        if qualname in context.functions:
+            found = find_io_through_calls(qualname, context)
+            if found is not None:
+                return f"{found} (in {qualname})"
+    node = context.class_nodes.get(class_name)
+    if node is None:
+        return None
+    for statement in node.body:
+        if isinstance(statement, _FunctionNode | ast.ClassDef):
+            continue
+        for call in ast.walk(statement):
+            if isinstance(call, ast.Call) and (
+                found := _io_in_call(call, context.aliases)
+            ):
+                return f"{found} (in the class body)"
+    return None
+
+
+def _method_reason(
+    context: ModuleContext, qualname: str, function: _FunctionNode
+) -> str | None:
+    name = qualname.rpartition(".")[2]
+    if name.startswith("__") and name.endswith("__"):
+        return DUNDER_REASON
+    if _is_property(function):
+        return PROPERTY_REASON
+    found = class_io(qualname.partition(".")[0], context)
     return None if found is None else f"{IO_REASON_PREFIX}{found}"

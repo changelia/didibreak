@@ -84,12 +84,16 @@ these. Parsers, formatters, validators, converters and small utility
 libraries are the sweet spot.
 
 `async def` functions are checked too: each case runs the coroutine with
-`asyncio.run`.
+`asyncio.run`. So are instance methods of classes that can be built from
+literal arguments: each case builds the instance, calls the method, and
+compares the instance's attributes after the call as well as the result.
 
 **Currently skipped**, each listed in the report with its reason:
 
-- instance methods (they need an object; `@staticmethod` and
-  `@classmethod` are checked);
+- properties, dunder methods (`__eq__`, `__repr__`, ...) and methods of
+  classes that do obvious I/O while they are built;
+- methods whose class cannot be built from literal constructor arguments
+  in both versions;
 - generators, including async generators;
 - functions with obvious I/O: files, network, subprocesses, databases;
 - functions that try to run commands, reach the network or change files

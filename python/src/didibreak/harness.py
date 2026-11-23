@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
-from didibreak.arguments import case_problem
+from didibreak.arguments import case_problem, format_case_call
 
 _CHILD_SCRIPT = Path(__file__).with_name("_harness_child.py")
 # -s: no user site-packages. -P: the script's folder is not put on sys.path.
@@ -69,11 +69,23 @@ class Case:
         args: Positional arguments, e.g. ``("'995 555 12 34 56'",)``.
         kwargs: Keyword arguments by name.
         rationale: Why the case was chosen; not used by the harness.
+        init_args: Constructor arguments of a method case: the class is
+            built with them and the method is called on the instance (task
+            30). None for a function; ``()`` for a constructor without
+            arguments.
+        init_kwargs: Constructor keyword arguments of a method case.
     """
 
     args: tuple[str, ...]
     kwargs: Mapping[str, str] = field(default_factory=dict)
     rationale: str = ""
+    init_args: tuple[str, ...] | None = None
+    init_kwargs: Mapping[str, str] = field(default_factory=dict)
+
+    @property
+    def is_method_case(self) -> bool:
+        """Whether the case builds an instance before the call."""
+        return self.init_args is not None
 
 
 @dataclass(frozen=True)
@@ -88,6 +100,9 @@ class Target:
         qualname: ``name`` or ``Class.name``.
         is_async: Run the coroutine each call returns with ``asyncio.run``
             (task 29).
+        is_method: ``qualname`` is ``Class.method`` of an instance method:
+            each case builds an instance from its constructor arguments
+            and calls the method on it (task 30).
     """
 
     tree: Path
@@ -95,6 +110,14 @@ class Target:
     module: str
     qualname: str
     is_async: bool = False
+    is_method: bool = False
+
+
+def case_call(name: str, case: Case) -> str:
+    """The case as one call, as every report prints it (format_case_call)."""
+    return format_case_call(
+        name, case.args, case.kwargs, case.init_args, case.init_kwargs
+    )
 
 
 @dataclass(frozen=True)
@@ -109,6 +132,13 @@ class Outcome:
         message: Exception message, at most 500 characters; None otherwise.
         stable: False when the second run of the case gave a different
             outcome; such cases are dropped as flaky.
+        state: For a method case, the instance's attributes after the call,
+            normalized (``{"type": "state", "items": [[name, node], ...]}``;
+            an attribute that cannot be normalized is ``{"type": "opaque",
+            "class": ...}``); None for functions and timeouts (task 30).
+        state_repr: The same attributes as text, at most 2,000 characters.
+        construction_failed: The constructor raised (``kind`` is
+            ``exception`` and ``type_name`` its type); the method never ran.
     """
 
     kind: str
@@ -117,6 +147,9 @@ class Outcome:
     value: Mapping[str, Any] | None = None
     message: str | None = None
     stable: bool = True
+    state: Mapping[str, Any] | None = None
+    state_repr: str | None = None
+    construction_failed: bool = False
 
 
 @dataclass(frozen=True)
@@ -198,7 +231,9 @@ def child_environment(
 def _check_literals(cases: Sequence[Case]) -> None:
     # Defensive: every entry point already checks with the same rule.
     for case in cases:
-        problem = case_problem(case.args, case.kwargs)
+        problem = case_problem(case.args, case.kwargs) or case_problem(
+            case.init_args or (), case.init_kwargs
+        )
         if problem is not None:
             raise ValueError(f"invalid case argument: {problem}")
 
@@ -210,6 +245,9 @@ def _outcome(record: Mapping[str, Any]) -> Outcome:
         repr=record["repr"],
         value=record.get("value"),
         message=record.get("message"),
+        state=record.get("state"),
+        state_repr=record.get("state_repr"),
+        construction_failed=bool(record.get("construction_failed", False)),
     )
 
 
@@ -236,6 +274,14 @@ class _ChildRun:
     exit_code: int
 
 
+def _case_request(case: Case) -> dict[str, Any]:
+    request: dict[str, Any] = {"args": list(case.args), "kwargs": dict(case.kwargs)}
+    if case.init_args is not None:
+        request["init_args"] = list(case.init_args)
+        request["init_kwargs"] = dict(case.init_kwargs)
+    return request
+
+
 def _write_request(
     path: Path, target: Target, cases: Sequence[Case], timeout: float, scratch: Path
 ) -> None:
@@ -247,10 +293,9 @@ def _write_request(
         "module": target.module,
         "qualname": target.qualname,
         "is_async": target.is_async,
+        "is_method": target.is_method,
         "timeout": timeout,
-        "cases": [
-            {"args": list(case.args), "kwargs": dict(case.kwargs)} for case in cases
-        ],
+        "cases": [_case_request(case) for case in cases],
     }
     path.write_text(json.dumps(request), encoding="utf-8")
 
@@ -464,7 +509,7 @@ def check_import(
 
 
 def _result_key(outcome: Outcome) -> tuple[object, ...]:
-    return (outcome.kind, outcome.type_name, outcome.value)
+    return (outcome.kind, outcome.type_name, outcome.value, outcome.state)
 
 
 def run_cases(

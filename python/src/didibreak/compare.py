@@ -68,6 +68,9 @@ class Comparison:
         timeouts_dropped: Cases dropped because both versions timed out.
         type_mismatch_dropped: Findings dropped later because their inputs
             contradict the type annotations (set by the pipeline).
+        construction_dropped: Method cases not compared because the
+            instance could not be built in one version or both (set by the
+            pipeline, task 30).
     """
 
     findings: tuple[Finding, ...]
@@ -75,6 +78,7 @@ class Comparison:
     flaky_dropped: int
     timeouts_dropped: int
     type_mismatch_dropped: int = 0
+    construction_dropped: int = 0
 
 
 def floats_close(before: float, after: float) -> bool:
@@ -146,7 +150,9 @@ def finding_id(function: str, case: Case) -> str:
 
     Returns:
         The first FINDING_ID_LENGTH hex characters of the SHA-256 of the
-        function name and the normalized arguments.
+        function name and the normalized arguments; a method case's
+        constructor arguments are part of it (a function's id is the same
+        as before task 30).
 
     Raises:
         ValueError: If an argument is not a Python literal.
@@ -158,8 +164,40 @@ def finding_id(function: str, case: Case) -> str:
             name: _canonical_argument(text) for name, text in case.kwargs.items()
         },
     }
+    if case.init_args is not None:
+        payload["init_args"] = [_canonical_argument(text) for text in case.init_args]
+        payload["init_kwargs"] = {
+            name: _canonical_argument(text) for name, text in case.init_kwargs.items()
+        }
     text = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:FINDING_ID_LENGTH]
+
+
+def state_changed(before: Outcome, after: Outcome) -> bool:
+    """Whether a method case left the instance in a different state (task 30).
+
+    Args:
+        before: Base outcome.
+        after: Current outcome.
+
+    Returns:
+        True when both outcomes carry a state and the states differ:
+        another attribute set, or an attribute with another value (by the
+        value rules) or, for attributes that cannot be normalized, another
+        type.
+    """
+    if before.state is None or after.state is None:
+        return False
+    return not values_equal(before.state, after.state)
+
+
+def _has_opaque(node: Any) -> bool:
+    # An attribute normalized as {"type": "opaque", ...}, at any depth.
+    if isinstance(node, list):
+        return any(_has_opaque(item) for item in node)
+    if isinstance(node, Mapping):
+        return node.get("type") == "opaque" or _has_opaque(node.get("items", []))
+    return False
 
 
 def difference(before: Outcome, after: Outcome) -> str | None:
@@ -175,8 +213,19 @@ def difference(before: Outcome, after: Outcome) -> str | None:
         type, ``high`` otherwise. Raise vs return, and a timeout on one side
         only, are differences. Exceptions of the same type are the same
         (messages ignored). Both sides timing out counts as the same here;
-        compare_cases() drops such cases.
+        compare_cases() drops such cases. For a method case, a different
+        state after the call is a difference too; it is ``low`` when an
+        attribute could only be compared by type.
     """
+    found = _result_difference(before, after)
+    if found is not None or not state_changed(before, after):
+        return found
+    assert before.state is not None and after.state is not None
+    opaque = _has_opaque(before.state) or _has_opaque(after.state)
+    return LOW_CONFIDENCE if opaque else HIGH_CONFIDENCE
+
+
+def _result_difference(before: Outcome, after: Outcome) -> str | None:
     if before.kind != after.kind:
         return HIGH_CONFIDENCE
     if before.kind == "timeout":

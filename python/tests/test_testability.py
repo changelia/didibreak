@@ -75,8 +75,76 @@ def test_async_function_with_obvious_io_is_skipped(statement: str) -> None:
     assert reason.startswith("obvious I/O")
 
 
-def test_instance_method_is_skipped() -> None:
-    assert _reason("def size(self):\n    return 1\n", "method") == "instance method"
+def _method_reason(source: str, qualname: str, is_async: bool = False) -> str | None:
+    return _reason(source, "method", is_async, qualname)
+
+
+def test_an_instance_method_is_tested() -> None:
+    # Task 30: the harness builds an instance and calls the method.
+    source = "class Box:\n    def size(self):\n        return 1\n"
+
+    assert _method_reason(source, "Box.size") is None
+
+
+@pytest.mark.parametrize(
+    ("decorator", "reason"),
+    [
+        ("@property", "property"),
+        ("@size.setter", "property"),
+        ("@functools.cached_property", "property"),
+        ("@cached_property", "property"),
+        ("@staticmethod", None),
+    ],
+)
+def test_properties_are_skipped(decorator: str, reason: str | None) -> None:
+    source = f"class Box:\n    {decorator}\n    def size(self):\n        return 1\n"
+    function_type = "staticmethod" if decorator == "@staticmethod" else "method"
+
+    assert _reason(source, function_type, False, "Box.size") == reason
+
+
+@pytest.mark.parametrize("name", ["__init__", "__eq__", "__repr__", "__call__"])
+def test_dunder_methods_are_skipped(name: str) -> None:
+    source = f"class Box:\n    def {name}(self, *args):\n        return 1\n"
+
+    assert _method_reason(source, f"Box.{name}") == "dunder method"
+
+
+@pytest.mark.parametrize(
+    ("member", "where"),
+    [
+        ("def __init__(self):\n        self.f = open('x')", "in Log.__init__"),
+        ("def __post_init__(self):\n        os.remove('x')", "in Log.__post_init__"),
+        ("def __init__(self):\n        self._go()", "in Log.__init__"),
+        ("handle = socket.socket()", "in the class body"),
+    ],
+)
+def test_a_class_with_io_while_it_is_built_skips_its_methods(
+    member: str, where: str
+) -> None:
+    source = (
+        "import os\nimport socket\n\n"
+        f"class Log:\n    {member}\n\n"
+        "    def _go(self):\n        os.system('ls')\n\n"
+        "    def name(self):\n        return 'log'\n"
+    )
+
+    reason = _method_reason(source, "Log.name")
+
+    assert reason is not None
+    assert reason.startswith("obvious I/O: ")
+    assert reason.endswith(f"({where})")
+
+
+def test_io_in_another_method_does_not_skip_a_method_that_never_calls_it() -> None:
+    source = (
+        "import os\n\nclass Log:\n"
+        "    def save(self):\n        os.remove('x')\n\n"
+        "    def name(self):\n        return 'log'\n"
+    )
+
+    assert _method_reason(source, "Log.name") is None
+    assert _method_reason(source, "Log.save") == "obvious I/O: os.remove"
 
 
 @pytest.mark.parametrize(
@@ -144,10 +212,10 @@ def test_similar_looking_code_is_not_io(statement: str) -> None:
     assert _reason(f"def f(items, text, path, a, b):\n    {statement}\n") is None
 
 
-def test_first_rule_wins_instance_method_before_io_for_async() -> None:
-    source = "async def fetch(self):\n    return open('x')\n"
+def test_an_async_method_with_io_is_skipped_as_io() -> None:
+    source = "class C:\n    async def fetch(self):\n        return open('x')\n"
 
-    assert _reason(source, "method", is_async=True) == "instance method"
+    assert _method_reason(source, "C.fetch", is_async=True) == "obvious I/O: open"
 
 
 def test_io_list_is_one_constant_with_the_task_categories() -> None:

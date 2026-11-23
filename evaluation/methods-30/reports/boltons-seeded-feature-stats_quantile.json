@@ -1,0 +1,413 @@
+{
+  "scenario": {
+    "id": "boltons-seeded-feature-stats_quantile",
+    "repo": "boltons",
+    "kind": "seeded",
+    "commit": "d31d821d56c8f7756af9c30a864077f2e5855321",
+    "intent": "Let Stats.get_quantile() also accept percentages, such as 50 for the median.",
+    "patch": "patches/boltons-seeded-feature-stats_quantile.diff"
+  },
+  "base_sha": "d31d821d56c8f7756af9c30a864077f2e5855321",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Let Stats.get_quantile() also accept percentages, such as 50 for the median.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 28.6,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~6,036 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.3.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "d31d821d56c8f7756af9c30a864077f2e5855321"
+    },
+    "intent": "Stated by the user: Let Stats.get_quantile() also accept percentages, such as 50 for the median.",
+    "findings": [
+      {
+        "id": "b09bbcc3194f",
+        "function": "boltons/statsutils.py::Stats.get_quantile",
+        "label": "unexpected",
+        "reason": "Changing 1 from the existing 100th-percentile fraction to the 1st percentile is not covered by the intent to also accept percentages.",
+        "confidence": "high",
+        "args": [
+          "1"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "100",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100], '_use_copy': True, 'data': [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.float",
+          "repr": "1.0",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100], '_use_copy': True, 'data': [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100], 'default': 0.0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-3jrb73cu/out/tests/test_Stats_get_quantile.py"
+      },
+      {
+        "id": "6896f042bf86",
+        "function": "boltons/statsutils.py::Stats.get_quantile",
+        "label": "expected",
+        "reason": "The change accepts 2 as a percentage and returns the 2nd percentile, as intended.",
+        "confidence": "high",
+        "args": [
+          "2"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[-100, -50, 0, 50, 100]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('expected q between 0.0 and 1.0, not 2.0')",
+          "message": "expected q between 0.0 and 1.0, not 2.0",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': None, '_use_copy': True, 'data': [-100, -50, 0, 50, 100], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.float",
+          "repr": "-96.0",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': [-100, -50, 0, 50, 100], '_use_copy': True, 'data': [-100, -50, 0, 50, 100], 'default': 0.0}"
+        },
+        "test_file": null
+      },
+      {
+        "id": "ed95dc4e2c8b",
+        "function": "boltons/statsutils.py::Stats.get_quantile",
+        "label": "expected",
+        "reason": "The change accepts 10 as a percentage and returns the 10th percentile, as intended.",
+        "confidence": "high",
+        "args": [
+          "10"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[1, 5, 9, 13, 17, 21, 25, 29]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('expected q between 0.0 and 1.0, not 10.0')",
+          "message": "expected q between 0.0 and 1.0, not 10.0",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': None, '_use_copy': True, 'data': [1, 5, 9, 13, 17, 21, 25, 29], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.float",
+          "repr": "3.8000000000000003",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': [1, 5, 9, 13, 17, 21, 25, 29], '_use_copy': True, 'data': [1, 5, 9, 13, 17, 21, 25, 29], 'default': 0.0}"
+        },
+        "test_file": null
+      },
+      {
+        "id": "6c0b70a56796",
+        "function": "boltons/statsutils.py::Stats.get_quantile",
+        "label": "expected",
+        "reason": "The change accepts 25 as a percentage and returns the 25th percentile, as intended.",
+        "confidence": "high",
+        "args": [
+          "25"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[-20, -10, 0, 10, 20, 30]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('expected q between 0.0 and 1.0, not 25.0')",
+          "message": "expected q between 0.0 and 1.0, not 25.0",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': None, '_use_copy': True, 'data': [-20, -10, 0, 10, 20, 30], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.float",
+          "repr": "-7.5",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': [-20, -10, 0, 10, 20, 30], '_use_copy': True, 'data': [-20, -10, 0, 10, 20, 30], 'default': 0.0}"
+        },
+        "test_file": null
+      },
+      {
+        "id": "0f5f99d4e2c4",
+        "function": "boltons/statsutils.py::Stats.get_quantile",
+        "label": "expected",
+        "reason": "The change accepts 50 as a percentage for the median, as explicitly intended.",
+        "confidence": "high",
+        "args": [
+          "50"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[0, 10, 20, 30]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('expected q between 0.0 and 1.0, not 50.0')",
+          "message": "expected q between 0.0 and 1.0, not 50.0",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': None, '_use_copy': True, 'data': [0, 10, 20, 30], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.float",
+          "repr": "15.0",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': [0, 10, 20, 30], '_use_copy': True, 'data': [0, 10, 20, 30], 'default': 0.0}"
+        },
+        "test_file": null
+      },
+      {
+        "id": "1eb1830e0309",
+        "function": "boltons/statsutils.py::Stats.get_quantile",
+        "label": "expected",
+        "reason": "The change accepts 75 as a percentage and returns the 75th percentile, as intended.",
+        "confidence": "high",
+        "args": [
+          "75"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[-9, -3, 0, 6, 15]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('expected q between 0.0 and 1.0, not 75.0')",
+          "message": "expected q between 0.0 and 1.0, not 75.0",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': None, '_use_copy': True, 'data': [-9, -3, 0, 6, 15], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "6",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': [-9, -3, 0, 6, 15], '_use_copy': True, 'data': [-9, -3, 0, 6, 15], 'default': 0.0}"
+        },
+        "test_file": null
+      },
+      {
+        "id": "10391135a6dd",
+        "function": "boltons/statsutils.py::Stats.get_quantile",
+        "label": "expected",
+        "reason": "The change accepts 99 as a percentage and returns the 99th percentile, as intended.",
+        "confidence": "high",
+        "args": [
+          "99"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[0, 100, 200]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('expected q between 0.0 and 1.0, not 99.0')",
+          "message": "expected q between 0.0 and 1.0, not 99.0",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': None, '_use_copy': True, 'data': [0, 100, 200], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.float",
+          "repr": "198.0",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': [0, 100, 200], '_use_copy': True, 'data': [0, 100, 200], 'default': 0.0}"
+        },
+        "test_file": null
+      },
+      {
+        "id": "212b26dc591b",
+        "function": "boltons/statsutils.py::Stats.get_quantile",
+        "label": "expected",
+        "reason": "The change accepts 100 as a percentage and returns the 100th percentile, as intended.",
+        "confidence": "high",
+        "args": [
+          "100"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[3, 6, 9, 12]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('expected q between 0.0 and 1.0, not 100.0')",
+          "message": "expected q between 0.0 and 1.0, not 100.0",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': None, '_use_copy': True, 'data': [3, 6, 9, 12], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "12",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': [3, 6, 9, 12], '_use_copy': True, 'data': [3, 6, 9, 12], 'default': 0.0}"
+        },
+        "test_file": null
+      },
+      {
+        "id": "646bd69b1fc9",
+        "function": "boltons/statsutils.py::Stats.get_quantile",
+        "label": "expected",
+        "reason": "The change accepts 1.5 as a percentage and returns the 1.5th percentile, consistent with percentage support.",
+        "confidence": "high",
+        "args": [
+          "1.5"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[0, 100, 200, 300]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('expected q between 0.0 and 1.0, not 1.5')",
+          "message": "expected q between 0.0 and 1.0, not 1.5",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': None, '_use_copy': True, 'data': [0, 100, 200, 300], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.float",
+          "repr": "4.5",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': [0, 100, 200, 300], '_use_copy': True, 'data': [0, 100, 200, 300], 'default': 0.0}"
+        },
+        "test_file": null
+      },
+      {
+        "id": "bc2df6b8ebc8",
+        "function": "boltons/statsutils.py::Stats.get_quantile",
+        "label": "unexpected",
+        "reason": "Changing True, which previously acted as the fraction 1, to behave like a 1-percent input is not covered by the stated intent.",
+        "confidence": "high",
+        "args": [
+          "True"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[10, 20, 30, 40, 50]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "50",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': [10, 20, 30, 40, 50], '_use_copy': True, 'data': [10, 20, 30, 40, 50], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.float",
+          "repr": "10.4",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': [10, 20, 30, 40, 50], '_use_copy': True, 'data': [10, 20, 30, 40, 50], 'default': 0.0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-3jrb73cu/out/tests/test_Stats_get_quantile.py"
+      },
+      {
+        "id": "92c6426acbd8",
+        "function": "boltons/statsutils.py::Stats.get_quantile",
+        "label": "unexpected",
+        "reason": "The intent describes accepting percentages but does not state that numeric strings such as '50' should be accepted.",
+        "confidence": "high",
+        "args": [
+          "'50'"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('expected q between 0.0 and 1.0, not 50.0')",
+          "message": "expected q between 0.0 and 1.0, not 50.0",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': None, '_use_copy': True, 'data': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.float",
+          "repr": "4.5",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], '_use_copy': True, 'data': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'default': 0.0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-3jrb73cu/out/tests/test_Stats_get_quantile.py"
+      },
+      {
+        "id": "153480b43b31",
+        "function": "boltons/statsutils.py::Stats.get_quantile",
+        "label": "expected",
+        "reason": "The change accepts 33.333 as a percentage and returns the corresponding percentile, as intended.",
+        "confidence": "high",
+        "args": [
+          "33.333"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[-30, -10, 0, 20, 70]"
+        ],
+        "init_kwargs": {
+          "is_sorted": "True",
+          "use_copy": "False"
+        },
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('expected q between 0.0 and 1.0, not 33.333')",
+          "message": "expected q between 0.0 and 1.0, not 33.333",
+          "state": "{'_is_sorted': True, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': None, '_use_copy': False, 'data': [-30, -10, 0, 20, 70], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.float",
+          "repr": "-6.666800000000002",
+          "state": "{'_is_sorted': True, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_sorted_data': None, '_use_copy': False, 'data': [-30, -10, 0, 20, 70], 'default': 0.0}"
+        },
+        "test_file": null
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 9,
+        "unexpected": 3,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 3495,
+      "output_tokens": 3368,
+      "cost_usd": 0.0020335
+    }
+  }
+}

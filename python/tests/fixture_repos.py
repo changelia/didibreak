@@ -21,7 +21,8 @@ from typing import Any
 
 from conftest import GitRepository
 
-from didibreak.functions import SourceFile, detect_changed_functions
+from didibreak.functions import ChangedFunction, SourceFile, detect_changed_functions
+from didibreak.harness import Case, case_call
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 # Per-case timeout for tests that run the harness directly; a case can set
@@ -36,7 +37,8 @@ FIXTURE_KEYS = {
     "skipped_functions": "Functions detection must skip: function, reason.",
     "findings": "Behavior differences to report: function, label, args, kwargs, "
     "before, after (outcomes as in the JSON report; before is null for new "
-    "functions).",
+    "functions). An instance method's entries also have init_args and "
+    "init_kwargs, and its outcomes a state, as in the JSON report.",
     "same_behavior": "Cases that must not produce a finding: function, args, "
     "kwargs. For a changed function both versions behave the same; for a new "
     "function the case returns or raises an exception type the function raises "
@@ -103,8 +105,8 @@ def fixture_timeout(name: str) -> float:
     return float(settings.get("tool", {}).get("didibreak", {}).get("timeout"))
 
 
-def is_awaited(name: str, function: str) -> bool:
-    """Whether detection marks a fixture function as awaited (task 29)."""
+def detected(name: str, function: str) -> ChangedFunction | None:
+    """The fixture function as detection reports it, or None."""
     file, _, qualname = function.partition("::")
     before = FIXTURES_DIR / name / "before" / file
     after = FIXTURES_DIR / name / "after" / file
@@ -113,7 +115,29 @@ def is_awaited(name: str, function: str) -> bool:
         [SourceFile(file, old, after.read_bytes())], max_functions=50
     )
     found = [f for f in detection.functions if f.qualname == qualname]
-    return bool(found) and found[0].awaited
+    return found[0] if found else None
+
+
+def is_awaited(name: str, function: str) -> bool:
+    """Whether detection marks a fixture function as awaited (task 29)."""
+    found = detected(name, function)
+    return found is not None and found.awaited
+
+
+def is_method(name: str, function: str) -> bool:
+    """Whether a fixture function is an instance method (task 30)."""
+    found = detected(name, function)
+    return found is not None and found.function_type == "method"
+
+
+def entry_case(entry: dict[str, Any]) -> Case:
+    """The Case of a documented entry, with constructor arguments if any."""
+    case = Case(tuple(entry["args"]), entry["kwargs"])
+    if "init_args" not in entry:
+        return case
+    return Case(
+        case.args, case.kwargs, "", tuple(entry["init_args"]), entry["init_kwargs"]
+    )
 
 
 def load_version(name: str, version: str, file: str) -> ModuleType:
@@ -138,3 +162,24 @@ def load_version(name: str, version: str, file: str) -> ModuleType:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def documented_call(entry: dict[str, Any]) -> str:
+    """The call of a documented entry as the text report prints it."""
+    return case_call(entry["function"], entry_case(entry))
+
+
+def documented_cases(expected: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    """The documented cases of a fixture as a fake LLM reply, by function."""
+    by_function: dict[str, list[dict[str, Any]]] = {}
+    for group in ("findings", "same_behavior", "flaky_functions"):
+        for item in expected[group]:
+            pairs = [{"name": k, "value": v} for k, v in item["kwargs"].items()]
+            case = {"args": item["args"], "kwargs": pairs, "rationale": "fixture"}
+            if "init_args" in item:  # an instance method (task 30)
+                case["init_args"] = item["init_args"]
+                case["init_kwargs"] = [
+                    {"name": k, "value": v} for k, v in item["init_kwargs"].items()
+                ]
+            by_function.setdefault(item["function"], []).append(case)
+    return by_function

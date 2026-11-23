@@ -8,9 +8,11 @@ from typing import Any
 import pytest
 from fixture_repos import (
     FIXTURES_DIR,
+    entry_case,
     fixture_names,
     fixture_timeout,
     is_awaited,
+    is_method,
     load_expected,
 )
 
@@ -34,7 +36,14 @@ def run_version(
     name: str, tree: Path, function: str, cases: list[Case]
 ) -> list[Outcome]:
     path, qualname = function.split("::")
-    target = Target(tree, tree, module_name(path), qualname, is_awaited(name, function))
+    target = Target(
+        tree,
+        tree,
+        module_name(path),
+        qualname,
+        is_awaited(name, function),
+        is_method(name, function),
+    )
     settings = HarnessSettings(python=sys.executable, timeout=fixture_timeout(name))
     result = run_cases(target, cases, settings)
     assert result.skip_reason is None
@@ -56,7 +65,7 @@ def compare_fixture(
     groups = ("findings", "same_behavior", "flaky_functions")
     cases: dict[str, list[Case]] = {}
     for entry in (entry for group in groups for entry in expected[group]):
-        case = Case(tuple(entry["args"]), entry["kwargs"])
+        case = entry_case(entry)
         cases.setdefault(entry["function"], []).append(case)
     new = {
         item["function"]
@@ -82,7 +91,16 @@ def compare_fixture(
 def shape(outcome: Outcome | None) -> dict[str, str] | None:
     if outcome is None:
         return None
-    return {"kind": outcome.kind, "type_name": outcome.type_name, "repr": outcome.repr}
+    shown = {"kind": outcome.kind, "type_name": outcome.type_name, "repr": outcome.repr}
+    if outcome.state_repr is not None:
+        shown["state"] = outcome.state_repr
+    return shown
+
+
+def _constructor(case: Case) -> dict[str, object]:
+    if case.init_args is None:
+        return {}
+    return {"init_args": list(case.init_args), "init_kwargs": dict(case.init_kwargs)}
 
 
 @pytest.mark.parametrize("name", fixture_names())
@@ -94,6 +112,7 @@ def test_fixture_findings_match_expected_json(name: str, tmp_path: Path) -> None
     found: list[dict[str, Any]] = [
         {
             "function": finding.function,
+            **_constructor(finding.case),
             "args": list(finding.case.args),
             "kwargs": dict(finding.case.kwargs),
             "before": shape(finding.before),
@@ -102,8 +121,9 @@ def test_fixture_findings_match_expected_json(name: str, tmp_path: Path) -> None
         for _, comparison in results.values()
         for finding in comparison.findings
     ]
+    keys = ("function", "init_args", "init_kwargs", "args", "kwargs", "before", "after")
     wanted = [
-        {key: entry[key] for key in ("function", "args", "kwargs", "before", "after")}
+        {key: entry[key] for key in keys if key in entry}
         for entry in expected["findings"]
     ]
     assert found == wanted

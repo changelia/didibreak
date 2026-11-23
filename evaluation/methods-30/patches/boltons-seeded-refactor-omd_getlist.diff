@@ -1,0 +1,20 @@
+diff --git a/boltons/dictutils.py b/boltons/dictutils.py
+index 5238596..d9eb971 100644
+--- a/boltons/dictutils.py
++++ b/boltons/dictutils.py
+@@ -251,12 +251,9 @@ class OrderedMultiDict(dict):
+         can be safely mutated. If *default* is not given, an empty
+         :class:`list` is returned.
+         """
+-        try:
+-            return super().__getitem__(k)[:]
+-        except KeyError:
+-            if default is _MISSING:
+-                return []
+-            return default
++        if super().__contains__(k):
++            return list(super().__getitem__(k))
++        return [] if default is _MISSING else default
+ 
+     def clear(self):
+         "Empty the dictionary."

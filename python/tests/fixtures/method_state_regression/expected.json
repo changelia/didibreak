@@ -1,0 +1,53 @@
+{
+  "description": "Inventory.add returns None in both versions, but the change overwrites the stock instead of adding to it: the regression shows only in the instance's state after the call.",
+  "intent": "skip adding zero items",
+  "changed_functions": [
+    {
+      "function": "app/inventory.py::Inventory.add",
+      "kind": "changed"
+    }
+  ],
+  "skipped_functions": [],
+  "findings": [
+    {
+      "function": "app/inventory.py::Inventory.add",
+      "label": "unexpected",
+      "init_args": [
+        "{'pen': 2}"
+      ],
+      "init_kwargs": {},
+      "args": [
+        "'pen'",
+        "3"
+      ],
+      "kwargs": {},
+      "before": {
+        "kind": "return",
+        "type_name": "builtins.NoneType",
+        "repr": "None",
+        "state": "{'counts': {'pen': 5}}"
+      },
+      "after": {
+        "kind": "return",
+        "type_name": "builtins.NoneType",
+        "repr": "None",
+        "state": "{'counts': {'pen': 3}}"
+      }
+    }
+  ],
+  "same_behavior": [
+    {
+      "function": "app/inventory.py::Inventory.add",
+      "init_args": [
+        "{}"
+      ],
+      "init_kwargs": {},
+      "args": [
+        "'ink'",
+        "1"
+      ],
+      "kwargs": {}
+    }
+  ],
+  "flaky_functions": []
+}

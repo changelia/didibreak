@@ -1,0 +1,51 @@
+{
+  "description": "A refactor of Basket.total clamps the result at zero, so a discount larger than the basket now gives 0 instead of a negative total: a regression in a method's return value.",
+  "intent": "refactor Basket.total for readability; behavior must not change",
+  "changed_functions": [
+    {
+      "function": "app/basket.py::Basket.total",
+      "kind": "changed"
+    }
+  ],
+  "skipped_functions": [],
+  "findings": [
+    {
+      "function": "app/basket.py::Basket.total",
+      "label": "unexpected",
+      "init_args": [
+        "[100, 50]"
+      ],
+      "init_kwargs": {},
+      "args": [
+        "200"
+      ],
+      "kwargs": {},
+      "before": {
+        "kind": "return",
+        "type_name": "builtins.int",
+        "repr": "-50",
+        "state": "{'items': [100, 50]}"
+      },
+      "after": {
+        "kind": "return",
+        "type_name": "builtins.int",
+        "repr": "0",
+        "state": "{'items': [100, 50]}"
+      }
+    }
+  ],
+  "same_behavior": [
+    {
+      "function": "app/basket.py::Basket.total",
+      "init_args": [
+        "[100, 50]"
+      ],
+      "init_kwargs": {},
+      "args": [
+        "20"
+      ],
+      "kwargs": {}
+    }
+  ],
+  "flaky_functions": []
+}

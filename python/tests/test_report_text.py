@@ -37,14 +37,14 @@ def test_text_without_llm_has_no_usage_lines() -> None:
 
     assert "LLM:" not in text
     assert "Refinement" not in text
-    assert text.startswith("14 cases · 3 behavior changes")
+    assert text.startswith("17 cases · 4 behavior changes")
     assert "invalid cases dropped" not in text
 
 
 def test_text_usage_line_comes_last() -> None:
     lines = results_text(sample_report()).splitlines()
 
-    assert lines[0].startswith("14 cases")
+    assert lines[0].startswith("17 cases")
     assert lines[-1].startswith("LLM: 3 calls")
 
 

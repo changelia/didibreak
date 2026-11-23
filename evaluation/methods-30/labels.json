@@ -1,0 +1,366 @@
+{
+ "boltons-replay-1cdc0e9/9f2b7639bf94": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1cdc0e9/36cd84397d8d": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1cdc0e9/73730b6eba63": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1cdc0e9/aa6772872d8b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1cdc0e9/76e822148429": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1cdc0e9/36e82169f723": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1cdc0e9/2a7d6de4723e": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1cdc0e9/1ddc97e86a0c": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1cdc0e9/4cccb7ac45e0": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1cdc0e9/3ed949b7ff1b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1cdc0e9/49f1f36efd08": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-1cdc0e9/d6d19e1dcbf8": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-609cabe/5d423f218b9e": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (borderline: the base returned an islice, compared by type)"
+ },
+ "boltons-replay-609cabe/f2a4c20cdf99": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (borderline: the base returned an islice, compared by type)"
+ },
+ "boltons-replay-609cabe/c6638c36f450": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (borderline: the base returned an islice, compared by type)"
+ },
+ "boltons-replay-6cac49c/c500df74494b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-6cac49c/852b35947be5": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-6cac49c/554457ff859e": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-6cac49c/ed728ef1584c": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-6cac49c/2560da46625f": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-6cac49c/95cffa30992a": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-6cac49c/bf1a801568b8": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-6cac49c/11c1425c77a5": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-6cac49c/390bdf892560": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-6cac49c/c478c4b5d59f": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-6cac49c/4e5de631f8f5": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-6cac49c/93bd4d9a8608": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-8177b93/3e217e6b2e49": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-8177b93/fab31a097cd5": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-8177b93/5989451ad3dc": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-8177b93/2582fb47c3a0": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-8177b93/1bdac4846e7f": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-8177b93/9e802a22c209": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-8177b93/cd1e6da394f9": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-8177b93/c3f15f204572": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-8177b93/4334b2d7e5a5": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-8177b93/4483a77dca3e": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-8177b93/0fd8e696f157": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-8177b93/a236f0ba7d4d": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-8177b93/9f9c8d407f58": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-8177b93/974de16e39c2": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-8177b93/6de337730689": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-8177b93/57d130592723": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-8177b93/2b290b91803c": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-8177b93/e94e382ee614": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-a180020/ab624d7eb44b": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-a180020/11ba924bc6ab": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-a180020/e22edd6b093e": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-a180020/19627d291cd5": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-a180020/119774995e7d": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-a180020/d5d4fd281e12": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-a180020/853e4229d650": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-a180020/1ca4cac95f33": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-a180020/88a8de83ff9e": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-a180020/380400279064": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-a180020/d238a7784e3d": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-a1ea103/5e93052d6231": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-a1ea103/3fcce6351673": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-a1ea103/fed7a78d0368": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-a1ea103/04b3fce10455": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-a1ea103/142f5575b7a1": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-a1ea103/7e5032c7c2fc": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-a1ea103/065b103dfda0": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-a1ea103/454eb3a76ecb": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-a1ea103/f0206e5d6321": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-a1ea103/470ef7ba82a3": {
+  "real": false,
+  "note": "out of contract: the values argument is not an iterable"
+ },
+ "boltons-replay-d0a284f/c61607291a5a": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-d0a284f/d345c716a19e": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-d0a284f/1cfdbbbea894": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-d0a284f/826fffec8751": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-d0a284f/91ddccdc134a": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-d0a284f/11a4a8e292ba": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-d0a284f/ab64f77be4a7": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-d0a284f/6a3dea4a7113": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids"
+ },
+ "boltons-replay-d0a284f/164bcade15d5": {
+  "real": false,
+  "note": "out of contract: the index is a float"
+ },
+ "boltons-replay-d0a284f/406e2dcd1f0a": {
+  "real": false,
+  "note": "out of contract: the index is a float"
+ },
+ "boltons-replay-d0a284f/993b255f5597": {
+  "real": true,
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (borderline: a bool index)"
+ },
+ "boltons-replay-d0a284f/af8a5281196e": {
+  "real": false,
+  "note": "out of contract: the index is a float"
+ },
+ "boltons-seeded-feature-indexedset_discard/903be080226a": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-indexedset_discard/b85c9cf03a8d": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-indexedset_discard/6796baab04e5": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-indexedset_discard/0ff9db58fbcb": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-indexedset_discard/44cb1e1dd665": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-indexedset_discard/19ed997c53b3": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-indexedset_discard/f78c251a1a4f": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-indexedset_discard/19543e6eb265": {
+  "real": false,
+  "note": "out of contract: an unhashable item"
+ },
+ "boltons-seeded-feature-indexedset_discard/23c0e1552b5d": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-indexedset_discard/e21c2c72d6a5": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-stats_quantile/b09bbcc3194f": {
+  "real": true,
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for"
+ },
+ "boltons-seeded-feature-stats_quantile/bc2df6b8ebc8": {
+  "real": false,
+  "note": "out of contract: the quantile is a bool"
+ },
+ "boltons-seeded-feature-stats_quantile/92c6426acbd8": {
+  "real": false,
+  "note": "intended: the intent asks for percentages; a numeric string is one"
+ }
+}

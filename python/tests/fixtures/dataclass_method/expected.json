@@ -1,0 +1,50 @@
+{
+  "description": "A dataclass built from its fields: the Manhattan distance loses abs() and goes wrong for negative coordinates.",
+  "intent": "make distance_to_origin faster",
+  "changed_functions": [
+    {
+      "function": "app/geometry.py::Point.distance_to_origin",
+      "kind": "changed"
+    }
+  ],
+  "skipped_functions": [],
+  "findings": [
+    {
+      "function": "app/geometry.py::Point.distance_to_origin",
+      "label": "unexpected",
+      "init_args": [
+        "-3"
+      ],
+      "init_kwargs": {
+        "y": "4"
+      },
+      "args": [],
+      "kwargs": {},
+      "before": {
+        "kind": "return",
+        "type_name": "builtins.int",
+        "repr": "7",
+        "state": "{'x': -3, 'y': 4}"
+      },
+      "after": {
+        "kind": "return",
+        "type_name": "builtins.int",
+        "repr": "1",
+        "state": "{'x': -3, 'y': 4}"
+      }
+    }
+  ],
+  "same_behavior": [
+    {
+      "function": "app/geometry.py::Point.distance_to_origin",
+      "init_args": [
+        "3",
+        "4"
+      ],
+      "init_kwargs": {},
+      "args": [],
+      "kwargs": {}
+    }
+  ],
+  "flaky_functions": []
+}

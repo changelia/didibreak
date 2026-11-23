@@ -18,6 +18,19 @@ def text_outcome(value: str) -> Outcome:
     )
 
 
+def state_outcome(balance: int) -> Outcome:
+    """A method that returned None and left ``balance`` in the instance."""
+    attribute = [{"type": "str", "value": "balance"}, {"type": "int", "value": balance}]
+    return Outcome(
+        "return",
+        "builtins.NoneType",
+        "None",
+        {"type": "none"},
+        state={"type": "state", "items": [attribute]},
+        state_repr=f"{{'balance': {balance}}}",
+    )
+
+
 def sample_report() -> Report:
     findings = (
         Finding(
@@ -42,6 +55,17 @@ def sample_report() -> Report:
             TEST_FILE,
         ),
         Finding(
+            "7d4e1f0a9b3c",
+            "app/bank.py::Account.deposit",
+            Case(("-50",), {}, "", ("100",), {}),
+            state_outcome(100),
+            state_outcome(50),
+            "high",
+            "unexpected",
+            "a negative deposit now lowers the balance",
+            ".didibreak/tests/test_Account_deposit.py",
+        ),
+        Finding(
             "0a1b2c3d4e5f",
             "app/text.py::initials",
             Case(("''",), {"strict": "True"}),
@@ -63,17 +87,18 @@ def sample_report() -> Report:
         base_sha="a1b2c3d4e5f60718293a4b5c6d7e8f9012345678",
         intent="Stated by the user: add international phone numbers",
         findings=findings,
-        functions_checked=2,
-        cases_run=14,
+        functions_checked=3,
+        cases_run=17,
         flaky_dropped=1,
         invalid_cases_dropped=2,
         type_mismatch_dropped=3,
+        construction_dropped=1,
         skipped=(SkippedItem("app/db.py::save_user", "obvious I/O: session.commit"),),
         removed=("app/old.py::legacy",),
         usage=ReportUsage(3, 3400, 810, 400, 0.0018),
         refined=1,
         refinement_cases=4,
-        test_files=(TEST_FILE,),
+        test_files=(TEST_FILE, ".didibreak/tests/test_Account_deposit.py"),
         no_tests=(
             SkippedItem(
                 f"{PHONE}('+1 202 555 0100')",

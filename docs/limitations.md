@@ -38,10 +38,13 @@ function; see [safety.md](safety.md).
 
 | Reason | When |
 | --- | --- |
-| `instance method` | A method without `@staticmethod` or `@classmethod`; it needs an instance. |
+| `construction failed: <type>` | Every case's instance failed to build in one version or both: the constructor raised `<type>` for every proposed constructor argument (`(base version)` when only the base failed). Cases whose instance fails to build are dropped and counted in `construction_dropped`. |
+| `constructor changed: no constructor arguments work in both versions` | The class's constructor changed, and no proposed constructor arguments built an instance in both versions. |
+| `property` | A method decorated with `@property`, `@<name>.setter` (or `getter`, `deleter`) or `@cached_property`. |
+| `dunder method` | A method named `__<name>__`, such as `__init__`, `__eq__` or `__repr__`. |
 | `generator` | The function itself contains `yield` or `yield from`. |
 | `async generator` | The function is defined with `async def` and contains `yield`. |
-| `obvious I/O: <name>` | The body (including helpers defined inside it) uses one of the I/O names below. |
+| `obvious I/O: <name>` | The body (including helpers defined inside it) uses one of the I/O names below. For a method, also `__new__`, `__init__` and `__post_init__` of its class and the class body: `obvious I/O: <name> (in Class.__init__)` or `(in the class body)`. |
 | `blocked: <event>` | While it ran, the function (or its module's import) tried an operation the runtime I/O guard stops: a command, a process, network access, native code, or a file change outside its temporary folder ([safety.md](safety.md#the-runtime-io-guard)). |
 
 Obvious I/O. Names are resolved through the module's imports and aliases, so
@@ -105,6 +108,25 @@ table; the first match is the reason.
 - Only `async def` functions are awaited. Async generators are skipped,
   and an awaitable returned by a plain `def` function is not run; it is
   compared by type.
+
+## Instance methods
+
+- The instance is built from literal constructor arguments. A class that
+  needs objects to be built (a session, a client, another instance) gets
+  no instance, and its methods are skipped with `construction failed:
+  <type>`.
+- Each case gets a new instance: state that builds up over several calls
+  is not checked, and class-level state (class attributes changed by a
+  method) is not compared, only the instance's own attributes.
+- A case whose instance fails to build in only one version is dropped, not
+  reported: a constructor that now rejects some arguments shows only in
+  `construction_dropped`. Constructors (`__init__`) are dunder methods and
+  are not checked themselves.
+- Properties, dunder methods, and methods of classes defined inside a
+  function or inside another class are not checked.
+- The state is the instance's `__dict__` and `__slots__`. Attributes kept
+  elsewhere (in a C extension, a `__getattr__` or a weak reference) are not
+  seen.
 
 ## Inputs from the LLM
 

@@ -37,6 +37,15 @@ def _call(case: str, version: str, item: dict[str, Any]) -> dict[str, str]:
         target = getattr(target, part)
     args = [ast.literal_eval(text) for text in item["args"]]
     kwargs = {key: ast.literal_eval(text) for key, text in item["kwargs"].items()}
+    instance = None
+    if "init_args" in item:  # an instance method (task 30)
+        owner = load_version(case, version, file)
+        for part in qualname.split(".")[:-1]:
+            owner = getattr(owner, part)
+        init_args = [ast.literal_eval(text) for text in item["init_args"]]
+        init_kwargs = {k: ast.literal_eval(v) for k, v in item["init_kwargs"].items()}
+        instance = owner(*init_args, **init_kwargs)
+        target = getattr(instance, qualname.rsplit(".", 1)[-1])
     try:
         value = target(*args, **kwargs)
         if inspect.iscoroutine(value):
@@ -53,16 +62,23 @@ def _call(case: str, version: str, item: dict[str, Any]) -> dict[str, str]:
     else:
         kind, result = "return", value
     result_type = type(result)
-    return {
+    outcome = {
         "kind": kind,
         "type_name": f"{result_type.__module__}.{result_type.__qualname__}",
         "repr": repr(result),
     }
+    if instance is not None:
+        # The harness's state text: the attributes sorted by name.
+        attributes = sorted(vars(instance).items())
+        outcome["state"] = "{" + ", ".join(f"{k!r}: {v!r}" for k, v in attributes) + "}"
+    return outcome
 
 
 def _same(before: dict[str, str], after: dict[str, str]) -> bool:
     if before["kind"] == "timeout" or after["kind"] == "timeout":
         return before == after
+    if before.get("state") != after.get("state"):
+        return False
     if before["kind"] != after["kind"] or before["type_name"] != after["type_name"]:
         return False
     if before["kind"] == "exception":
@@ -87,6 +103,11 @@ def test_the_required_cases_exist() -> None:
         "async_intended_change",
         "async_timeout",
         "async_exception",
+        "method_regression",
+        "method_state_regression",
+        "dataclass_method",
+        "constructor_change",
+        "method_blocked",
     }
 
 
