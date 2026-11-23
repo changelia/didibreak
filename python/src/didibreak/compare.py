@@ -10,7 +10,7 @@ import hashlib
 import json
 import math
 from collections.abc import Collection, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from didibreak._harness_child import normalize
@@ -25,6 +25,7 @@ FINDING_ID_LENGTH = 12
 NEW_FUNCTION_LABEL = "new_function"
 HIGH_CONFIDENCE = "high"
 LOW_CONFIDENCE = "low"
+CONSTRUCTOR = "__init__"
 
 
 @dataclass(frozen=True)
@@ -326,3 +327,76 @@ def compare_cases(
                 )
             )
     return Comparison(tuple(findings), len(cases), flaky, timeouts)
+
+
+def constructor_name(method: str) -> str:
+    """Report name of the constructor of a method's class.
+
+    Args:
+        method: Report name ``path::Class.method`` of an instance method.
+
+    Returns:
+        ``path::Class.__init__``.
+    """
+    return f"{method.rpartition('.')[0]}.{CONSTRUCTOR}"
+
+
+def is_constructor_finding(finding: Finding) -> bool:
+    """Whether a finding is about building the instance (task 38)."""
+    return finding.case.is_method_case and finding.function.endswith(f".{CONSTRUCTOR}")
+
+
+def _construction(outcome: Outcome) -> Outcome | None:
+    # The constructor's own outcome: the exception it raised, or the instance.
+    if outcome.construction_failed:
+        return replace(outcome, state=None, state_repr=None)
+    if outcome.construction is None:
+        return None
+    return replace(outcome.construction, stable=outcome.stable)
+
+
+def constructor_findings(
+    method: str,
+    cases: Sequence[Case],
+    before: Sequence[Outcome],
+    after: Sequence[Outcome],
+) -> tuple[Finding, ...]:
+    """Findings where the instance is built in one version only (task 38).
+
+    A constructor that now rejects arguments it accepted, or accepts
+    arguments it rejected, changed behavior. Such a finding is on
+    ``Class.__init__`` with the case's constructor arguments only; it is
+    the same finding whichever method's case found it.
+
+    Args:
+        method: Report name of the instance method the cases were for.
+        cases: Method cases, in run order.
+        before: Base outcomes in case order.
+        after: Current outcomes in case order.
+
+    Returns:
+        One finding per case where exactly one version could not build the
+        instance and both versions were stable.
+    """
+    name = constructor_name(method)
+    findings: list[Finding] = []
+    for case, old, new in zip(cases, before, after, strict=True):
+        if old.construction_failed == new.construction_failed:
+            continue
+        built_before, built_after = _construction(old), _construction(new)
+        if built_before is None or built_after is None:
+            continue  # timed out while building: no construction outcome
+        if not (built_before.stable and built_after.stable):
+            continue
+        only_init = replace(case, args=(), kwargs={})
+        findings.append(
+            Finding(
+                finding_id(name, only_init),
+                name,
+                only_init,
+                built_before,
+                built_after,
+                HIGH_CONFIDENCE,
+            )
+        )
+    return tuple(findings)
