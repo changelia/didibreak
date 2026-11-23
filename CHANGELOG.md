@@ -31,7 +31,17 @@ the Python package and `js-v*` for the JS/TS package.
   state right after it was built. The reproducing test builds the
   instance (`pytest.raises` when the base raised, else type and state).
 
+- When a case-generation reply has no valid case, the same request is
+  sent once more if it fits `max_cost` and `max_tokens`.
+
 #### Changed
+
+- A case-generation reply is capped at 700 output tokens per requested
+  case (8,400 for the default 12; at least 4,000, at most 16,000) instead
+  of 16,000. Replies that reached 16,000 were runaway output, and with the
+  retry they made some runs cost 4 to 6 times their estimate. Every
+  request's cap also stays within what is left of `max_tokens` and
+  `max_cost`.
 
 - The skip reason `instance method` is gone; new reasons are `property`,
   `dunder method` (not for `__init__`), `construction failed: <type>`
