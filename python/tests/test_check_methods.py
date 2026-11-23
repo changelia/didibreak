@@ -23,11 +23,17 @@ class Account:
 """
 
 
-def change(repository: GitRepository, before: str, after: str, cases: list[Any]) -> str:
+def change(
+    repository: GitRepository,
+    before: str,
+    after: str,
+    cases: list[Any],
+    method: str = "deposit",
+) -> str:
     repository.write("app/bank.py", before)
     repository.commit("base")
     repository.write("app/bank.py", after)
-    items = [{"function": "app/bank.py::Account.deposit", **case} for case in cases]
+    items = [{"function": f"app/bank.py::Account.{method}", **case} for case in cases]
     return str(repository.write("cases.json", json.dumps({"cases": items})))
 
 
@@ -214,3 +220,55 @@ def test_a_property_is_skipped_and_a_blocked_constructor_too(
         },
     ]
     assert not marker.exists()
+
+
+STRICT = BANK.replace("if balance < 0:", "if balance <= 0:")
+
+
+def test_one_constructor_finding_for_several_methods_of_the_class(
+    git_repository: GitRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    extra = (
+        "\n    def withdraw(self, amount: int) -> None:\n"
+        "        self.balance -= amount\n"
+    )
+    after = STRICT.replace("self.balance += amount", "self.balance += amount * 2")
+    git_repository.write("app/bank.py", BANK + extra)
+    git_repository.commit("base")
+    git_repository.write("app/bank.py", after + extra.replace("-=", "-= 2 *"))
+    items = [
+        {"function": f"app/bank.py::Account.{name}", "args": ["1"], "init_args": ["0"]}
+        for name in ("deposit", "withdraw")
+    ]
+    cases = str(git_repository.write("cases.json", json.dumps({"cases": items})))
+    monkeypatch.chdir(git_repository.path)
+
+    _, report = run(capsys, cases)
+
+    assert [f["function"] for f in report["findings"]] == [
+        "app/bank.py::Account.__init__"
+    ]
+
+
+def test_a_method_case_finds_a_constructor_that_now_rejects_its_arguments(
+    git_repository: GitRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    after = STRICT.replace("self.balance += amount", "self.balance += amount * 2")
+    cases = change(git_repository, BANK, after, [{"args": ["1"], "init_args": ["0"]}])
+    monkeypatch.chdir(git_repository.path)
+
+    assert main(["check", "--cases-file", cases]) == EXIT_FINDINGS
+
+    out = capsys.readouterr().out
+    assert "app/bank.py::Account(0)" in out
+    assert "state before {'balance': 0} → after -" in out
+    assert "app/bank.py::Account.deposit (construction failed: ValueError)" in out
+    text = (
+        git_repository.path / ".didibreak/tests/test_Account___init__.py"
+    ).read_text()
+    assert "    instance = Account(0)\n    assert _type_name(instance) ==" in text
+    assert "    assert _state(instance) == {'balance': 0}" in text

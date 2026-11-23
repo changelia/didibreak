@@ -70,8 +70,9 @@ class Comparison:
         type_mismatch_dropped: Findings dropped later because their inputs
             contradict the type annotations (set by the pipeline).
         construction_dropped: Method cases not compared because the
-            instance could not be built in one version or both (set by the
-            pipeline, task 30).
+            instance could not be built in either version (set by the
+            pipeline, task 30); one built in one version only is a
+            constructor finding instead (task 38).
     """
 
     findings: tuple[Finding, ...]

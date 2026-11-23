@@ -26,7 +26,13 @@ from didibreak.cases import (
     cases_schema,
     is_method,
 )
-from didibreak.compare import Comparison, Finding, compare_cases, finding_id
+from didibreak.compare import (
+    Comparison,
+    Finding,
+    compare_cases,
+    constructor_findings,
+    finding_id,
+)
 from didibreak.config import ConfigError, find_pyproject
 from didibreak.contracts import case_contradicts
 from didibreak.functions import ChangedFunction, import_root, module_name
@@ -158,7 +164,9 @@ class Analysis:
         type_mismatch_dropped: Findings dropped because their inputs
             contradict the function's type annotations (task 21a).
         construction_dropped: Method cases dropped because the instance
-            could not be built in one version or both (task 30).
+            could not be built in either version (task 30); a case built in
+            one version only is a ``Class.__init__`` finding instead (task
+            38).
         runs: Every case run, with both outcomes, by report name (input for
             the refinement round).
     """
@@ -249,17 +257,37 @@ def _built_cases(
     return kept, _construction_reason(function, before, after)
 
 
+@dataclass(frozen=True)
+class _FunctionRun:
+    """One function run on both versions.
+
+    Attributes:
+        skip_reason: Why the function was not compared, or None.
+        comparison: Its comparison when it was compared.
+        runs: Every compared case with both outcomes.
+        constructor_findings: For a method, cases whose instance was built
+            in one version only (task 38); reported even when the method
+            itself is skipped.
+    """
+
+    skip_reason: str | None
+    comparison: Comparison | None = None
+    runs: tuple[CaseRun, ...] = ()
+    constructor_findings: tuple[Finding, ...] = ()
+
+
 def _run(
     function: ChangedFunction,
     cases: Sequence[Case],
     trees: tuple[Path, Path],
     base_path: str,
     settings: HarnessSettings,
-) -> tuple[Comparison, tuple[CaseRun, ...]] | str:
-    """Run one function on both versions; a str is the skip reason.
+) -> _FunctionRun:
+    """Run one function on both versions and compare the outcomes.
 
-    For an instance method, a case whose instance could not be built in one
-    version or both is dropped and counted (task 30); when no case is left,
+    For an instance method, a case whose instance could not be built in
+    one version or both is not compared (task 30); one built in one
+    version only is a constructor finding (task 38). When no case is left,
     the method is skipped with the reason.
     """
     base_tree, current_tree = trees
@@ -269,23 +297,47 @@ def _run(
     if function.kind == "changed":
         base = run_cases(_target(base_tree, base_path, function), cases, settings)
         if base.skip_reason is not None:
-            return f"{base.skip_reason} (base version)"
+            return _FunctionRun(f"{base.skip_reason} (base version)")
         before = base.outcomes
     current_target = _target(current_tree, function.file, function)
     current = run_cases(current_target, cases, settings)
     if current.skip_reason is not None:
-        return current.skip_reason
+        return _FunctionRun(current.skip_reason)
     after = current.outcomes
-    dropped = 0
-    if is_method(function):
-        built, reason = _built_cases(function, cases, before, after)
-        if reason is not None:
-            return reason
-        dropped = len(cases) - len(built)
-        cases = [cases[index] for index in built]
-        after = tuple(after[index] for index in built)
-        if before is not None:
-            before = tuple(before[index] for index in built)
+    if not is_method(function):
+        return _compared(function, cases, before, after)
+    constructors = (
+        ()
+        if before is None
+        else constructor_findings(function.report_name, cases, before, after)
+    )
+    built, reason = _built_cases(function, cases, before, after)
+    if reason is not None:
+        return _FunctionRun(reason, constructor_findings=constructors)
+    failed_in_both = sum(
+        1
+        for index in range(len(cases))
+        if after[index].construction_failed
+        and (before is None or before[index].construction_failed)
+    )
+    olds = None if before is None else tuple(before[index] for index in built)
+    result = _compared(
+        function,
+        [cases[index] for index in built],
+        olds,
+        tuple(after[index] for index in built),
+    )
+    assert result.comparison is not None
+    comparison = replace(result.comparison, construction_dropped=failed_in_both)
+    return replace(result, comparison=comparison, constructor_findings=constructors)
+
+
+def _compared(
+    function: ChangedFunction,
+    cases: Sequence[Case],
+    before: Sequence[Outcome] | None,
+    after: Sequence[Outcome],
+) -> _FunctionRun:
     comparison = compare_cases(
         function.report_name, cases, before, after, function.raised_types
     )
@@ -298,14 +350,13 @@ def _run(
         comparison,
         findings=kept,
         type_mismatch_dropped=len(comparison.findings) - len(kept),
-        construction_dropped=dropped,
     )
     olds = before if before is not None else (None,) * len(cases)
     runs = tuple(
         CaseRun(case, old, new)
         for case, old, new in zip(cases, olds, after, strict=True)
     )
-    return comparison, runs
+    return _FunctionRun(None, comparison, runs)
 
 
 def analyze(
@@ -345,6 +396,7 @@ def analyze(
     checked: list[ChangedFunction] = []
     skipped: list[ChangedFunction] = []
     runs: dict[str, tuple[CaseRun, ...]] = {}
+    constructors: dict[str, Finding] = {}  # by id: one per class and arguments
     with base_worktree(root, base_sha) as base, working_tree_copy(root, skip) as copy:
         for function in functions:
             function_cases = cases.get(function.report_name, ())
@@ -353,17 +405,20 @@ def analyze(
                 continue
             base_path = base_paths.get(function.file, function.file)
             result = _run(function, function_cases, (base, copy), base_path, settings)
-            if isinstance(result, str):
-                skipped.append(replace(function, skip_reason=result))
+            for finding in result.constructor_findings:
+                constructors.setdefault(finding.id, finding)
+            if result.comparison is None:
+                skipped.append(replace(function, skip_reason=result.skip_reason))
             else:
                 checked.append(function)
-                comparisons.append(result[0])
-                runs[function.report_name] = result[1]
+                comparisons.append(result.comparison)
+                runs[function.report_name] = result.runs
+    found = {f.id: f for comparison in comparisons for f in comparison.findings}
+    found |= {key: f for key, f in constructors.items() if key not in found}
     return Analysis(
         findings=tuple(
             finding if finding.label else replace(finding, label=UNLABELLED)
-            for comparison in comparisons
-            for finding in comparison.findings
+            for finding in found.values()
         ),
         checked=tuple(checked),
         skipped=tuple(skipped),
