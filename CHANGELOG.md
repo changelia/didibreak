@@ -9,6 +9,27 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
+### 0.4.0 - 2026-11-23
+
+**Highlights: instance methods are now checked, including the object's
+state after the call.** Each case builds the instance from literal
+constructor arguments, calls the method and compares the instance's
+attributes as well as the result. **Constructor changes are reported**:
+an instance built in one version only is a finding on `Class.__init__`,
+and a changed `__init__` is checked itself. **Replies are capped**, so
+runs cost less over their estimate when the model runs away (the worst
+measured run went from 3.9 to 2.3 times its estimate).
+
+#### Upgrading from 0.3.x
+
+- **JSON report `schema_version` 2.** A consumer that requires
+  `schema_version: 1` must accept 2. Version 2 only adds keys:
+  `init_args` and `init_kwargs` on findings of instance methods and
+  constructors, `state` (the instance's attributes) on their outcomes,
+  and `summary.construction_dropped`, which is always present. A report
+  without method findings only adds `summary.construction_dropped`
+  (`docs/output-format.md`, `spec/report.schema.json`).
+
 #### Added
 
 - Instance methods are checked instead of skipped. For each case the LLM
@@ -30,7 +51,6 @@ the Python package and `js-v*` for the JS/TS package.
   constructor arguments; its outcome is the exception or the instance's
   state right after it was built. The reproducing test builds the
   instance (`pytest.raises` when the base raised, else type and state).
-
 - When a case-generation reply has no valid case, the same request is
   sent once more if it fits `max_cost` and `max_tokens`.
 
@@ -42,12 +62,10 @@ the Python package and `js-v*` for the JS/TS package.
   retry they made some runs cost 4 to 6 times their estimate. Every
   request's cap also stays within what is left of `max_tokens` and
   `max_cost`.
-
 - The skip reason `instance method` is gone; new reasons are `property`,
   `dunder method` (not for `__init__`), `construction failed: <type>`
   and `constructor changed: no constructor arguments work in both
   versions`.
-
 - The JSON report is `schema_version: 2`. It only adds keys to version 1:
   `init_args` and `init_kwargs` on findings of instance methods, `state`
   (the instance's attributes after the call) on their outcomes, and

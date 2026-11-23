@@ -1,3 +1,3 @@
 """didibreak: find unintended behavior changes in Python code changes."""
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
