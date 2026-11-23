@@ -83,6 +83,16 @@ What to do with each label:
 | `expected` | The intent describes this change. | Nothing. Never undo it. |
 | `new_function` | A new function raised an exception, crashed or timed out on an input. Never fails the check. | Mention it to the user (call and outcome). Do not change code for it unless the user asks. In the evaluation none of 53 was a real bug. |
 
+## On pull requests
+
+Agents that open pull requests (cloud agents, Copilot-style bots) can be
+checked in CI as well: the [GitHub Action](github-action.md) runs didibreak
+on every pull request and keeps one comment with the `unexpected` and
+`unclear` findings. The pull request's text is the intent by default; the
+agent writes that text too, so use `intent-source: fixed` or `commits`
+when the intent should not come from the agent
+([Security](github-action.md#security)).
+
 ## Reproducing tests
 
 Run the reproducing tests **only for `unexpected` and `unclear`

@@ -17,6 +17,7 @@ on:
       - "python/**"
       - "spec/**"
       - "LICENSE"
+      - "github-action/**"
       - ".github/workflows/python.yml"
       - ".github/actions/python-checks/**"
   # No path filter on pull requests: required checks must report on every

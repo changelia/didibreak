@@ -1,0 +1,68 @@
+name: github-action
+
+# Self-test of the composite action in github-action/ (task 32). It runs the
+# action on this repository's pull requests with --cases-file, so it needs no
+# API key and no repository secret: a pull request that changes
+# github-action/selftest/prices.py gets a real comment with its findings.
+# The no-key job is the path pull requests from forks take.
+
+on:
+  pull_request:
+    paths:
+      - "github-action/**"
+      - ".github/workflows/github-action.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  cases-file:
+    name: Action / cases file / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: didibreak
+        uses: ./github-action
+        with:
+          cases-file: github-action/selftest/cases.json
+          comment: ${{ matrix.os == 'ubuntu-latest' }}
+          artifact-name: didibreak-report-${{ matrix.os }}
+      - name: Check the outputs
+        shell: bash
+        env:
+          DECISION: ${{ steps.didibreak.outputs.decision }}
+          EXIT_CODE: ${{ steps.didibreak.outputs.exit-code }}
+          UNEXPECTED: ${{ steps.didibreak.outputs.unexpected }}
+          UNCLEAR: ${{ steps.didibreak.outputs.unclear }}
+        run: |
+          echo "decision=$DECISION exit-code=$EXIT_CODE unexpected=$UNEXPECTED unclear=$UNCLEAR"
+          test "$DECISION" = run
+          test "$EXIT_CODE" = 0 -o "$EXIT_CODE" = 1
+          test -n "$UNCLEAR"
+
+  no-key:
+    name: Action / no API key (fork pull requests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: didibreak
+        uses: ./github-action
+        with:
+          api-key: ""
+      - name: Check that the run was skipped
+        shell: bash
+        env:
+          DECISION: ${{ steps.didibreak.outputs.decision }}
+        run: test "$DECISION" = skip
