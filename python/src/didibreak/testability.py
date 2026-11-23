@@ -542,7 +542,8 @@ def _method_reason(
     context: ModuleContext, qualname: str, function: _FunctionNode
 ) -> str | None:
     name = qualname.rpartition(".")[2]
-    if name.startswith("__") and name.endswith("__"):
+    # __init__ is checked by building the instance (task 38).
+    if name.startswith("__") and name.endswith("__") and name != "__init__":
         return DUNDER_REASON
     if _is_property(function):
         return PROPERTY_REASON

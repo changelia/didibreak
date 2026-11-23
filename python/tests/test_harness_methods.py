@@ -300,3 +300,18 @@ def test_a_constructor_state_that_changes_between_runs_is_flaky(
 
     assert outcome.state_repr == "{'at': 0}"
     assert not outcome.stable
+
+
+def test_for_the_constructor_itself_the_construction_is_the_outcome(
+    tmp_path: Path,
+) -> None:
+    target = method_target(tmp_path, ACCOUNT, "Account.__init__")
+
+    built, failed = run_cases(
+        target, [case(init=("7",)), case(init=())], SETTINGS
+    ).outcomes
+
+    assert (built.kind, built.type_name) == ("return", "mod.Account")
+    assert built.state_repr == "{'balance': 7, 'owner': 'ada'}"
+    assert failed.construction_failed
+    assert failed.type_name == "builtins.TypeError"

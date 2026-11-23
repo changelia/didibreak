@@ -24,6 +24,7 @@ from didibreak.cases import (
     build_messages,
     build_refinement_messages,
     cases_schema,
+    is_constructor,
     is_method,
 )
 from didibreak.compare import (
@@ -257,6 +258,14 @@ def _built_cases(
     return kept, _construction_reason(function, before, after)
 
 
+def _unique_cases(function: ChangedFunction, cases: Sequence[Case]) -> list[Case]:
+    # Cases that differ only in their (ignored) call arguments run once.
+    kept: dict[str, Case] = {}
+    for case in cases:
+        kept.setdefault(finding_id(function.report_name, case), case)
+    return list(kept.values())
+
+
 @dataclass(frozen=True)
 class _FunctionRun:
     """One function run on both versions.
@@ -293,6 +302,8 @@ def _run(
     base_tree, current_tree = trees
     if is_method(function):
         cases = [c if c.is_method_case else replace(c, init_args=()) for c in cases]
+    if is_constructor(function):  # only the constructor arguments matter
+        cases = _unique_cases(function, [replace(c, args=(), kwargs={}) for c in cases])
     before = None
     if function.kind == "changed":
         base = run_cases(_target(base_tree, base_path, function), cases, settings)
@@ -304,7 +315,8 @@ def _run(
     if current.skip_reason is not None:
         return _FunctionRun(current.skip_reason)
     after = current.outcomes
-    if not is_method(function):
+    if not is_method(function) or is_constructor(function):
+        # For __init__ a failed construction is the outcome to compare.
         return _compared(function, cases, before, after)
     constructors = (
         ()
@@ -414,6 +426,7 @@ def analyze(
                 comparisons.append(result.comparison)
                 runs[function.report_name] = result.runs
     found = {f.id: f for comparison in comparisons for f in comparison.findings}
+    # A checked __init__ finds the same constructor findings as its methods.
     found |= {key: f for key, f in constructors.items() if key not in found}
     return Analysis(
         findings=tuple(

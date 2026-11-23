@@ -21,6 +21,7 @@ instance's state after the call: its ``__dict__`` and slots, each value
 normalized like a return value. A constructor that raises gives an outcome
 marked ``construction_failed``; one that works is recorded under
 ``construction`` (the instance's repr and state right after it was built).
+For ``Class.__init__`` itself that construction is the outcome (task 38).
 """
 
 import ast
@@ -357,6 +358,8 @@ def _call_method(
         "repr": _safe_text(repr, instance, REPR_LIMIT),
         **instance_state(instance),
     }
+    if target.name == "__init__":  # the constructor itself is checked
+        return {**construction, "construction": construction}
     args, kwargs = _literals(case)
     outcome = _call(getattr(instance, target.name), args, kwargs, is_async)
     return {**outcome, **instance_state(instance), "construction": construction}

@@ -46,6 +46,12 @@ METHOD_TASK = (
     '"args" and "kwargs". The state of the instance after the call is '
     "compared too, so a different attribute value is a difference."
 )
+CONSTRUCTOR_TASK = (
+    " This is the constructor: each case builds an instance with "
+    '"init_args" and "init_kwargs"; leave "args" and "kwargs" empty. '
+    "Whether it raises, and the state of the instance right after it is "
+    "built, are compared."
+)
 NOT_A_METHOD = "(none: not an instance method)"
 
 CASES_SCHEMA_NAME = "didibreak_cases"
@@ -106,6 +112,11 @@ def is_method(function: ChangedFunction) -> bool:
     return function.function_type == "method"
 
 
+def is_constructor(function: ChangedFunction) -> bool:
+    """Whether the function is ``Class.__init__``, checked by building (task 38)."""
+    return is_method(function) and function.qualname.endswith(".__init__")
+
+
 def cases_schema(function: ChangedFunction) -> tuple[dict[str, Any], str]:
     """The reply schema and its name for one function's cases."""
     if is_method(function):
@@ -115,6 +126,8 @@ def cases_schema(function: ChangedFunction) -> tuple[dict[str, Any], str]:
 
 def _task(function: ChangedFunction) -> str:
     task = NEW_TASK if function.old_source is None else CHANGED_TASK
+    if is_constructor(function):
+        return task + CONSTRUCTOR_TASK
     return task + METHOD_TASK if is_method(function) else task
 
 
@@ -125,11 +138,12 @@ def constructor_text(function: ChangedFunction) -> str:
     text = f"New version:\n```python\n{function.constructor}\n```"
     old = function.base_constructor
     if old is not None and old != function.constructor:
-        text += (
-            f"\nOld version:\n```python\n{old}\n```\n"
-            "The constructor changed: give constructor arguments that both "
-            "versions accept."
-        )
+        text += f"\nOld version:\n```python\n{old}\n```"
+        if not is_constructor(function):  # for __init__ the change is the point
+            text += (
+                "\nThe constructor changed: give constructor arguments that both "
+                "versions accept."
+            )
     return text
 
 

@@ -1,18 +1,17 @@
 {
-  "description": "The constructor gains a unit parameter (and renames celsius to value), and fahrenheit() starts rounding. Positional constructor arguments work in both versions; the rounding is a finding. __init__ itself is a dunder method and skipped.",
+  "description": "The constructor gains a unit parameter (and renames celsius to value), and fahrenheit() starts rounding. Positional constructor arguments work in both versions; the rounding is a finding. __init__ itself is checked by building the instance (task 38): the same arguments build the same state, so it has no finding.",
   "intent": "let Temperature take the unit of its value",
   "changed_functions": [
+    {
+      "function": "app/temperature.py::Temperature.__init__",
+      "kind": "changed"
+    },
     {
       "function": "app/temperature.py::Temperature.fahrenheit",
       "kind": "changed"
     }
   ],
-  "skipped_functions": [
-    {
-      "function": "app/temperature.py::Temperature.__init__",
-      "reason": "dunder method"
-    }
-  ],
+  "skipped_functions": [],
   "findings": [
     {
       "function": "app/temperature.py::Temperature.fahrenheit",
@@ -40,6 +39,24 @@
   "same_behavior": [
     {
       "function": "app/temperature.py::Temperature.fahrenheit",
+      "init_args": [
+        "100"
+      ],
+      "init_kwargs": {},
+      "args": [],
+      "kwargs": {}
+    },
+    {
+      "function": "app/temperature.py::Temperature.__init__",
+      "init_args": [
+        "36.6"
+      ],
+      "init_kwargs": {},
+      "args": [],
+      "kwargs": {}
+    },
+    {
+      "function": "app/temperature.py::Temperature.__init__",
       "init_args": [
         "100"
       ],
