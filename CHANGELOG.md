@@ -9,6 +9,25 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
+#### Added
+
+- A GitHub Action (`github-action/`, docs/github-action.md) runs
+  `didibreak check` on pull requests and keeps one comment up to date with
+  the unexpected and unclear findings, skip counts and the run's cost.
+  Inputs: the API key from a secret, provider, model, `max-cost`,
+  `max-tokens`, `mode` (`report-only` or `fail-on-unexpected`) and
+  `intent-source` (pull request text, commit messages only, or a fixed
+  text). It runs only on `pull_request`, skips with a notice and passes
+  when there is no key (pull requests from forks), shows untrusted text
+  only in code blocks, stays under GitHub's comment size limit, and is
+  pinned with the `py-v*` tags (the action installs the didibreak
+  version released with its tag).
+
+#### Changed
+
+- `docs/output-format.md` no longer names async functions and instance
+  methods as skipped by design.
+
 ### 0.4.0 - 2026-11-23
 
 **Highlights: instance methods are now checked, including the object's
