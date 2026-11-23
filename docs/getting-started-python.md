@@ -198,9 +198,11 @@ change): without it every finding is `unclear`, and each run writes a
 failing test for every one of them, replacing the function's earlier test
 file.
 
-- Only module-level functions, `@staticmethod` and `@classmethod` methods
-  whose inputs can be written as Python literals are run. Other functions
-  are listed as skipped with a reason; see
+- Functions (`async def` included), `@staticmethod` and `@classmethod`
+  methods whose inputs can be written as Python literals are run, and so
+  are instance methods of classes that can be built from literal
+  constructor arguments. Other functions are listed as skipped with a
+  reason; see
   [limitations.md](limitations.md#functions-that-are-skipped).
 - didibreak runs your functions, so read [safety.md](safety.md) first:
   side effects of your own code still happen.

@@ -219,7 +219,8 @@ seven pure-Python libraries, `gpt-6-luna`, 2026-11-09):
   lower.
 - **Recall:** of 22 reintroduced real bug fixes, 14 were reported. The
   misses needed non-literal arguments (iterators, parsed tokens), changed a
-  generator, an instance method or a module-level regular expression, or
+  generator, an instance method (not checked at the time) or a
+  module-level regular expression, or
   got no valid cases in that run.
 - **`new_function`:** 53 findings over two runs, none a real bug (wrong
   input types or slow huge inputs). This is why they never change the exit
