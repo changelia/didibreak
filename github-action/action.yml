@@ -1,0 +1,207 @@
+name: didibreak
+description: >-
+  Run didibreak on a pull request: compare the behavior of the changed Python
+  functions before and after the change, and post one summary comment.
+author: changelia
+branding:
+  icon: git-pull-request
+  color: orange
+
+# Use only with the pull_request event (docs/github-action.md). Never with
+# pull_request_target: that would run a fork's code with your secrets.
+
+inputs:
+  api-key:
+    description: >-
+      LLM API key, from a repository secret (for example
+      secrets.OPENAI_API_KEY). Empty for pull requests from forks: the action
+      then skips with a message and passes.
+    required: false
+    default: ""
+  provider:
+    description: openai, anthropic, openrouter, ollama or lmstudio.
+    required: false
+    default: openai
+  model:
+    description: Model name; empty for the provider's default model.
+    required: false
+    default: ""
+  max-cost:
+    description: Hard LLM cost limit per run, in US dollars.
+    required: false
+    default: "0.50"
+  max-tokens:
+    description: Hard limit on input + output tokens per run.
+    required: false
+    default: "200000"
+  mode:
+    description: >-
+      report-only (never fails the job) or fail-on-unexpected (fails on
+      unexpected findings and on errors).
+    required: false
+    default: report-only
+  intent-source:
+    description: >-
+      Where the intent comes from: pr (title and body), commits (commit
+      messages only) or fixed (the intent input). didibreak always adds the
+      commit messages since the base.
+    required: false
+    default: pr
+  intent:
+    description: The intent text for intent-source fixed.
+    required: false
+    default: ""
+  didibreak-version:
+    description: >-
+      didibreak version to install from PyPI; empty for the version released
+      with this action's tag.
+    required: false
+    default: ""
+  python:
+    description: >-
+      Python interpreter that has your project's dependencies; your code is
+      imported and run with it. didibreak itself is installed in a separate
+      virtual environment.
+    required: false
+    default: python3
+  comment:
+    description: Post or update the pull request comment (true or false).
+    required: false
+    default: "true"
+  artifact-name:
+    description: Name of the artifact with the JSON report; empty for none.
+    required: false
+    default: didibreak-report
+  github-token:
+    description: Token used to post the comment.
+    required: false
+    default: ${{ github.token }}
+  cases-file:
+    description: >-
+      Testing only: take the input cases from this JSON file instead of the
+      LLM (no API key, no cost; findings are unclear). See CONTRIBUTING.md.
+    required: false
+    default: ""
+
+outputs:
+  decision:
+    description: run, or skip when there was no API key (fork pull requests).
+    value: ${{ steps.preflight.outputs.decision }}
+  exit-code:
+    description: didibreak's exit code (0, 1 for unexpected findings, 2 for errors).
+    value: ${{ steps.run.outputs.exit-code }}
+  unexpected:
+    description: Number of unexpected findings.
+    value: ${{ steps.comment.outputs.unexpected }}
+  unclear:
+    description: Number of unclear findings.
+    value: ${{ steps.comment.outputs.unclear }}
+  report:
+    description: Path of the JSON report.
+    value: ${{ steps.run.outputs.report }}
+
+runs:
+  using: composite
+  steps:
+    - id: preflight
+      name: Check the event and inputs
+      shell: bash
+      env:
+        DIDIBREAK_ACTION_EVENT: ${{ github.event_name }}
+        DIDIBREAK_ACTION_MODE: ${{ inputs.mode }}
+        DIDIBREAK_ACTION_INTENT_SOURCE: ${{ inputs.intent-source }}
+        DIDIBREAK_ACTION_INTENT: ${{ inputs.intent }}
+        DIDIBREAK_ACTION_PROVIDER: ${{ inputs.provider }}
+        DIDIBREAK_ACTION_API_KEY: ${{ inputs.api-key }}
+        DIDIBREAK_ACTION_CASES_FILE: ${{ inputs.cases-file }}
+        DIDIBREAK_ACTION_PYTHON: ${{ inputs.python }}
+      run: '"$DIDIBREAK_ACTION_PYTHON" "$GITHUB_ACTION_PATH/didibreak_action.py" preflight'
+
+    - id: install
+      name: Install didibreak
+      if: steps.preflight.outputs.decision == 'run'
+      shell: bash
+      env:
+        DIDIBREAK_ACTION_VERSION: ${{ inputs.didibreak-version }}
+        DIDIBREAK_ACTION_PYTHON: ${{ inputs.python }}
+        DIDIBREAK_ACTION_BASE: ${{ github.event.pull_request.base.sha }}
+      run: |
+        set -euo pipefail
+        version="$DIDIBREAK_ACTION_VERSION"
+        if [ -z "$version" ]; then
+          version=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' \
+            "$GITHUB_ACTION_PATH/../python/src/didibreak/__init__.py")
+        fi
+        if ! [[ "$version" =~ ^[0-9]+(\.[0-9]+)*((a|b|rc)[0-9]+)?$ ]]; then
+          echo "::error title=didibreak::didibreak-version must be a version such as 0.4.0."
+          exit 1
+        fi
+        python=$(command -v "$DIDIBREAK_ACTION_PYTHON")
+        "$python" -m venv "$RUNNER_TEMP/didibreak-venv"
+        "$RUNNER_TEMP/didibreak-venv/bin/python" -m pip install --quiet \
+          --disable-pip-version-check "didibreak==$version"
+        echo "python=$python" >> "$GITHUB_OUTPUT"
+        if ! git cat-file -e "$DIDIBREAK_ACTION_BASE^{commit}" 2>/dev/null; then
+          git fetch --quiet --no-tags --depth=1 origin "$DIDIBREAK_ACTION_BASE"
+        fi
+
+    - id: run
+      name: Run didibreak
+      if: steps.preflight.outputs.decision == 'run'
+      shell: bash
+      env:
+        DIDIBREAK_ACTION_DIDIBREAK: ${{ runner.temp }}/didibreak-venv/bin/didibreak
+        DIDIBREAK_ACTION_TEMP: ${{ runner.temp }}
+        DIDIBREAK_ACTION_BASE: ${{ github.event.pull_request.base.sha }}
+        DIDIBREAK_ACTION_PYTHON: ${{ steps.install.outputs.python }}
+        DIDIBREAK_ACTION_PROVIDER: ${{ inputs.provider }}
+        DIDIBREAK_ACTION_MODEL: ${{ inputs.model }}
+        DIDIBREAK_ACTION_MAX_COST: ${{ inputs.max-cost }}
+        DIDIBREAK_ACTION_MAX_TOKENS: ${{ inputs.max-tokens }}
+        DIDIBREAK_ACTION_INTENT_SOURCE: ${{ inputs.intent-source }}
+        DIDIBREAK_ACTION_INTENT: ${{ inputs.intent }}
+        DIDIBREAK_ACTION_PR_TITLE: ${{ github.event.pull_request.title }}
+        DIDIBREAK_ACTION_PR_BODY: ${{ github.event.pull_request.body }}
+        DIDIBREAK_ACTION_API_KEY: ${{ inputs.api-key }}
+        DIDIBREAK_ACTION_CASES_FILE: ${{ inputs.cases-file }}
+      run: '"$RUNNER_TEMP/didibreak-venv/bin/python" "$GITHUB_ACTION_PATH/didibreak_action.py" run'
+
+    - id: comment
+      name: Write the comment
+      if: steps.preflight.outputs.decision == 'run'
+      shell: bash
+      env:
+        DIDIBREAK_ACTION_TEMP: ${{ runner.temp }}
+        DIDIBREAK_ACTION_REPORT: ${{ steps.run.outputs.report }}
+        DIDIBREAK_ACTION_EXIT_CODE: ${{ steps.run.outputs.exit-code }}
+      run: '"$RUNNER_TEMP/didibreak-venv/bin/python" "$GITHUB_ACTION_PATH/didibreak_action.py" comment'
+
+    - name: Post the comment
+      if: steps.preflight.outputs.decision == 'run' && inputs.comment == 'true'
+      shell: bash
+      env:
+        DIDIBREAK_ACTION_COMMENT: ${{ steps.comment.outputs.comment }}
+        DIDIBREAK_ACTION_API_URL: ${{ github.api_url }}
+        DIDIBREAK_ACTION_REPOSITORY: ${{ github.repository }}
+        DIDIBREAK_ACTION_PR_NUMBER: ${{ github.event.pull_request.number }}
+        DIDIBREAK_ACTION_GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: '"$RUNNER_TEMP/didibreak-venv/bin/python" "$GITHUB_ACTION_PATH/didibreak_action.py" post'
+
+    - name: Upload the report
+      if: always() && steps.preflight.outputs.decision == 'run' && inputs.artifact-name != ''
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: |
+          ${{ runner.temp }}/didibreak-report.json
+          ${{ runner.temp }}/didibreak-output/tests
+        if-no-files-found: ignore
+
+    - name: Result
+      if: steps.preflight.outputs.decision == 'run'
+      shell: bash
+      env:
+        DIDIBREAK_ACTION_MODE: ${{ inputs.mode }}
+        DIDIBREAK_ACTION_REPORT: ${{ steps.run.outputs.report }}
+        DIDIBREAK_ACTION_EXIT_CODE: ${{ steps.run.outputs.exit-code }}
+      run: '"$RUNNER_TEMP/didibreak-venv/bin/python" "$GITHUB_ACTION_PATH/didibreak_action.py" finish'

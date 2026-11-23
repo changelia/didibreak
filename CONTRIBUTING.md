@@ -8,6 +8,7 @@ One repository, one folder per package, a shared contract:
 | --- | --- |
 | `python/` | PyPI package `didibreak` (uv + hatchling, `src/` layout). |
 | `js/` | npm package, added after Python 0.1.0. |
+| `github-action/` | Composite GitHub Action that runs didibreak on pull requests and posts one comment ([docs/github-action.md](docs/github-action.md)); versioned with the `py-v*` tags. |
 | `spec/` | Shared contract: JSON report schema, prompt templates, shared test cases. |
 | `docs/` | User documentation for all packages (plain Markdown). |
 | `evaluation/` | Real-repository evaluation for the release gate: plan, seeded patches, saved reports, hand labels, results (`python/scripts/evaluate.py`). |
@@ -38,6 +39,16 @@ uv run pytest
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy src
+```
+
+The GitHub Action's script (`github-action/didibreak_action.py`, standard
+library only) is tested by `tests/test_github_action.py`; CI also lints,
+format-checks and type-checks it. When you change it, run:
+
+```bash
+uv run ruff check ../github-action
+uv run ruff format --check ../github-action
+uv run mypy ../github-action/didibreak_action.py
 ```
 
 Read each command's exit status, not only its last lines. Never pipe a
@@ -80,7 +91,7 @@ GitHub Actions workflows in `.github/workflows/`:
 
 | Workflow | Runs on changes in | What it does |
 | --- | --- | --- |
-| `python.yml` | every pull request; pushes to `main` that change `python/`, `spec/`, `LICENSE` | The four checks, build and package content check, on Linux with Python 3.11–3.13. macOS (not a required check): Python 3.11–3.13 on pull requests and pushes once the repository is public; while it is private, Python 3.13 on pushes to `main`, the weekly schedule (Mondays) and manual runs only. The steps live in `.github/actions/python-checks/`. |
+| `python.yml` | every pull request; pushes to `main` that change `python/`, `spec/`, `LICENSE`, `github-action/` | The four checks (lint, format and types also for `github-action/`), build and package content check, on Linux with Python 3.11–3.13. macOS (not a required check): Python 3.11–3.13 on pull requests and pushes once the repository is public; while it is private, Python 3.13 on pushes to `main`, the weekly schedule (Mondays) and manual runs only. The steps live in `.github/actions/python-checks/`. |
 | `spec.yml` | `spec/`, prompt-copy code | Report schema is valid JSON, a valid JSON Schema (draft 2020-12, checked with `check-jsonschema`) and has the expected structure; packaged prompts match `spec/prompts/`. |
 
 ### Required checks for `main`

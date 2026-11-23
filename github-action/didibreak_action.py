@@ -8,7 +8,11 @@ blocks, where GitHub renders no Markdown, HTML, links or @mentions.
 
 Subcommands, each reading its inputs from ``DIDIBREAK_ACTION_*`` variables:
 
+- ``preflight``: decide whether the run can go ahead (event, API key).
+- ``run``: run ``didibreak check --format json`` and keep the report.
 - ``comment``: write the pull request comment from the report.
+- ``post``: create the comment, or update the one posted before.
+- ``finish``: the step's exit code for the chosen mode.
 """
 
 from __future__ import annotations
@@ -17,8 +21,11 @@ import json
 import os
 import re
 import secrets
+import subprocess
 import sys
 import unicodedata
+import urllib.error
+import urllib.request
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -28,12 +35,197 @@ MARKER = "<!-- didibreak-action-comment -->"
 # GitHub rejects comments over 65,536 characters; stay well below it.
 MAX_COMMENT_CHARACTERS = 60_000
 MAX_LINE_CHARACTERS = 600
+MAX_INTENT_CHARACTERS = 4_000
 SHOWN_LABELS = ("unexpected", "unclear")
+KEY_VARIABLES = {
+    "openai": "OPENAI_API_KEY",
+    "anthropic": "ANTHROPIC_API_KEY",
+    "openrouter": "OPENROUTER_API_KEY",
+}
+LOCAL_PROVIDERS = ("ollama", "lmstudio")
+MODES = ("report-only", "fail-on-unexpected")
+INTENT_SOURCES = ("pr", "commits", "fixed")
+NO_KEY_MESSAGE = (
+    "didibreak skipped: no API key. Pull requests from forks get no "
+    "repository secrets, so the action cannot call the LLM for them; "
+    "this is expected and the job passes. For pull requests from this "
+    "repository, add the key as a repository secret and pass it as "
+    "the api-key input."
+)
+WRONG_EVENT_MESSAGE = (
+    "didibreak: this action runs only on the pull_request event. "
+    "Never use pull_request_target with it: that event runs the pull "
+    "request's code with the repository's secrets, so a fork could steal "
+    "the API key."
+)
 
 
 def env(name: str, default: str = "") -> str:
     """The value of ``DIDIBREAK_ACTION_<name>``, stripped, or ``default``."""
     return os.environ.get(f"DIDIBREAK_ACTION_{name}", default).strip() or default
+
+
+# --- preflight ---------------------------------------------------------------
+
+
+def preflight(values: Mapping[str, str]) -> tuple[str, str]:
+    """Decide whether the action can run.
+
+    Args:
+        values: ``event``, ``mode``, ``intent_source``, ``intent``,
+            ``provider``, ``has_key`` ("true" / "false") and ``cases_file``.
+
+    Returns:
+        ``("run", "")``, ``("skip", message)`` for a pull request without
+        an API key (forks), or ``("error", message)`` for a wrong event or
+        an invalid input.
+    """
+    if values["event"] != "pull_request":
+        return "error", WRONG_EVENT_MESSAGE
+    if values["mode"] not in MODES:
+        return "error", f"didibreak: mode must be one of {', '.join(MODES)}."
+    if values["intent_source"] not in INTENT_SOURCES:
+        sources = ", ".join(INTENT_SOURCES)
+        return "error", f"didibreak: intent-source must be one of {sources}."
+    if values["intent_source"] == "fixed" and not values["intent"]:
+        return "error", "didibreak: intent-source fixed needs the intent input."
+    provider = values["provider"]
+    if provider not in KEY_VARIABLES and provider not in LOCAL_PROVIDERS:
+        known = ", ".join([*KEY_VARIABLES, *LOCAL_PROVIDERS])
+        return "error", f"didibreak: provider must be one of {known}."
+    needs_key = provider in KEY_VARIABLES and not values["cases_file"]
+    if needs_key and values["has_key"] != "true":
+        return "skip", NO_KEY_MESSAGE
+    return "run", ""
+
+
+def _preflight_main() -> int:
+    decision, message = preflight(
+        {
+            "event": env("EVENT"),
+            "mode": env("MODE", "report-only"),
+            "intent_source": env("INTENT_SOURCE", "pr"),
+            "intent": env("INTENT"),
+            "provider": env("PROVIDER", "openai"),
+            "has_key": "true" if env("API_KEY") else "false",
+            "cases_file": env("CASES_FILE"),
+        }
+    )
+    _write_output("decision", decision)
+    if env("API_KEY"):
+        # Inputs from secrets are masked already; this covers other sources.
+        print(f"::add-mask::{env('API_KEY')}")
+    if decision == "skip":
+        print(f"::notice title=didibreak skipped::{message}")
+        _append_summary(message)
+    elif decision == "error":
+        print(f"::error title=didibreak::{message}")
+        return 1
+    return 0
+
+
+# --- run -------------------------------------------------------------------
+
+
+def pull_request_intent(title: str, body: str) -> str:
+    """The intent text from a pull request, at most 4,000 characters."""
+    text = title.strip()
+    if body.strip():
+        text = f"{text}\n\n{body.strip()}"
+    return text[:MAX_INTENT_CHARACTERS]
+
+
+def check_command(values: Mapping[str, str]) -> list[str]:
+    """The ``didibreak check`` command line for the action's inputs.
+
+    Args:
+        values: ``didibreak``, ``base``, ``python``, ``output_dir``,
+            ``provider``, ``model``, ``max_cost``, ``max_tokens``,
+            ``intent_source``, ``intent``, ``pr_title``, ``pr_body`` and
+            ``cases_file``.
+
+    Returns:
+        The argument list; untrusted text is one argument, never shell code.
+    """
+    command = [values["didibreak"], "check", "--base", values["base"]]
+    command += ["--format", "json", "--yes", "--fail-on", "unexpected"]
+    command += ["--python", values["python"], "--output-dir", values["output_dir"]]
+    command += ["--provider", values["provider"]]
+    command += ["--max-cost", values["max_cost"], "--max-tokens", values["max_tokens"]]
+    if values["model"]:
+        command += ["--model", values["model"]]
+    intent = _intent(values)
+    if intent:
+        command += ["--intent", intent]
+    if values["cases_file"]:
+        command += ["--cases-file", values["cases_file"]]
+    return command
+
+
+def _intent(values: Mapping[str, str]) -> str:
+    if values["intent_source"] == "fixed":
+        return values["intent"]
+    if values["intent_source"] == "pr":
+        return pull_request_intent(values["pr_title"], values["pr_body"])
+    return ""
+
+
+_HIDDEN_VARIABLES = (
+    "GITHUB_TOKEN",
+    "GH_TOKEN",
+    "ACTIONS_RUNTIME_TOKEN",
+    "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
+    "ACTIONS_ID_TOKEN_REQUEST_URL",
+)
+
+
+def check_environment(
+    environment: Mapping[str, str], provider: str, api_key: str
+) -> dict[str, str]:
+    """The environment for didibreak: the key in the provider's variable.
+
+    The action's own variables (the key among them) and GitHub's tokens
+    are not passed on: didibreak runs the pull request's code.
+    """
+    child = {
+        name: value
+        for name, value in environment.items()
+        if not name.startswith("DIDIBREAK_ACTION_") and name not in _HIDDEN_VARIABLES
+    }
+    variable = KEY_VARIABLES.get(provider)
+    if variable and api_key:
+        child[variable] = api_key
+    return child
+
+
+def _run_main() -> int:
+    temporary = Path(env("TEMP", "."))
+    values = {
+        "didibreak": env("DIDIBREAK", "didibreak"),
+        "base": env("BASE"),
+        "python": env("PYTHON", sys.executable),
+        "output_dir": str(temporary / "didibreak-output"),
+        "provider": env("PROVIDER", "openai"),
+        "model": env("MODEL"),
+        "max_cost": env("MAX_COST", "0.50"),
+        "max_tokens": env("MAX_TOKENS", "200000"),
+        "intent_source": env("INTENT_SOURCE", "pr"),
+        "intent": env("INTENT"),
+        "pr_title": os.environ.get("DIDIBREAK_ACTION_PR_TITLE", ""),
+        "pr_body": os.environ.get("DIDIBREAK_ACTION_PR_BODY", ""),
+        "cases_file": env("CASES_FILE"),
+    }
+    child = check_environment(os.environ, values["provider"], env("API_KEY"))
+    report = temporary / "didibreak-report.json"
+    with report.open("w", encoding="utf-8") as stdout:
+        result = subprocess.run(
+            check_command(values), stdout=stdout, stderr=subprocess.PIPE,
+            env=child, text=True, check=False,
+        )  # fmt: skip
+    print_untrusted(result.stderr)
+    _write_output("exit-code", str(result.returncode))
+    _write_output("report", str(report))
+    return 0
 
 
 # --- comment -----------------------------------------------------------------
@@ -260,6 +452,117 @@ def _read_report(path: Path) -> dict[str, Any] | None:
     return report if isinstance(report, dict) else None
 
 
+# --- post --------------------------------------------------------------------
+
+
+def find_comment(comments: Sequence[Mapping[str, Any]]) -> int | None:
+    """The id of the action's earlier comment, or None.
+
+    Only a comment by a bot account counts, so a person who pastes the
+    marker into their own comment cannot make the action edit it.
+    """
+    for comment in comments:
+        user = comment.get("user") or {}
+        if (
+            str(comment.get("body", "")).startswith(MARKER)
+            and user.get("type") == "Bot"
+        ):
+            return int(comment["id"])
+    return None
+
+
+def _request(method: str, url: str, token: str, data: Any = None) -> Any:
+    request = urllib.request.Request(
+        url,
+        method=method,
+        data=None if data is None else json.dumps(data).encode(),
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "didibreak-action",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return json.loads(response.read() or b"null")
+
+
+def post_comment(api: str, repository: str, number: int, token: str, body: str) -> str:
+    """Update the action's comment on the pull request, or create it.
+
+    Returns:
+        ``updated`` or ``created``.
+    """
+    issue = f"{api}/repos/{repository}/issues/{number}/comments"
+    comments: list[Mapping[str, Any]] = []
+    for page in range(1, 31):
+        batch = _request("GET", f"{issue}?per_page=100&page={page}", token)
+        if not isinstance(batch, list):
+            break
+        comments += batch
+        if len(batch) < 100:
+            break
+    existing = find_comment(comments)
+    if existing is not None:
+        url = f"{api}/repos/{repository}/issues/comments/{existing}"
+        _request("PATCH", url, token, {"body": body})
+        return "updated"
+    _request("POST", issue, token, {"body": body})
+    return "created"
+
+
+def _post_main() -> int:
+    body = Path(env("COMMENT")).read_text(encoding="utf-8")
+    try:
+        result = post_comment(
+            env("API_URL", "https://api.github.com"),
+            env("REPOSITORY"),
+            int(env("PR_NUMBER")),
+            env("GITHUB_TOKEN"),
+            body,
+        )
+    except urllib.error.HTTPError as error:
+        print(
+            "::warning title=didibreak::Could not post the comment "
+            f"(HTTP {error.code}). The workflow needs 'permissions: "
+            "pull-requests: write'; pull requests from forks get a read-only "
+            "token, so no comment can be posted for them."
+        )
+        return 0
+    print(f"didibreak: pull request comment {result}.")
+    return 0
+
+
+# --- finish ------------------------------------------------------------------
+
+
+def finish(mode: str, exit_code: int, has_report: bool) -> tuple[int, str]:
+    """The step's exit code and a message for the job log.
+
+    ``report-only`` never fails the job; problems become warnings.
+    ``fail-on-unexpected`` fails on unexpected findings (didibreak's exit
+    code 1 with ``--fail-on unexpected``) and on errors (exit code 2).
+    """
+    if exit_code == 0 and has_report:
+        return 0, ""
+    if exit_code == 1:
+        problem = "didibreak found unexpected behavior changes."
+    else:
+        problem = f"didibreak ended with an error (exit code {exit_code}); see the log."
+    return (1 if mode == "fail-on-unexpected" else 0), problem
+
+
+def _finish_main() -> int:
+    code, message = finish(
+        env("MODE", "report-only"),
+        int(env("EXIT_CODE", "2")),
+        _read_report(Path(env("REPORT", "didibreak-report.json"))) is not None,
+    )
+    if message:
+        print(f"::{'error' if code else 'warning'} title=didibreak::{message}")
+    return code
+
+
 # --- GitHub Actions helpers --------------------------------------------------
 
 
@@ -282,8 +585,19 @@ def _write_output(name: str, value: str) -> None:
             output.write(f"{name}={value}\n")
 
 
+def _append_summary(text: str) -> None:
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if path:
+        with open(path, "a", encoding="utf-8") as summary:
+            summary.write(f"{text}\n")
+
+
 COMMANDS = {
+    "preflight": _preflight_main,
+    "run": _run_main,
     "comment": _comment_main,
+    "post": _post_main,
+    "finish": _finish_main,
 }
 
 

@@ -34,6 +34,19 @@ HOSTILE = (
 )
 
 
+def preflight_values(**changes: str) -> dict[str, str]:
+    values = {
+        "event": "pull_request",
+        "mode": "report-only",
+        "intent_source": "pr",
+        "intent": "",
+        "provider": "openai",
+        "has_key": "true",
+        "cases_file": "",
+    }
+    return {**values, **changes}
+
+
 def finding(**changes: Any) -> dict[str, Any]:
     item: dict[str, Any] = {
         "id": "30040f8bc543",
@@ -89,6 +102,135 @@ def outside_code_blocks(markdown: str) -> str:
         outside.append(line)
     assert not fence, "a code block is left open"
     return "\n".join(outside)
+
+
+# --- preflight ---------------------------------------------------------------
+
+
+def test_a_pull_request_with_a_key_runs() -> None:
+    assert action.preflight(preflight_values()) == ("run", "")
+
+
+def test_a_pull_request_without_a_key_is_skipped_with_the_fork_message() -> None:
+    decision, message = action.preflight(preflight_values(has_key="false"))
+
+    assert decision == "skip"
+    assert "forks" in message and "passes" in message
+
+
+@pytest.mark.parametrize("event", ["pull_request_target", "push", "workflow_dispatch"])
+def test_any_other_event_is_refused(event: str) -> None:
+    decision, message = action.preflight(preflight_values(event=event))
+
+    assert decision == "error"
+    assert "pull_request_target" in message
+
+
+def test_a_cases_file_needs_no_key() -> None:
+    values = preflight_values(has_key="false", cases_file="cases.json")
+
+    assert action.preflight(values) == ("run", "")
+
+
+def test_a_local_provider_needs_no_key() -> None:
+    values = preflight_values(has_key="false", provider="ollama")
+
+    assert action.preflight(values) == ("run", "")
+
+
+@pytest.mark.parametrize(
+    ("changes", "word"),
+    [
+        ({"mode": "strict"}, "mode"),
+        ({"intent_source": "issue"}, "intent-source"),
+        ({"intent_source": "fixed"}, "intent input"),
+        ({"provider": "gemini"}, "provider"),
+    ],
+)
+def test_an_invalid_input_is_an_error(changes: dict[str, str], word: str) -> None:
+    decision, message = action.preflight(preflight_values(**changes))
+
+    assert decision == "error"
+    assert word in message
+
+
+# --- run -------------------------------------------------------------------
+
+
+def run_values(**changes: str) -> dict[str, str]:
+    values = {
+        "didibreak": "didibreak",
+        "base": "a1b2c3",
+        "python": "/usr/bin/python3",
+        "output_dir": "/tmp/out",
+        "provider": "openai",
+        "model": "",
+        "max_cost": "0.50",
+        "max_tokens": "200000",
+        "intent_source": "pr",
+        "intent": "",
+        "pr_title": "Add separators",
+        "pr_body": "",
+        "cases_file": "",
+    }
+    return {**values, **changes}
+
+
+def test_the_command_checks_against_the_base_with_json_output() -> None:
+    command = action.check_command(run_values())
+
+    assert command[:4] == ["didibreak", "check", "--base", "a1b2c3"]
+    assert command[4:6] == ["--format", "json"]
+    assert "--yes" in command
+    assert command[command.index("--fail-on") + 1] == "unexpected"
+    assert command[command.index("--python") + 1] == "/usr/bin/python3"
+    assert "--model" not in command
+    assert "--cases-file" not in command
+
+
+def test_the_pull_request_text_is_one_argument() -> None:
+    command = action.check_command(run_values(pr_title=HOSTILE, pr_body="$(rm -rf /)"))
+
+    assert command[command.index("--intent") + 1] == f"{HOSTILE}\n\n$(rm -rf /)"
+
+
+def test_the_pull_request_intent_is_cut_at_4000_characters() -> None:
+    assert len(action.pull_request_intent("t", "x" * 10_000)) == 4_000
+
+
+def test_commit_messages_only_passes_no_intent() -> None:
+    command = action.check_command(run_values(intent_source="commits"))
+
+    assert "--intent" not in command
+
+
+def test_a_fixed_intent_replaces_the_pull_request_text() -> None:
+    values = run_values(intent_source="fixed", intent="add separators")
+
+    command = action.check_command(values)
+
+    assert command[command.index("--intent") + 1] == "add separators"
+
+
+def test_model_and_cases_file_are_passed() -> None:
+    command = action.check_command(run_values(model="gpt-6-sol", cases_file="c.json"))
+
+    assert command[command.index("--model") + 1] == "gpt-6-sol"
+    assert command[command.index("--cases-file") + 1] == "c.json"
+
+
+def test_the_key_goes_to_the_provider_variable_and_tokens_stay_behind() -> None:
+    environment = {
+        "PATH": "/bin",
+        "DIDIBREAK_ACTION_API_KEY": "sk-test",
+        "DIDIBREAK_ACTION_PR_BODY": "text",
+        "GITHUB_TOKEN": "ghs_x",
+        "ACTIONS_RUNTIME_TOKEN": "y",
+    }
+
+    child = action.check_environment(environment, "anthropic", "sk-test")
+
+    assert child == {"PATH": "/bin", "ANTHROPIC_API_KEY": "sk-test"}
 
 
 # --- comment -----------------------------------------------------------------
@@ -239,7 +381,85 @@ def test_the_footer_keeps_only_version_and_hex_characters() -> None:
     assert "didibreak 0.4.0bghostb · compared with base abcc" in body
 
 
-# --- logs ------------------------------------------------------------------
+# --- post --------------------------------------------------------------------
+
+
+def test_only_a_bot_comment_with_the_marker_is_updated() -> None:
+    comments = [
+        {"id": 1, "body": f"{action.MARKER} pasted", "user": {"type": "User"}},
+        {"id": 2, "body": "other bot", "user": {"type": "Bot"}},
+        {"id": 3, "body": f"{action.MARKER}\nold", "user": {"type": "Bot"}},
+    ]
+
+    assert action.find_comment(comments) == 3
+    assert action.find_comment(comments[:2]) is None
+
+
+def fake_github(
+    monkeypatch: pytest.MonkeyPatch, comments: list[dict[str, Any]]
+) -> list[tuple[str, str, Any]]:
+    calls: list[tuple[str, str, Any]] = []
+
+    def request(method: str, url: str, token: str, data: Any = None) -> Any:
+        assert token == "ghs_token"
+        calls.append((method, url, data))
+        return comments if method == "GET" else {}
+
+    monkeypatch.setattr(action, "_request", request)
+    return calls
+
+
+def test_the_earlier_comment_is_updated_in_place(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = fake_github(
+        monkeypatch, [{"id": 7, "body": f"{action.MARKER}x", "user": {"type": "Bot"}}]
+    )
+
+    result = action.post_comment("https://api", "o/r", 5, "ghs_token", "body")
+
+    assert result == "updated"
+    assert calls[-1] == (
+        "PATCH",
+        "https://api/repos/o/r/issues/comments/7",
+        {"body": "body"},
+    )
+
+
+def test_a_first_comment_is_created(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = fake_github(monkeypatch, [])
+
+    result = action.post_comment("https://api", "o/r", 5, "ghs_token", "body")
+
+    assert result == "created"
+    assert calls == [
+        ("GET", "https://api/repos/o/r/issues/5/comments?per_page=100&page=1", None),
+        ("POST", "https://api/repos/o/r/issues/5/comments", {"body": "body"}),
+    ]
+
+
+# --- finish and logs ---------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("mode", "exit_code", "has_report", "expected"),
+    [
+        ("report-only", 0, True, 0),
+        ("report-only", 1, True, 0),
+        ("report-only", 2, False, 0),
+        ("fail-on-unexpected", 0, True, 0),
+        ("fail-on-unexpected", 1, True, 1),
+        ("fail-on-unexpected", 2, True, 1),
+        ("fail-on-unexpected", 0, False, 1),
+    ],
+)
+def test_the_mode_decides_the_step_result(
+    mode: str, exit_code: int, has_report: bool, expected: int
+) -> None:
+    code, message = action.finish(mode, exit_code, has_report)
+
+    assert code == expected
+    assert bool(message) == (exit_code != 0 or not has_report)
 
 
 def test_untrusted_log_text_cannot_run_workflow_commands(
@@ -256,3 +476,25 @@ def test_untrusted_log_text_cannot_run_workflow_commands(
 
 def test_an_unknown_subcommand_is_a_usage_error() -> None:
     assert action.main(["deploy"]) == 2
+
+
+# --- action.yml --------------------------------------------------------------
+
+
+def test_actions_used_by_the_action_are_pinned_by_commit() -> None:
+    text = (ACTION / "action.yml").read_text()
+
+    uses = re.findall(r"uses: (\S+)", text)
+    assert uses
+    assert all(re.fullmatch(r"[\w.-]+/[\w.-]+@[0-9a-f]{40}", use) for use in uses)
+
+
+def test_no_expression_is_expanded_inside_a_shell_script() -> None:
+    # Pull request text reaches the scripts only through environment
+    # variables, so it can never become shell code.
+    text = (ACTION / "action.yml").read_text()
+    scripts = re.findall(r"run: (?:\|\n((?:        .*\n|\n)+)|(.*))", text)
+
+    assert scripts
+    for block, line in scripts:
+        assert "${{" not in (block or line)

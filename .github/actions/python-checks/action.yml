@@ -1,8 +1,9 @@
 name: Python checks
 description: >-
   Install the locked dev environment and run the four checks, the build and
-  the package content check for the package in python/. One definition shared
-  by the Linux and macOS jobs of python.yml.
+  the package content check for the package in python/. Lint, format and type
+  checks also cover the GitHub Action's script in github-action/. One
+  definition shared by the Linux and macOS jobs of python.yml.
 
 inputs:
   python-version:
@@ -27,15 +28,15 @@ runs:
     - name: Lint
       shell: bash
       working-directory: python
-      run: uv run ruff check .
+      run: uv run ruff check . ../github-action
     - name: Format
       shell: bash
       working-directory: python
-      run: uv run ruff format --check .
+      run: uv run ruff format --check . ../github-action
     - name: Types
       shell: bash
       working-directory: python
-      run: uv run mypy src
+      run: uv run mypy src ../github-action/didibreak_action.py
     - name: Build
       shell: bash
       working-directory: python
