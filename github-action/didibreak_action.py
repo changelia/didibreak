@@ -392,7 +392,7 @@ def _footer(report: Mapping[str, Any]) -> str:
     version = re.sub(r"[^0-9A-Za-z.+-]", "", version)
     base = re.sub(r"[^0-9a-f]", "", str(report.get("base", {}).get("sha", "")))[:12]
     return (
-        f"\n<sub>didibreak {version} · compared with base {base} · "
+        f"\n<sub>didibreak `{version}` · compared with base `{base}` · "
         "full report: job log and the workflow run's artifacts</sub>\n"
     )
 
