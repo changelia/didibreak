@@ -48,6 +48,7 @@ from didibreak.harness import (
 )
 from didibreak.llm.common import (
     CHARS_PER_TOKEN,
+    MAX_OUTPUT_TOKENS,
     LLMClient,
     LLMInvalidResponseError,
     LLMReply,
@@ -511,6 +512,13 @@ TOKEN_LIMIT_REASON = "token limit"
 # A refinement prompt also lists the cases already tried: about this many
 # characters per case (call plus both outcomes).
 PREVIOUS_CHARS_PER_CASE = 160
+# Reply cap of a case-generation request (task 38). In 150 evaluation runs
+# a reply used at most about 4,100 output tokens for 12 cases (median
+# 1,300); the replies that reached the old 16,000 cap were runaway output,
+# and the retry of such a reply often ran away too. A smaller cap halves
+# what one costs; a larger one would only make it dearer.
+REPLY_TOKENS_PER_CASE = 700
+MIN_REPLY_TOKENS = 4000
 
 
 @dataclass(frozen=True)
@@ -663,10 +671,41 @@ class Budget:
             return TOKEN_LIMIT_REASON
         return None
 
+    def reply_cap(self, messages: Sequence[Message], ceiling: int | None = None) -> int:
+        """The output cap of one request: its ceiling, within both limits.
+
+        A reply cut off at the cap and its retry then cannot take the run
+        past max_tokens or max_cost (task 38).
+
+        Args:
+            messages: The request to send.
+            ceiling: Cap without limits; None means the case-generation cap
+                for ``count`` cases (case_reply_tokens()).
+
+        Returns:
+            At least 1 token; refusal() decides whether to send at all.
+        """
+        cap = case_reply_tokens(self.count) if ceiling is None else ceiling
+        prompt = estimate_call(messages, 0, 0)
+        if self.max_tokens is not None:
+            cap = min(cap, self.max_tokens - _total(self.usage) - prompt.input_tokens)
+        if self.price is not None and self.max_cost is not None:
+            left = self.max_cost - self.cost - cost_usd(prompt, self.price)
+            million = replace(prompt, output_tokens=1_000_000)
+            per_million = cost_usd(million, self.price) - cost_usd(prompt, self.price)
+            if per_million > 0:
+                cap = min(cap, int(left / per_million * 1_000_000))
+        return max(cap, 1)
+
     def _over_max_cost(self, estimate: TokenUsage) -> bool:
         if self.price is None or self.max_cost is None:
             return False  # without a price the cost limit cannot be enforced
         return self.cost + cost_usd(estimate, self.price) > self.max_cost
+
+
+def case_reply_tokens(count: int) -> int:
+    """Output cap of a case-generation reply for ``count`` cases (task 38)."""
+    return min(MAX_OUTPUT_TOKENS, max(MIN_REPLY_TOKENS, REPLY_TOKENS_PER_CASE * count))
 
 
 def _total(usage: TokenUsage) -> int:
@@ -688,7 +727,13 @@ def _ask(
         return spending.refusal(messages, spent) is None
 
     try:
-        reply = client.complete_json(messages, schema[0], schema[1], may_continue)
+        reply = client.complete_json(
+            messages,
+            schema[0],
+            schema[1],
+            may_continue,
+            max_output_tokens=spending.reply_cap(messages),
+        )
     except LLMInvalidResponseError as error:
         spending.add(error.usage)
         return INVALID_RESPONSE_REASON

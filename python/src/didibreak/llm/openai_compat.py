@@ -91,6 +91,7 @@ def request_payload(
     schema: Mapping[str, Any],
     schema_name: str,
     json_mode: bool = False,
+    max_output_tokens: int = MAX_OUTPUT_TOKENS,
 ) -> dict[str, Any]:
     """The Chat Completions request body.
 
@@ -101,6 +102,8 @@ def request_payload(
         schema_name: Name for the schema (letters, digits, ``_``, ``-``).
         json_mode: Use the fallback: ``json_object`` with the schema in a
             system message instead of a strict JSON schema.
+        max_output_tokens: Cap on the reply, sent when the server's field
+            for it is known.
 
     Returns:
         The JSON body.
@@ -126,7 +129,7 @@ def request_payload(
     if settings.temperature is not None:
         body["temperature"] = settings.temperature
     if settings.output_limit_parameter is not None:
-        body[settings.output_limit_parameter] = MAX_OUTPUT_TOKENS
+        body[settings.output_limit_parameter] = max_output_tokens
     if urlparse(settings.base_url).hostname == "openrouter.ai":
         # Route only to endpoints that support structured outputs (OpenRouter docs).
         body["provider"] = {"require_parameters": True}
@@ -172,6 +175,7 @@ class OpenAICompatibleClient:
         schema: Mapping[str, Any],
         schema_name: str,
         may_continue: MayContinue | None = None,
+        max_output_tokens: int = MAX_OUTPUT_TOKENS,
     ) -> LLMReply:
         """Ask for a JSON object matching ``schema``.
 
@@ -182,6 +186,7 @@ class OpenAICompatibleClient:
             schema_name: Name for the schema.
             may_continue: Asked before a retry or the JSON-mode fallback
                 request; None allows them.
+            max_output_tokens: Cap on each reply (task 38).
 
         Returns:
             The schema-valid object and the usage of all calls made.
@@ -191,7 +196,7 @@ class OpenAICompatibleClient:
         """
         return complete_with_one_retry(
             lambda spent: self._attempt(
-                messages, schema, schema_name, spent, may_continue
+                messages, schema, schema_name, spent, may_continue, max_output_tokens
             ),
             schema,
             may_continue,
@@ -213,9 +218,15 @@ class OpenAICompatibleClient:
         schema_name: str,
         spent: TokenUsage,
         may_continue: MayContinue | None,
+        max_output_tokens: int = MAX_OUTPUT_TOKENS,
     ) -> RawReply:
         payload = request_payload(
-            self.settings, messages, schema, schema_name, self._json_mode
+            self.settings,
+            messages,
+            schema,
+            schema_name,
+            self._json_mode,
+            max_output_tokens,
         )
         try:
             response = self._post(payload)
@@ -227,7 +238,7 @@ class OpenAICompatibleClient:
                 raise  # the run's limit does not allow the fallback request
             self._json_mode = True  # stays on for this client's later calls
             payload = request_payload(
-                self.settings, messages, schema, schema_name, True
+                self.settings, messages, schema, schema_name, True, max_output_tokens
             )
             response = self._post(payload)
         try:

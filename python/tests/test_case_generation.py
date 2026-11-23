@@ -37,6 +37,7 @@ from didibreak.pipeline import (
     TOKEN_LIMIT_REASON,
     UNAVAILABLE_REASON,
     Budget,
+    case_reply_tokens,
     estimate_call,
     estimate_generation,
     generate_cases,
@@ -68,6 +69,7 @@ class FakeClient:
         self.replies = replies
         self.usage = usage
         self.prompts: list[str] = []
+        self.caps: list[int] = []
 
     def complete_json(
         self,
@@ -75,11 +77,15 @@ class FakeClient:
         schema: Mapping[str, Any],
         schema_name: str,
         may_continue: Any = None,
+        max_output_tokens: int = 16000,
     ) -> LLMReply:
         prompt = messages[-1].content
         self.prompts.append(prompt)
+        self.caps.append(max_output_tokens)
         name = next(n for n in self.replies if f"::{n}\n" in prompt)
         reply = self.replies[name]
+        if isinstance(reply, list):  # one reply per request, in order
+            reply = reply.pop(0)
         if isinstance(reply, Exception):
             raise reply
         assert isinstance(reply, dict)
@@ -411,7 +417,9 @@ def test_audit_case_stays_within_max_tokens_plus_one_reply() -> None:
         client, [function("f"), function("g")], 12, load_template(), budget=budget
     )
 
-    assert [body["max_completion_tokens"] for body in sent] == [16000]
+    # The server ignores the cap (task 38: 8,400 for 12 cases) and replies
+    # with 16,000 tokens; the retry still does not fit.
+    assert [body["max_completion_tokens"] for body in sent] == [8400]
     assert [(f.qualname, f.skip_reason) for f in result.skipped] == [
         ("f", INVALID_RESPONSE_REASON),
         ("g", TOKEN_LIMIT_REASON),
@@ -495,3 +503,44 @@ def test_reported_usage_is_not_replaced_by_an_estimate() -> None:
     assert len(sent) == 2
     assert result.usage == TokenUsage(1200, 16000, None, 0, 2)
     assert result.usage.estimated_calls == 0
+
+
+@pytest.mark.parametrize(
+    ("count", "cap"), [(1, 4000), (5, 4000), (12, 8400), (22, 15400), (50, 16000)]
+)
+def test_the_reply_cap_follows_the_number_of_cases(count: int, cap: int) -> None:
+    assert case_reply_tokens(count) == cap
+
+
+def test_case_requests_ask_for_the_reply_cap() -> None:
+    client = FakeClient({"f": cases("1")})
+
+    generate_cases(client, [function("f")], 12, load_template())
+
+    assert client.caps == [8400]
+
+
+def test_the_reply_cap_stays_within_max_tokens() -> None:
+    messages = build_messages(function("f"), 12, load_template())
+    prompt = estimate_call(messages, 0, 0).input_tokens
+    budget = Budget(None, None, 12, max_tokens=prompt + 5000)
+
+    assert budget.reply_cap(messages) == 5000
+    budget.add(TokenUsage(1000, 1000, None, 0, 1))
+    assert budget.reply_cap(messages) == 3000
+
+
+def test_the_reply_cap_stays_within_max_cost() -> None:
+    messages = build_messages(function("f"), 12, load_template())
+    prompt = estimate_call(messages, 0, 0)
+    # $10 per million output tokens: 2,000 tokens cost $0.02.
+    budget = Budget(PRICE, cost_usd(prompt, PRICE) + 0.02, 12)
+
+    assert budget.reply_cap(messages) in (1999, 2000)  # rounded down
+    assert Budget(PRICE, None, 12).reply_cap(messages) == 8400
+
+
+def test_a_labelling_request_keeps_the_large_cap_within_the_limits() -> None:
+    messages = build_messages(function("f"), 12, load_template())
+
+    assert Budget(None, None, 12).reply_cap(messages, 16000) == 16000

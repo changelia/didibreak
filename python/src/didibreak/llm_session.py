@@ -36,6 +36,7 @@ from didibreak.intent import (
 from didibreak.llm import client_settings, resolve_provider
 from didibreak.llm.common import (
     CHARS_PER_TOKEN,
+    MAX_OUTPUT_TOKENS,
     ClientSettings,
     LLMInvalidResponseError,
     LLMRequestError,
@@ -233,7 +234,11 @@ class LLMSession:
 
         try:
             reply = self._client.complete_json(
-                messages, LABELS_SCHEMA, LABELS_SCHEMA_NAME, may_continue
+                messages,
+                LABELS_SCHEMA,
+                LABELS_SCHEMA_NAME,
+                may_continue,
+                max_output_tokens=self.budget.reply_cap(messages, MAX_OUTPUT_TOKENS),
             )
         except LLMInvalidResponseError as error:
             self.budget.add(error.usage)

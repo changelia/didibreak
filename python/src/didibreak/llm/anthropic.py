@@ -82,13 +82,16 @@ def parse_reply(body: object, model: str) -> RawReply:
 
 
 def request_payload(
-    settings: ClientSettings, messages: Sequence[Message], schema: Mapping[str, Any]
+    settings: ClientSettings,
+    messages: Sequence[Message],
+    schema: Mapping[str, Any],
+    max_tokens: int = MAX_TOKENS,
 ) -> dict[str, Any]:
     """The Messages request body; system messages go to the ``system`` field."""
     system = "\n\n".join(m.content for m in messages if m.role == "system")
     body: dict[str, Any] = {
         "model": settings.model,
-        "max_tokens": MAX_TOKENS,
+        "max_tokens": max_tokens,
         "messages": [
             {"role": m.role, "content": m.content}
             for m in messages
@@ -141,6 +144,7 @@ class AnthropicClient:
         schema: Mapping[str, Any],
         schema_name: str,
         may_continue: MayContinue | None = None,
+        max_output_tokens: int = MAX_TOKENS,
     ) -> LLMReply:
         """Ask for a JSON object matching ``schema``.
 
@@ -151,6 +155,7 @@ class AnthropicClient:
                 additionalProperties false).
             schema_name: Unused by this API; kept for the shared signature.
             may_continue: Asked before a retry; None allows it.
+            max_output_tokens: Cap on each reply (``max_tokens``, task 38).
 
         Returns:
             The schema-valid object and the usage of all calls made.
@@ -159,11 +164,16 @@ class AnthropicClient:
             LLMError: A subclass from llm.common describing the failure.
         """
         return complete_with_one_retry(
-            lambda _spent: self._attempt(messages, schema), schema, may_continue
+            lambda _spent: self._attempt(messages, schema, max_output_tokens),
+            schema,
+            may_continue,
         )
 
     def _attempt(
-        self, messages: Sequence[Message], schema: Mapping[str, Any]
+        self,
+        messages: Sequence[Message],
+        schema: Mapping[str, Any],
+        max_tokens: int = MAX_TOKENS,
     ) -> RawReply:
         headers = {
             "user-agent": f"didibreak/{__version__}",
@@ -172,7 +182,7 @@ class AnthropicClient:
         if self.settings.api_key:
             headers["x-api-key"] = self.settings.api_key
         url = self.settings.base_url.rstrip("/") + "/v1/messages"
-        payload = request_payload(self.settings, messages, schema)
+        payload = request_payload(self.settings, messages, schema, max_tokens)
         response = post_with_retries(
             self._http, url, headers, payload, self.settings, self._sleep
         )

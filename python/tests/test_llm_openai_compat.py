@@ -274,3 +274,12 @@ def test_an_unusable_reply_without_usage_is_counted_too() -> None:
 
     assert info.value.usage.estimated_calls == 2
     assert info.value.usage.input_tokens > 0
+
+
+def test_a_request_can_ask_for_a_smaller_output_cap() -> None:
+    reply = httpx.Response(200, json=completion('{"labels": []}'))
+    client, sent = make_client([reply], output_limit_parameter="max_tokens")
+
+    client.complete_json(MESSAGES, SCHEMA, "labels", max_output_tokens=8400)
+
+    assert sent[0]["body"]["max_tokens"] == 8400
