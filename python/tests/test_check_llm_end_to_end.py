@@ -74,11 +74,16 @@ def test_llm_cases_reproduce_the_documented_findings(
 
     expected_functions = [f["function"] for f in fixture.expected["changed_functions"]]
     with_findings = {f["function"] for f in fixture.expected["findings"]}
-    # One request per testable function, then one refinement request for each
-    # function that ran (it had cases) without a finding; the fake repeats its
-    # cases, so the refinement brings no new cases and stops there.
-    assert asked[: len(expected_functions)] == expected_functions
-    assert sorted(asked[len(expected_functions) :]) == sorted(
+    # One request per testable function (two when the fake has no case for
+    # it: a reply without valid cases is asked for once more, task 38), then
+    # one refinement request for each function that ran (it had cases)
+    # without a finding; the fake repeats its cases, so the refinement brings
+    # no new cases and stops there.
+    first = [
+        name for f in expected_functions for name in ([f] if f in replies else [f, f])
+    ]
+    assert asked[: len(first)] == first
+    assert sorted(asked[len(first) :]) == sorted(
         f for f in expected_functions if f not in with_findings and f in replies
     )
     failing = [f for f in fixture.expected["findings"] if f["label"] != "new_function"]
@@ -186,7 +191,7 @@ def test_no_llm_request_is_sent_for_a_module_that_does_not_import(
 
     main(["check", "--format", "json", "--refine-rounds", "0"])
 
-    assert asked == ["good.py::f"]
+    assert asked == ["good.py::f"] * 2  # no valid case: asked once more
     report = json.loads(capsys.readouterr().out)
     assert {
         "function": "broken.py::g",

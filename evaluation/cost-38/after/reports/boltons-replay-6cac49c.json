@@ -1,0 +1,430 @@
+{
+  "scenario": {
+    "id": "boltons-replay-6cac49c",
+    "repo": "boltons",
+    "kind": "replay",
+    "commit": "6cac49ce4eba506a3582e8089bcc347c6b2fa70f",
+    "intent": "Refactor the dictutils module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "6cac49ce4eba506a3582e8089bcc347c6b2fa70f",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the dictutils module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 21.4,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~6,049 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.3.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "6cac49ce4eba506a3582e8089bcc347c6b2fa70f"
+    },
+    "intent": "Stated by the user: Refactor the dictutils module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "f96271c27a2d",
+        "function": "boltons/dictutils.py::OneToOne.update",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this empty update now raises UnboundLocalError instead of returning normally.",
+        "confidence": "high",
+        "args": [
+          "{}"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "{}"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'inv': OneToOne({})}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.UnboundLocalError",
+          "repr": "UnboundLocalError(\"cannot access local variable 'keys_vals' where it is not associated with a value\")",
+          "message": "cannot access local variable 'keys_vals' where it is not associated with a value",
+          "state": "{'inv': OneToOne({})}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-h9kougpn/out/tests/test_OneToOne_update.py"
+      },
+      {
+        "id": "8bd087bb61ba",
+        "function": "boltons/dictutils.py::OneToOne.update",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this update now raises UnboundLocalError and fails to apply the keyword update.",
+        "confidence": "high",
+        "args": [
+          "{}"
+        ],
+        "kwargs": {
+          "fresh": "2"
+        },
+        "init_args": [
+          "{'base': 1}"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'inv': OneToOne({1: 'base', 2: 'fresh'})}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.UnboundLocalError",
+          "repr": "UnboundLocalError(\"cannot access local variable 'keys_vals' where it is not associated with a value\")",
+          "message": "cannot access local variable 'keys_vals' where it is not associated with a value",
+          "state": "{'inv': OneToOne({1: 'base'})}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-h9kougpn/out/tests/test_OneToOne_update.py"
+      },
+      {
+        "id": "32c4cb4729f2",
+        "function": "boltons/dictutils.py::OneToOne.update",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this update now raises UnboundLocalError and fails to apply the keyword updates.",
+        "confidence": "high",
+        "args": [
+          "{}"
+        ],
+        "kwargs": {
+          "left": "'L'",
+          "right": "'R'"
+        },
+        "init_args": [
+          "{'base': 1, 'other': 3}"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'inv': OneToOne({1: 'base', 3: 'other', 'L': 'left', 'R': 'right'})}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.UnboundLocalError",
+          "repr": "UnboundLocalError(\"cannot access local variable 'keys_vals' where it is not associated with a value\")",
+          "message": "cannot access local variable 'keys_vals' where it is not associated with a value",
+          "state": "{'inv': OneToOne({1: 'base', 3: 'other'})}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-h9kougpn/out/tests/test_OneToOne_update.py"
+      },
+      {
+        "id": "6aa99f9d51bd",
+        "function": "boltons/dictutils.py::OneToOne.update",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this update with an empty list now raises UnboundLocalError instead of returning normally.",
+        "confidence": "high",
+        "args": [
+          "[]"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "{'seed': 7}"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'inv': OneToOne({7: 'seed'})}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.UnboundLocalError",
+          "repr": "UnboundLocalError(\"cannot access local variable 'keys_vals' where it is not associated with a value\")",
+          "message": "cannot access local variable 'keys_vals' where it is not associated with a value",
+          "state": "{'inv': OneToOne({7: 'seed'})}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-h9kougpn/out/tests/test_OneToOne_update.py"
+      },
+      {
+        "id": "40ad13674637",
+        "function": "boltons/dictutils.py::OneToOne.update",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this update now raises UnboundLocalError and fails to apply the keyword update.",
+        "confidence": "high",
+        "args": [
+          "[]"
+        ],
+        "kwargs": {
+          "added": "8"
+        },
+        "init_args": [
+          "{}"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'inv': OneToOne({8: 'added'})}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.UnboundLocalError",
+          "repr": "UnboundLocalError(\"cannot access local variable 'keys_vals' where it is not associated with a value\")",
+          "message": "cannot access local variable 'keys_vals' where it is not associated with a value",
+          "state": "{'inv': OneToOne({})}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-h9kougpn/out/tests/test_OneToOne_update.py"
+      },
+      {
+        "id": "9d1c92b5b16b",
+        "function": "boltons/dictutils.py::OneToOne.update",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this update now raises UnboundLocalError and fails to apply the keyword update.",
+        "confidence": "high",
+        "args": [
+          "()"
+        ],
+        "kwargs": {
+          "added": "'tuple-case'"
+        },
+        "init_args": [
+          "{'prior': 4}"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'inv': OneToOne({4: 'prior', 'tuple-case': 'added'})}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.UnboundLocalError",
+          "repr": "UnboundLocalError(\"cannot access local variable 'keys_vals' where it is not associated with a value\")",
+          "message": "cannot access local variable 'keys_vals' where it is not associated with a value",
+          "state": "{'inv': OneToOne({4: 'prior'})}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-h9kougpn/out/tests/test_OneToOne_update.py"
+      },
+      {
+        "id": "0cc86f6352d3",
+        "function": "boltons/dictutils.py::OneToOne.update",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this update with an empty string now raises UnboundLocalError instead of returning normally.",
+        "confidence": "high",
+        "args": [
+          "''"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "{}"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'inv': OneToOne({})}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.UnboundLocalError",
+          "repr": "UnboundLocalError(\"cannot access local variable 'keys_vals' where it is not associated with a value\")",
+          "message": "cannot access local variable 'keys_vals' where it is not associated with a value",
+          "state": "{'inv': OneToOne({})}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-h9kougpn/out/tests/test_OneToOne_update.py"
+      },
+      {
+        "id": "90921b8f87d7",
+        "function": "boltons/dictutils.py::OneToOne.update",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this update now raises UnboundLocalError and fails to apply the keyword update.",
+        "confidence": "high",
+        "args": [
+          "''"
+        ],
+        "kwargs": {
+          "added": "11"
+        },
+        "init_args": [
+          "{'prior': 10}"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'inv': OneToOne({10: 'prior', 11: 'added'})}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.UnboundLocalError",
+          "repr": "UnboundLocalError(\"cannot access local variable 'keys_vals' where it is not associated with a value\")",
+          "message": "cannot access local variable 'keys_vals' where it is not associated with a value",
+          "state": "{'inv': OneToOne({10: 'prior'})}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-h9kougpn/out/tests/test_OneToOne_update.py"
+      },
+      {
+        "id": "d9634b30f47f",
+        "function": "boltons/dictutils.py::OneToOne.update",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this update with empty bytes now raises UnboundLocalError instead of returning normally.",
+        "confidence": "high",
+        "args": [
+          "b''"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "{'prior': 12}"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'inv': OneToOne({12: 'prior'})}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.UnboundLocalError",
+          "repr": "UnboundLocalError(\"cannot access local variable 'keys_vals' where it is not associated with a value\")",
+          "message": "cannot access local variable 'keys_vals' where it is not associated with a value",
+          "state": "{'inv': OneToOne({12: 'prior'})}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-h9kougpn/out/tests/test_OneToOne_update.py"
+      },
+      {
+        "id": "dd4e200cd1a6",
+        "function": "boltons/dictutils.py::OneToOne.update",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this update now raises UnboundLocalError and fails to apply the keyword update.",
+        "confidence": "high",
+        "args": [
+          "b''"
+        ],
+        "kwargs": {
+          "added": "'bytes-case'"
+        },
+        "init_args": [
+          "{}"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'inv': OneToOne({'bytes-case': 'added'})}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.UnboundLocalError",
+          "repr": "UnboundLocalError(\"cannot access local variable 'keys_vals' where it is not associated with a value\")",
+          "message": "cannot access local variable 'keys_vals' where it is not associated with a value",
+          "state": "{'inv': OneToOne({})}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-h9kougpn/out/tests/test_OneToOne_update.py"
+      },
+      {
+        "id": "d327911e0c5d",
+        "function": "boltons/dictutils.py::OneToOne.update",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this update now raises UnboundLocalError instead of applying the keyword update.",
+        "confidence": "high",
+        "args": [
+          "{}"
+        ],
+        "kwargs": {
+          "base": "5"
+        },
+        "init_args": [
+          "{'base': 1}"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'inv': OneToOne({5: 'base'})}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.UnboundLocalError",
+          "repr": "UnboundLocalError(\"cannot access local variable 'keys_vals' where it is not associated with a value\")",
+          "message": "cannot access local variable 'keys_vals' where it is not associated with a value",
+          "state": "{'inv': OneToOne({1: 'base'})}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-h9kougpn/out/tests/test_OneToOne_update.py"
+      },
+      {
+        "id": "00f476e9d3b5",
+        "function": "boltons/dictutils.py::OneToOne.update",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but this update now raises UnboundLocalError and fails to apply the keyword updates.",
+        "confidence": "high",
+        "args": [
+          "[]"
+        ],
+        "kwargs": {
+          "x": "20",
+          "y": "21"
+        },
+        "init_args": [
+          "{'kept': 19}"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'inv': OneToOne({19: 'kept', 20: 'x', 21: 'y'})}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.UnboundLocalError",
+          "repr": "UnboundLocalError(\"cannot access local variable 'keys_vals' where it is not associated with a value\")",
+          "message": "cannot access local variable 'keys_vals' where it is not associated with a value",
+          "state": "{'inv': OneToOne({19: 'kept'})}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-h9kougpn/out/tests/test_OneToOne_update.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2573,
+      "output_tokens": 2161,
+      "cost_usd": 0.00122944
+    }
+  }
+}

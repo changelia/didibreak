@@ -1,0 +1,18 @@
+diff --git a/asyncstdlib/builtins.py b/asyncstdlib/builtins.py
+index d2d11bc..eea9a01 100644
+--- a/asyncstdlib/builtins.py
++++ b/asyncstdlib/builtins.py
+@@ -407,10 +407,10 @@ async def dict(  # noqa: F811
+     """
+     if not iterable:
+         return {**kwargs}
++    if isinstance(iterable, _sync_builtins.dict):
++        iterable = iterable.items()  # a mapping gives its items, like dict()
+     base_dict: Dict[Any, T] = {key: value async for key, value in aiter(iterable)}
+-    if kwargs:
+-        base_dict.update(kwargs)
+-    return base_dict
++    return {**kwargs, **base_dict}
+ 
+ 
+ async def set(iterable: Union[Iterable[T], AsyncIterable[T]] = ()) -> Set[T]:

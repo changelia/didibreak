@@ -16,6 +16,7 @@ from typing import TextIO
 
 from didibreak import __version__
 from didibreak.cases import is_method
+from didibreak.compare import Finding
 from didibreak.config import (
     CONFIG_KEYS,
     FAIL_ON,
@@ -460,13 +461,22 @@ def _start_llm(
     return session if _confirmed(arguments, config) else None
 
 
+def _unique(findings: Sequence[Finding]) -> tuple[Finding, ...]:
+    """The findings in order, each id once (the first one is kept)."""
+    kept: dict[str, Finding] = {}
+    for finding in findings:
+        kept.setdefault(finding.id, finding)
+    return tuple(kept.values())
+
+
 def _merge(first: Analysis, second: Analysis) -> Analysis:
     runs = dict(first.runs)
     for name, more in second.runs.items():
         runs[name] = (*runs.get(name, ()), *more)
     checked = (*first.checked, *(f for f in second.checked if f not in first.checked))
     return Analysis(
-        findings=(*first.findings, *second.findings),
+        # A constructor finding (task 38) can come back in a later round.
+        findings=_unique((*first.findings, *second.findings)),
         checked=checked,
         skipped=(*first.skipped, *second.skipped),
         cases_run=first.cases_run + second.cases_run,

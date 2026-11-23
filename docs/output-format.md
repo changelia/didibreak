@@ -242,7 +242,7 @@ that ignores unknown keys keeps working.
 | `intent` | The intent text used for labelling (`--intent` and the commit messages since the base), or `null`. |
 | `findings` | One item per behavior change, in run order. |
 | `findings[].id` | 12 hex characters, stable for the same function and arguments. |
-| `findings[].function` | `path::qualname`, path relative to the repository. |
+| `findings[].function` | `path::qualname`, path relative to the repository. `path::Class.__init__` for a constructor finding: the instance was built in one version only, or a changed `__init__` built it differently; its `args` and `kwargs` are empty. |
 | `findings[].label` | `expected`, `unexpected`, `unclear` or `new_function`. |
 | `findings[].reason` | Why the label was chosen; empty for new functions. |
 | `findings[].confidence` | `high` when both outcomes were compared by value, `low` when only by type. |
@@ -256,7 +256,7 @@ that ignores unknown keys keeps working.
 | `findings[].after.type_name` | Qualified type of the return value or exception. |
 | `findings[].after.repr` | `repr` of the value or exception, at most 2,000 characters. |
 | `findings[].after.message` | Exception message, at most 500 characters; only for exceptions. |
-| `findings[].after.state` | Only for an instance method: the instance's attributes after the call (`__dict__` and slots), as text, at most 2,000 characters. A different state is a finding even when the result is the same. |
+| `findings[].after.state` | Only for an instance method: the instance's attributes after the call (`__dict__` and slots), as text, at most 2,000 characters. A different state is a finding even when the result is the same. For a `Class.__init__` finding, the state right after the instance was built; absent on the side that raised. |
 | `findings[].test_file` | Reproducing pytest file, relative to the repository root (absolute when `output_dir` is outside it), or `null`: findings labelled `expected`, new functions, a base version that timed out or ended the process, or a folder that could not be written. |
 | `summary` | Counts for the whole run. |
 | `summary.functions_checked` | Functions whose cases ran on both versions. |
@@ -269,7 +269,7 @@ that ignores unknown keys keeps working.
 | `summary.flaky_dropped` | Cases dropped because a version gave different results on two runs. |
 | `summary.invalid_cases_dropped` | LLM cases rejected because an argument was not a Python literal. |
 | `summary.type_mismatch_dropped` | Findings dropped because an input contradicts the function's type annotations (for example `bytes` for a `str` parameter). Only simple annotations are checked: builtin types, `None`, `Optional`/`Union`, and `list`, `dict`, `tuple`, `set` of these. |
-| `summary.construction_dropped` | Method cases dropped because the instance could not be built from the case's constructor arguments in one version or both. |
+| `summary.construction_dropped` | Method cases dropped because the instance could not be built from the case's constructor arguments in either version. A case built in one version only is a finding on `Class.__init__` instead. |
 | `summary.skipped` | Functions not checked. Files that could not be read appear with their path; functions cut by `max_functions` have the reason `limit`. |
 | `summary.skipped[].function` | `path::qualname`, or a file path. |
 | `summary.skipped[].reason` | Why it was skipped, for example `obvious I/O: session.commit`, `blocked: os.system`, `cost limit` or `token limit`. |

@@ -231,6 +231,18 @@ def test_a_changed_constructor_shows_both_versions() -> None:
     assert "give constructor arguments that both versions accept" in text
 
 
+def test_a_constructor_prompt_asks_for_constructor_arguments_only() -> None:
+    changed = ACCOUNT_INIT.replace("balance: int", "balance: int, fee=0")
+    init = replace(METHOD, qualname="Account.__init__", constructor=changed)
+
+    _, user = build_messages(init, 6, load_template())
+
+    assert 'leave "args" and "kwargs" empty' in user.content
+    assert "This is an instance method" not in user.content
+    assert "Old version:" in constructor_text(init)
+    assert "both versions accept" not in constructor_text(init)
+
+
 def test_a_function_prompt_says_it_is_not_a_method() -> None:
     _, user = build_messages(function(), 6, load_template())
 

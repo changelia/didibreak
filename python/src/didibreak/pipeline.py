@@ -18,15 +18,23 @@ from didibreak.cases import (
     CASES_SCHEMA,
     CASES_SCHEMA_NAME,
     MAX_PREVIOUS_CASES,
+    CaseBatch,
     CaseRun,
     PromptTemplate,
     accept_cases,
     build_messages,
     build_refinement_messages,
     cases_schema,
+    is_constructor,
     is_method,
 )
-from didibreak.compare import Comparison, Finding, compare_cases, finding_id
+from didibreak.compare import (
+    Comparison,
+    Finding,
+    compare_cases,
+    constructor_findings,
+    finding_id,
+)
 from didibreak.config import ConfigError, find_pyproject
 from didibreak.contracts import case_contradicts
 from didibreak.functions import ChangedFunction, import_root, module_name
@@ -41,6 +49,7 @@ from didibreak.harness import (
 )
 from didibreak.llm.common import (
     CHARS_PER_TOKEN,
+    MAX_OUTPUT_TOKENS,
     LLMClient,
     LLMInvalidResponseError,
     LLMReply,
@@ -158,7 +167,9 @@ class Analysis:
         type_mismatch_dropped: Findings dropped because their inputs
             contradict the function's type annotations (task 21a).
         construction_dropped: Method cases dropped because the instance
-            could not be built in one version or both (task 30).
+            could not be built in either version (task 30); a case built in
+            one version only is a ``Class.__init__`` finding instead (task
+            38).
         runs: Every case run, with both outcomes, by report name (input for
             the refinement round).
     """
@@ -249,43 +260,98 @@ def _built_cases(
     return kept, _construction_reason(function, before, after)
 
 
+def _unique_cases(function: ChangedFunction, cases: Sequence[Case]) -> list[Case]:
+    # Cases that differ only in their (ignored) call arguments run once.
+    kept: dict[str, Case] = {}
+    for case in cases:
+        kept.setdefault(finding_id(function.report_name, case), case)
+    return list(kept.values())
+
+
+@dataclass(frozen=True)
+class _FunctionRun:
+    """One function run on both versions.
+
+    Attributes:
+        skip_reason: Why the function was not compared, or None.
+        comparison: Its comparison when it was compared.
+        runs: Every compared case with both outcomes.
+        constructor_findings: For a method, cases whose instance was built
+            in one version only (task 38); reported even when the method
+            itself is skipped.
+    """
+
+    skip_reason: str | None
+    comparison: Comparison | None = None
+    runs: tuple[CaseRun, ...] = ()
+    constructor_findings: tuple[Finding, ...] = ()
+
+
 def _run(
     function: ChangedFunction,
     cases: Sequence[Case],
     trees: tuple[Path, Path],
     base_path: str,
     settings: HarnessSettings,
-) -> tuple[Comparison, tuple[CaseRun, ...]] | str:
-    """Run one function on both versions; a str is the skip reason.
+) -> _FunctionRun:
+    """Run one function on both versions and compare the outcomes.
 
-    For an instance method, a case whose instance could not be built in one
-    version or both is dropped and counted (task 30); when no case is left,
+    For an instance method, a case whose instance could not be built in
+    one version or both is not compared (task 30); one built in one
+    version only is a constructor finding (task 38). When no case is left,
     the method is skipped with the reason.
     """
     base_tree, current_tree = trees
     if is_method(function):
         cases = [c if c.is_method_case else replace(c, init_args=()) for c in cases]
+    if is_constructor(function):  # only the constructor arguments matter
+        cases = _unique_cases(function, [replace(c, args=(), kwargs={}) for c in cases])
     before = None
     if function.kind == "changed":
         base = run_cases(_target(base_tree, base_path, function), cases, settings)
         if base.skip_reason is not None:
-            return f"{base.skip_reason} (base version)"
+            return _FunctionRun(f"{base.skip_reason} (base version)")
         before = base.outcomes
     current_target = _target(current_tree, function.file, function)
     current = run_cases(current_target, cases, settings)
     if current.skip_reason is not None:
-        return current.skip_reason
+        return _FunctionRun(current.skip_reason)
     after = current.outcomes
-    dropped = 0
-    if is_method(function):
-        built, reason = _built_cases(function, cases, before, after)
-        if reason is not None:
-            return reason
-        dropped = len(cases) - len(built)
-        cases = [cases[index] for index in built]
-        after = tuple(after[index] for index in built)
-        if before is not None:
-            before = tuple(before[index] for index in built)
+    if not is_method(function) or is_constructor(function):
+        # For __init__ a failed construction is the outcome to compare.
+        return _compared(function, cases, before, after)
+    constructors = (
+        ()
+        if before is None
+        else constructor_findings(function.report_name, cases, before, after)
+    )
+    built, reason = _built_cases(function, cases, before, after)
+    if reason is not None:
+        return _FunctionRun(reason, constructor_findings=constructors)
+    failed_in_both = sum(
+        1
+        for index in range(len(cases))
+        if after[index].construction_failed
+        and (before is None or before[index].construction_failed)
+    )
+    olds = None if before is None else tuple(before[index] for index in built)
+    result = _compared(
+        function,
+        [cases[index] for index in built],
+        olds,
+        tuple(after[index] for index in built),
+    )
+    assert result.comparison is not None
+    comparison = replace(result.comparison, construction_dropped=failed_in_both)
+    return replace(result, comparison=comparison, constructor_findings=constructors)
+
+
+def _compared(
+    function: ChangedFunction,
+    cases: Sequence[Case],
+    before: Sequence[Outcome] | None,
+    after: Sequence[Outcome],
+) -> _FunctionRun:
     comparison = compare_cases(
         function.report_name, cases, before, after, function.raised_types
     )
@@ -298,14 +364,13 @@ def _run(
         comparison,
         findings=kept,
         type_mismatch_dropped=len(comparison.findings) - len(kept),
-        construction_dropped=dropped,
     )
     olds = before if before is not None else (None,) * len(cases)
     runs = tuple(
         CaseRun(case, old, new)
         for case, old, new in zip(cases, olds, after, strict=True)
     )
-    return comparison, runs
+    return _FunctionRun(None, comparison, runs)
 
 
 def analyze(
@@ -345,6 +410,7 @@ def analyze(
     checked: list[ChangedFunction] = []
     skipped: list[ChangedFunction] = []
     runs: dict[str, tuple[CaseRun, ...]] = {}
+    constructors: dict[str, Finding] = {}  # by id: one per class and arguments
     with base_worktree(root, base_sha) as base, working_tree_copy(root, skip) as copy:
         for function in functions:
             function_cases = cases.get(function.report_name, ())
@@ -353,17 +419,21 @@ def analyze(
                 continue
             base_path = base_paths.get(function.file, function.file)
             result = _run(function, function_cases, (base, copy), base_path, settings)
-            if isinstance(result, str):
-                skipped.append(replace(function, skip_reason=result))
+            for finding in result.constructor_findings:
+                constructors.setdefault(finding.id, finding)
+            if result.comparison is None:
+                skipped.append(replace(function, skip_reason=result.skip_reason))
             else:
                 checked.append(function)
-                comparisons.append(result[0])
-                runs[function.report_name] = result[1]
+                comparisons.append(result.comparison)
+                runs[function.report_name] = result.runs
+    found = {f.id: f for comparison in comparisons for f in comparison.findings}
+    # A checked __init__ finds the same constructor findings as its methods.
+    found |= {key: f for key, f in constructors.items() if key not in found}
     return Analysis(
         findings=tuple(
             finding if finding.label else replace(finding, label=UNLABELLED)
-            for comparison in comparisons
-            for finding in comparison.findings
+            for finding in found.values()
         ),
         checked=tuple(checked),
         skipped=tuple(skipped),
@@ -443,6 +513,13 @@ TOKEN_LIMIT_REASON = "token limit"
 # A refinement prompt also lists the cases already tried: about this many
 # characters per case (call plus both outcomes).
 PREVIOUS_CHARS_PER_CASE = 160
+# Reply cap of a case-generation request (task 38). In 150 evaluation runs
+# a reply used at most about 4,100 output tokens for 12 cases (median
+# 1,300); the replies that reached the old 16,000 cap were runaway output,
+# and the retry of such a reply often ran away too. A smaller cap halves
+# what one costs; a larger one would only make it dearer.
+REPLY_TOKENS_PER_CASE = 700
+MIN_REPLY_TOKENS = 4000
 
 
 @dataclass(frozen=True)
@@ -595,10 +672,41 @@ class Budget:
             return TOKEN_LIMIT_REASON
         return None
 
+    def reply_cap(self, messages: Sequence[Message], ceiling: int | None = None) -> int:
+        """The output cap of one request: its ceiling, within both limits.
+
+        A reply cut off at the cap and its retry then cannot take the run
+        past max_tokens or max_cost (task 38).
+
+        Args:
+            messages: The request to send.
+            ceiling: Cap without limits; None means the case-generation cap
+                for ``count`` cases (case_reply_tokens()).
+
+        Returns:
+            At least 1 token; refusal() decides whether to send at all.
+        """
+        cap = case_reply_tokens(self.count) if ceiling is None else ceiling
+        prompt = estimate_call(messages, 0, 0)
+        if self.max_tokens is not None:
+            cap = min(cap, self.max_tokens - _total(self.usage) - prompt.input_tokens)
+        if self.price is not None and self.max_cost is not None:
+            left = self.max_cost - self.cost - cost_usd(prompt, self.price)
+            million = replace(prompt, output_tokens=1_000_000)
+            per_million = cost_usd(million, self.price) - cost_usd(prompt, self.price)
+            if per_million > 0:
+                cap = min(cap, int(left / per_million * 1_000_000))
+        return max(cap, 1)
+
     def _over_max_cost(self, estimate: TokenUsage) -> bool:
         if self.price is None or self.max_cost is None:
             return False  # without a price the cost limit cannot be enforced
         return self.cost + cost_usd(estimate, self.price) > self.max_cost
+
+
+def case_reply_tokens(count: int) -> int:
+    """Output cap of a case-generation reply for ``count`` cases (task 38)."""
+    return min(MAX_OUTPUT_TOKENS, max(MIN_REPLY_TOKENS, REPLY_TOKENS_PER_CASE * count))
 
 
 def _total(usage: TokenUsage) -> int:
@@ -620,7 +728,13 @@ def _ask(
         return spending.refusal(messages, spent) is None
 
     try:
-        reply = client.complete_json(messages, schema[0], schema[1], may_continue)
+        reply = client.complete_json(
+            messages,
+            schema[0],
+            schema[1],
+            may_continue,
+            max_output_tokens=spending.reply_cap(messages),
+        )
     except LLMInvalidResponseError as error:
         spending.add(error.usage)
         return INVALID_RESPONSE_REASON
@@ -631,6 +745,41 @@ def _ask(
         return _UNAVAILABLE
     spending.add(reply.usage)
     return reply
+
+
+def _ask_valid(
+    client: LLMClient,
+    messages: Sequence[Message],
+    spending: Budget,
+    function: ChangedFunction,
+    count: int,
+    stop: str | None,
+) -> tuple[CaseBatch, int] | str | object | None:
+    """Accepted cases and the number rejected, a skip reason, or _UNAVAILABLE.
+
+    When no case of a reply is valid, the same request is sent once more
+    if the limits allow it (task 38: 3 of 38 evaluation runs lost a
+    function this way to model variance). None when ``stop`` is set.
+    """
+    if stop is not None:
+        return None
+    schema = cases_schema(function)
+    batch, rejected = CaseBatch((), 0), 0
+    for attempt in range(2):
+        if attempt and spending.refusal(messages) is not None:
+            break  # no room for the second request: no valid cases
+        result = _ask(client, messages, spending, schema)
+        if attempt and result is not _UNAVAILABLE and not isinstance(result, LLMReply):
+            break  # the second reply is unusable: still no valid cases
+        if not isinstance(result, LLMReply):
+            return result
+        batch = accept_cases(
+            result.data, count, function.report_name, is_method(function)
+        )
+        rejected += batch.invalid
+        if batch.cases:
+            break
+    return batch, rejected
 
 
 def generate_cases(
@@ -657,10 +806,12 @@ def generate_cases(
 
     Returns:
         Accepted cases, skipped functions, and the usage and cost of this
-        round. An invalid reply (after the client's one retry) skips that
-        function; an unavailable provider, the cost limit or the token limit
-        skips it and all remaining functions; any other rejected request
-        (HTTP 4xx except 401/403/404) skips that function.
+        round. A reply without any valid case is asked for once more when
+        the limits allow it (task 38). An invalid reply (after the client's
+        one retry) skips that function; an unavailable provider, the cost
+        limit or the token limit skips it and all remaining functions; any
+        other rejected request (HTTP 4xx except 401/403/404) skips that
+        function.
 
     Raises:
         LLMAuthError: The key was rejected (HTTP 401/403).
@@ -678,20 +829,17 @@ def generate_cases(
         else:
             messages = build_refinement_messages(function, count, template, tried)
         stop = spending.refusal(messages)
-        schema = cases_schema(function)
-        result = _ask(client, messages, spending, schema) if stop is None else None
+        result = _ask_valid(client, messages, spending, function, count, stop)
         if result is _UNAVAILABLE:
             stop = UNAVAILABLE_REASON
         if stop is not None:
             skipped += [replace(rest, skip_reason=stop) for rest in functions[index:]]
             break
-        if not isinstance(result, LLMReply):  # a skip reason
+        if not isinstance(result, tuple):  # a skip reason
             skipped.append(replace(function, skip_reason=str(result)))
             continue
-        batch = accept_cases(
-            result.data, count, function.report_name, is_method(function)
-        )
-        invalid += batch.invalid
+        batch, rejected = result
+        invalid += rejected
         new = _not_tried(function.report_name, batch.cases, tried)
         if new:
             cases[function.report_name] = new

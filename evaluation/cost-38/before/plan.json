@@ -1,0 +1,201 @@
+{
+  "budget": 5.0,
+  "max_cost_per_run": 0.1,
+  "extra_spent": 0.0,
+  "extra_spent_note": "Task 38 cost measurement (before the retry and reply-cap change): asyncstdlib (task 29) and boltons (task 30) scenarios.",
+  "repos": {
+    "asyncstdlib": {
+      "url": "https://github.com/maxfischer2781/asyncstdlib",
+      "head": "0f01ce7"
+    },
+    "boltons": {
+      "url": "https://github.com/mahmoud/boltons",
+      "head": "d31d821"
+    }
+  },
+  "scenarios": [
+    {
+      "id": "asyncstdlib-replay-3879b3d",
+      "repo": "asyncstdlib",
+      "kind": "replay",
+      "commit": "3879b3dcdd17665b2634f77775167f9d19c0aac1",
+      "intent": "Refactor the builtins module for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-replay-fa54340",
+      "repo": "asyncstdlib",
+      "kind": "replay",
+      "commit": "fa543404c980d7928116c12ee43c9219040926b2",
+      "intent": "Refactor the builtins module for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-replay-fb1dca4",
+      "repo": "asyncstdlib",
+      "kind": "replay",
+      "commit": "fb1dca469bd8b54adf717f7756695ce9e7b7c09d",
+      "intent": "Refactor the builtins module for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-replay-730c981",
+      "repo": "asyncstdlib",
+      "kind": "replay",
+      "commit": "730c981c82590c2923fb62277ef2be39b8cbbc9e",
+      "intent": "Refactor the builtins module for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-replay-b537d07",
+      "repo": "asyncstdlib",
+      "kind": "replay",
+      "commit": "b537d076bfd10251ca8bb933e0ff5b9a4b6fbc82",
+      "intent": "Refactor the heapq module for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-replay-d5363de",
+      "repo": "asyncstdlib",
+      "kind": "replay",
+      "commit": "d5363de84d4b15633f5af05ef7517dba5e2e7fdf",
+      "intent": "Refactor the builtins module for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-seeded-refactor-sum",
+      "repo": "asyncstdlib",
+      "kind": "seeded",
+      "commit": "0f01ce79fcdeedee199971fa7dae150018766aa3",
+      "patch": "patches/asyncstdlib-seeded-refactor-sum.diff",
+      "intent": "Refactor sum() for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-seeded-refactor-all_any",
+      "repo": "asyncstdlib",
+      "kind": "seeded",
+      "commit": "0f01ce79fcdeedee199971fa7dae150018766aa3",
+      "patch": "patches/asyncstdlib-seeded-refactor-all_any.diff",
+      "intent": "Refactor all() and any() for readability; behavior must not change."
+    },
+    {
+      "id": "asyncstdlib-seeded-feature-sorted",
+      "repo": "asyncstdlib",
+      "kind": "seeded",
+      "commit": "0f01ce79fcdeedee199971fa7dae150018766aa3",
+      "patch": "patches/asyncstdlib-seeded-feature-sorted.diff",
+      "intent": "Sort None values last in sorted()."
+    },
+    {
+      "id": "asyncstdlib-seeded-feature-dict",
+      "repo": "asyncstdlib",
+      "kind": "seeded",
+      "commit": "0f01ce79fcdeedee199971fa7dae150018766aa3",
+      "patch": "patches/asyncstdlib-seeded-feature-dict.diff",
+      "intent": "Let dict() accept a mapping as its first argument, like the builtin dict()."
+    },
+    {
+      "id": "boltons-replay-8a49b74",
+      "repo": "boltons",
+      "kind": "replay",
+      "commit": "8a49b74eb9854f781f64d3a5d55f82482fe49685",
+      "intent": "Refactor the dictutils module for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-replay-1cdc0e9",
+      "repo": "boltons",
+      "kind": "replay",
+      "commit": "1cdc0e9d36f3eb32608f3b34885717697643e9b8",
+      "intent": "Refactor the statsutils module for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-replay-a180020",
+      "repo": "boltons",
+      "kind": "replay",
+      "commit": "a180020c760b532e8889f161d97d05647adfee8c",
+      "intent": "Refactor the setutils module for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-replay-a1ea103",
+      "repo": "boltons",
+      "kind": "replay",
+      "commit": "a1ea1030ed85137e999c0bd9b11d16368d3ab241",
+      "intent": "Refactor the dictutils module for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-replay-ec1ff9f",
+      "repo": "boltons",
+      "kind": "replay",
+      "commit": "ec1ff9f6728f5f857402b294c218be731c62af5f",
+      "intent": "Refactor the setutils module for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-replay-d0a284f",
+      "repo": "boltons",
+      "kind": "replay",
+      "commit": "d0a284fc7ef1aebceb54798600d73be4eeb76ed8",
+      "intent": "Refactor the setutils module for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-replay-609cabe",
+      "repo": "boltons",
+      "kind": "replay",
+      "commit": "609cabe932a1ea1423b24568644945abb1b8bb84",
+      "intent": "Refactor the setutils module for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-replay-c463d16",
+      "repo": "boltons",
+      "kind": "replay",
+      "commit": "c463d1633a075c398d6ffad7d8653064a615b696",
+      "intent": "Refactor the dictutils module for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-replay-f9c4f30",
+      "repo": "boltons",
+      "kind": "replay",
+      "commit": "f9c4f30511b58c543bda7e4c04193fd480f68b24",
+      "intent": "Refactor the listutils module for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-replay-6cac49c",
+      "repo": "boltons",
+      "kind": "replay",
+      "commit": "6cac49ce4eba506a3582e8089bcc347c6b2fa70f",
+      "intent": "Refactor the dictutils module for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-replay-8177b93",
+      "repo": "boltons",
+      "kind": "replay",
+      "commit": "8177b933b418d91c7280909690f45589fbe004d2",
+      "intent": "Refactor the dictutils module for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-seeded-refactor-indexedset_add",
+      "repo": "boltons",
+      "kind": "seeded",
+      "commit": "d31d821d56c8f7756af9c30a864077f2e5855321",
+      "patch": "patches/boltons-seeded-refactor-indexedset_add.diff",
+      "intent": "Refactor IndexedSet.add for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-seeded-refactor-omd_getlist",
+      "repo": "boltons",
+      "kind": "seeded",
+      "commit": "d31d821d56c8f7756af9c30a864077f2e5855321",
+      "patch": "patches/boltons-seeded-refactor-omd_getlist.diff",
+      "intent": "Refactor OrderedMultiDict.getlist for readability; behavior must not change."
+    },
+    {
+      "id": "boltons-seeded-feature-indexedset_discard",
+      "repo": "boltons",
+      "kind": "seeded",
+      "commit": "d31d821d56c8f7756af9c30a864077f2e5855321",
+      "patch": "patches/boltons-seeded-feature-indexedset_discard.diff",
+      "intent": "Speed up IndexedSet.discard by not raising and catching KeyError."
+    },
+    {
+      "id": "boltons-seeded-feature-stats_quantile",
+      "repo": "boltons",
+      "kind": "seeded",
+      "commit": "d31d821d56c8f7756af9c30a864077f2e5855321",
+      "patch": "patches/boltons-seeded-feature-stats_quantile.diff",
+      "intent": "Let Stats.get_quantile() also accept percentages, such as 50 for the median."
+    }
+  ]
+}

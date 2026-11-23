@@ -139,6 +139,9 @@ class Outcome:
         state_repr: The same attributes as text, at most 2,000 characters.
         construction_failed: The constructor raised (``kind`` is
             ``exception`` and ``type_name`` its type); the method never ran.
+        construction: For a method case whose instance was built, what the
+            constructor did: ``return`` of the instance with its state right
+            after it was built, before the method ran (task 38).
     """
 
     kind: str
@@ -150,6 +153,7 @@ class Outcome:
     state: Mapping[str, Any] | None = None
     state_repr: str | None = None
     construction_failed: bool = False
+    construction: "Outcome | None" = None
 
 
 @dataclass(frozen=True)
@@ -239,6 +243,7 @@ def _check_literals(cases: Sequence[Case]) -> None:
 
 
 def _outcome(record: Mapping[str, Any]) -> Outcome:
+    built = record.get("construction")
     return Outcome(
         kind=record["kind"],
         type_name=record["type_name"],
@@ -248,6 +253,7 @@ def _outcome(record: Mapping[str, Any]) -> Outcome:
         state=record.get("state"),
         state_repr=record.get("state_repr"),
         construction_failed=bool(record.get("construction_failed", False)),
+        construction=None if built is None else _outcome(built),
     )
 
 
@@ -509,7 +515,9 @@ def check_import(
 
 
 def _result_key(outcome: Outcome) -> tuple[object, ...]:
-    return (outcome.kind, outcome.type_name, outcome.value, outcome.state)
+    built = outcome.construction
+    built_key = None if built is None else (built.type_name, built.state)
+    return (outcome.kind, outcome.type_name, outcome.value, outcome.state, built_key)
 
 
 def run_cases(

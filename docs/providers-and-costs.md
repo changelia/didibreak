@@ -60,16 +60,27 @@ LLM: 0 calls · 0 input tokens · 0 output tokens · cost $0.0000
   and ten functions of 20–80 lines are estimated at 85,000–121,000 tokens
   with refinement and labelling. The limit is checked before each request,
   against the tokens used so far plus that request's estimate, including
-  the retry after an unusable reply and the JSON-mode fallback request. So
-  a single request can go past the limit by the size of its own reply, and
-  no request is sent after that.
-- Each request also asks the server to stop after 16,000 output tokens
-  (more than five times the largest request in the evaluation), with the
-  field each server documents: `max_completion_tokens` for OpenAI and
-  OpenRouter, `max_tokens` for Anthropic, Ollama and LM Studio. Other
-  OpenAI-compatible servers get no such field, since an unknown field may
-  be rejected; there one reply is limited only by the model. A reply cut
-  off at the limit is an unusable reply (`invalid llm response`).
+  the retry after an unusable reply and the JSON-mode fallback request.
+  Each request's output cap (below) is also kept within what is left of
+  both limits, so on a server that honors the cap a cut-off reply cannot
+  take the run past either one.
+- Each request asks the server to stop after a number of output tokens,
+  with the field each server documents: `max_completion_tokens` for OpenAI
+  and OpenRouter, `max_tokens` for Anthropic, Ollama and LM Studio. A
+  case-generation request may use 700 tokens per requested case (8,400
+  for the default 12 cases; at least 4,000, at most 16,000); the labelling
+  request 16,000. In 150 evaluation runs a case-generation reply used at
+  most about 4,100 tokens (median 1,300); the replies that reached the
+  former 16,000 cap were runaway output, so a smaller cap makes such a
+  reply cheaper without cutting off normal ones. Other OpenAI-compatible
+  servers get no such field, since an unknown field may be rejected; there
+  one reply is limited only by the model. A reply cut off at the cap is an
+  unusable reply (`invalid llm response`).
+- The estimate does not include retries: an unusable reply asked for once
+  more, or a reply without any valid case asked for once more. They are
+  rare, the per-case output estimate already sits above what replies
+  usually use, and both limits are checked before each of them. A run
+  with a runaway reply can still cost a few times its estimate.
 - Both limits count the tokens the server reports. Some OpenAI-compatible
   servers and proxies report none (no `usage` object, zeros or negative
   numbers). For such a reply didibreak counts an estimate instead: the size
@@ -269,6 +280,7 @@ Things to know:
 | HTTP 429, 408, 409, 5xx, timeout or network error | Retries up to 2 times, waiting 1 s then 2 s, or the time in `Retry-After` (at most 30 s). |
 | Any other HTTP 4xx | Does not retry; `check` skips that function (`llm request rejected: <message>`) and continues. |
 | Reply is not JSON, does not match the schema, was refused or cut off | Asks once more; if the second reply is also unusable, the function is skipped. |
+| Reply is valid but none of its cases is (no Python literal, for example) | `check` sends the same request once more if the limits allow it; if that reply has no valid case either, the function is skipped (`no valid cases`). |
 
 Requests time out after 120 seconds without a response (10 seconds to
 connect).

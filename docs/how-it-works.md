@@ -12,7 +12,8 @@ One `didibreak check` run:
    changed when its code changes (formatting, comments and docstrings are
    ignored). New functions are found too; removed ones are listed.
 2. **Skip what cannot be run.** Generators (async generators too),
-   properties, dunder methods and functions with obvious I/O are skipped
+   properties, dunder methods other than `__init__` and functions with
+   obvious I/O are skipped
    with a reason ([limitations.md](limitations.md#functions-that-are-skipped)).
    Async functions ([Async functions](#async-functions)) and instance
    methods ([Instance methods](#instance-methods)) are run. Each
@@ -188,11 +189,20 @@ attribute in its `__dict__` and its `__slots__`.
   finding even when the result is the same: most methods that change
   `self` return `None`. The state is recorded after an exception too.
 - Building the instance runs under the same timeout and runtime I/O guard
-  as the call. A case whose instance cannot be built in one version or
-  both is dropped and counted (`construction_dropped`); a method with no
-  case left is skipped with `construction failed: <type>`, or with
+  as the call. A case whose instance cannot be built in either version
+  is dropped and counted (`construction_dropped`); a method with no case
+  left is skipped with `construction failed: <type>`, or with
   `constructor changed: ...` when the constructor changed and no
   arguments built both versions.
+- A case whose instance is built in one version only is a finding on
+  `Class.__init__`: the constructor now rejects arguments it accepted, or
+  the other way round. It is labelled against the intent like any other
+  finding and reported once per class and constructor arguments, shown
+  as `Order(0)`, with the state the version that built it left. A
+  changed `__init__` is checked itself the same way: its cases carry
+  constructor arguments only, and its outcome is the exception or the
+  instance's state right after it was built. Its reproducing test builds
+  the instance.
 - An async method is awaited as an async function.
 - The text report prints the case as `Account(100).deposit(-50)` and adds
   a `state before … → after …` line when the instance changed; the JSON

@@ -159,10 +159,13 @@ def format_case_call(
 
     Returns:
         For a method case, the constructor call on the class followed by the
-        method call, e.g. ``app/bank.py::Account(100).deposit(-5)``.
+        method call, e.g. ``app/bank.py::Account(100).deposit(-5)``; for
+        ``Class.__init__`` only the constructor call (task 38).
     """
     if init_args is None:
         return format_call(name, args, kwargs)
     owner, _, method = name.rpartition(".")
     instance = format_call(owner, init_args, init_kwargs or {})
+    if method == "__init__":
+        return instance
     return f"{instance}.{format_call(method, args, kwargs)}"

@@ -188,3 +188,11 @@ def test_a_reply_without_usage_counts_an_estimate(usage: object) -> None:
         calls=1,
         estimated_calls=1,
     )
+
+
+def test_a_request_can_ask_for_a_smaller_max_tokens() -> None:
+    client, sent = make_client([httpx.Response(200, json=message('{"labels": []}'))])
+
+    client.complete_json(MESSAGES, SCHEMA, "labels", max_output_tokens=4000)
+
+    assert sent[0]["body"]["max_tokens"] == 4000

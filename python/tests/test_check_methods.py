@@ -23,11 +23,17 @@ class Account:
 """
 
 
-def change(repository: GitRepository, before: str, after: str, cases: list[Any]) -> str:
+def change(
+    repository: GitRepository,
+    before: str,
+    after: str,
+    cases: list[Any],
+    method: str = "deposit",
+) -> str:
     repository.write("app/bank.py", before)
     repository.commit("base")
     repository.write("app/bank.py", after)
-    items = [{"function": "app/bank.py::Account.deposit", **case} for case in cases]
+    items = [{"function": f"app/bank.py::Account.{method}", **case} for case in cases]
     return str(repository.write("cases.json", json.dumps({"cases": items})))
 
 
@@ -151,7 +157,7 @@ def test_a_constructor_change_with_no_common_arguments_says_so(
         item["function"]: item["reason"] for item in report["summary"]["skipped"]
     }
     assert reasons == {
-        "app/bank.py::Account.__init__": "dunder method",
+        "app/bank.py::Account.__init__": "no cases",
         "app/bank.py::Account.deposit": (
             "constructor changed: no constructor arguments work in both versions"
         ),
@@ -214,3 +220,125 @@ def test_a_property_is_skipped_and_a_blocked_constructor_too(
         },
     ]
     assert not marker.exists()
+
+
+STRICT = BANK.replace("if balance < 0:", "if balance <= 0:")
+
+
+def test_a_constructor_that_now_rejects_an_argument_is_a_finding(
+    git_repository: GitRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    cases = change(
+        git_repository,
+        BANK,
+        STRICT,
+        [{"args": [], "init_args": ["0"]}, {"args": [], "init_args": ["5"]}],
+        "__init__",
+    )
+    monkeypatch.chdir(git_repository.path)
+
+    code, report = run(capsys, cases)
+
+    assert code == EXIT_FINDINGS
+    (finding,) = report["findings"]
+    assert finding["function"] == "app/bank.py::Account.__init__"
+    assert (finding["args"], finding["init_args"]) == ([], ["0"])
+    assert finding["before"]["state"] == "{'balance': 0}"
+    assert finding["after"]["type_name"] == "builtins.ValueError"
+    assert report["summary"]["construction_dropped"] == 0
+    assert report["summary"]["functions_checked"] == 1
+
+
+def test_the_constructor_finding_text_and_test_build_the_instance(
+    git_repository: GitRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    cases = change(
+        git_repository, BANK, STRICT, [{"args": [], "init_args": ["0"]}], "__init__"
+    )
+    monkeypatch.chdir(git_repository.path)
+
+    assert main(["check", "--cases-file", cases]) == EXIT_FINDINGS
+
+    out = capsys.readouterr().out
+    assert "app/bank.py::Account(0)" in out
+    assert "state before {'balance': 0} → after -" in out
+    test_file = git_repository.path / ".didibreak/tests/test_Account___init__.py"
+    text = test_file.read_text()
+    assert "    instance = Account(0)" in text
+    assert "    assert _state(instance) == {'balance': 0}" in text
+    command = [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"]
+    on_change = subprocess.run(command, cwd=test_file.parent, capture_output=True)
+    git_repository.write("app/bank.py", BANK)
+    on_base = subprocess.run(command, cwd=test_file.parent, capture_output=True)
+    assert (on_change.returncode, on_base.returncode) == (1, 0)
+
+
+def test_a_constructor_that_now_accepts_an_argument_expects_the_old_error(
+    git_repository: GitRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    cases = change(
+        git_repository, STRICT, BANK, [{"args": [], "init_args": ["0"]}], "__init__"
+    )
+    monkeypatch.chdir(git_repository.path)
+
+    _, report = run(capsys, cases)
+
+    (finding,) = report["findings"]
+    assert finding["before"]["type_name"] == "builtins.ValueError"
+    text = (git_repository.path / finding["test_file"]).read_text()
+    assert "    with pytest.raises(ValueError) as info:\n        Account(0)" in text
+
+
+def test_one_constructor_finding_for_several_methods_of_the_class(
+    git_repository: GitRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    extra = (
+        "\n    def withdraw(self, amount: int) -> None:\n"
+        "        self.balance -= amount\n"
+    )
+    after = STRICT.replace("self.balance += amount", "self.balance += amount * 2")
+    git_repository.write("app/bank.py", BANK + extra)
+    git_repository.commit("base")
+    git_repository.write("app/bank.py", after + extra.replace("-=", "-= 2 *"))
+    items = [
+        {"function": f"app/bank.py::Account.{name}", "args": ["1"], "init_args": ["0"]}
+        for name in ("deposit", "withdraw")
+    ]
+    cases = str(git_repository.write("cases.json", json.dumps({"cases": items})))
+    monkeypatch.chdir(git_repository.path)
+
+    _, report = run(capsys, cases)
+
+    assert [f["function"] for f in report["findings"]] == [
+        "app/bank.py::Account.__init__"
+    ]
+
+
+def test_a_method_case_finds_a_constructor_that_now_rejects_its_arguments(
+    git_repository: GitRepository,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    after = STRICT.replace("self.balance += amount", "self.balance += amount * 2")
+    cases = change(git_repository, BANK, after, [{"args": ["1"], "init_args": ["0"]}])
+    monkeypatch.chdir(git_repository.path)
+
+    assert main(["check", "--cases-file", cases]) == EXIT_FINDINGS
+
+    out = capsys.readouterr().out
+    assert "app/bank.py::Account(0)" in out
+    assert "state before {'balance': 0} → after -" in out
+    assert "app/bank.py::Account.deposit (construction failed: ValueError)" in out
+    text = (
+        git_repository.path / ".didibreak/tests/test_Account___init__.py"
+    ).read_text()
+    assert "    instance = Account(0)\n    assert _type_name(instance) ==" in text
+    assert "    assert _state(instance) == {'balance': 0}" in text

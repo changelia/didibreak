@@ -1,0 +1,334 @@
+{
+  "scenario": {
+    "id": "asyncstdlib-seeded-feature-sorted",
+    "repo": "asyncstdlib",
+    "kind": "seeded",
+    "commit": "0f01ce79fcdeedee199971fa7dae150018766aa3",
+    "intent": "Sort None values last in sorted().",
+    "patch": "patches/asyncstdlib-seeded-feature-sorted.diff"
+  },
+  "base_sha": "0f01ce79fcdeedee199971fa7dae150018766aa3",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Sort None values last in sorted().",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 22.6,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~6,854 input + ~7,200 output tokens, ~$0.0043 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.3.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "0f01ce79fcdeedee199971fa7dae150018766aa3"
+    },
+    "intent": "Stated by the user: Sort None values last in sorted().",
+    "findings": [
+      {
+        "id": "0a549ff92cba",
+        "function": "asyncstdlib/builtins.py::sorted",
+        "label": "unexpected",
+        "reason": "The change removes a duplicate value, which is unrelated to sorting None values last.",
+        "confidence": "high",
+        "args": [
+          "[3, 1, 3, 2]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[1, 2, 3, 3]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[1, 2, 3]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-algnce2i/out/tests/test_sorted.py"
+      },
+      {
+        "id": "b92188ed911d",
+        "function": "asyncstdlib/builtins.py::sorted",
+        "label": "unexpected",
+        "reason": "The change removes a duplicate value, which is unrelated to sorting None values last.",
+        "confidence": "high",
+        "args": [
+          "['pear', 'apple', 'pear', 'banana']"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "['apple', 'banana', 'pear', 'pear']"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "['apple', 'banana', 'pear']"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-algnce2i/out/tests/test_sorted.py"
+      },
+      {
+        "id": "33e76b3295e8",
+        "function": "asyncstdlib/builtins.py::sorted",
+        "label": "unexpected",
+        "reason": "The change removes a duplicate value, which is unrelated to sorting None values last.",
+        "confidence": "high",
+        "args": [
+          "[(2, 'b'), (1, 'a'), (2, 'b')]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[(1, 'a'), (2, 'b'), (2, 'b')]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[(1, 'a'), (2, 'b')]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-algnce2i/out/tests/test_sorted.py"
+      },
+      {
+        "id": "8d9fcf26b129",
+        "function": "asyncstdlib/builtins.py::sorted",
+        "label": "unexpected",
+        "reason": "Although sorting None values is within the intent, dropping two of the None values is not.",
+        "confidence": "high",
+        "args": [
+          "[None, None, None]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"'<' not supported between instances of 'NoneType' and 'NoneType'\")",
+          "message": "'<' not supported between instances of 'NoneType' and 'NoneType'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[None]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-algnce2i/out/tests/test_sorted.py"
+      },
+      {
+        "id": "24afa064d619",
+        "function": "asyncstdlib/builtins.py::sorted",
+        "label": "expected",
+        "reason": "The result sorts the non-None values and places None last, as intended.",
+        "confidence": "high",
+        "args": [
+          "[3, None, 1]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"'<' not supported between instances of 'NoneType' and 'int'\")",
+          "message": "'<' not supported between instances of 'NoneType' and 'int'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[1, 3, None]"
+        },
+        "test_file": null
+      },
+      {
+        "id": "32a387b4f6b7",
+        "function": "asyncstdlib/builtins.py::sorted",
+        "label": "unexpected",
+        "reason": "With reverse=True, None is placed first rather than last as the intent specifies.",
+        "confidence": "high",
+        "args": [
+          "[3, None, 1]"
+        ],
+        "kwargs": {
+          "reverse": "True"
+        },
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"'<' not supported between instances of 'NoneType' and 'int'\")",
+          "message": "'<' not supported between instances of 'NoneType' and 'int'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[None, 3, 1]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-algnce2i/out/tests/test_sorted.py"
+      },
+      {
+        "id": "459018d63b79",
+        "function": "asyncstdlib/builtins.py::sorted",
+        "label": "unexpected",
+        "reason": "The change makes sorting a list of lists fail, which is unrelated to sorting None values last.",
+        "confidence": "high",
+        "args": [
+          "[[2], [1], [1]]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[[1], [1], [2]]"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"unhashable type: 'list'\")",
+          "message": "unhashable type: 'list'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-algnce2i/out/tests/test_sorted.py"
+      },
+      {
+        "id": "3102a366722c",
+        "function": "asyncstdlib/builtins.py::sorted",
+        "label": "unexpected",
+        "reason": "The change removes a duplicate value, which is unrelated to sorting None values last.",
+        "confidence": "high",
+        "args": [
+          "[False, True, False]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[False, False, True]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[False, True]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-algnce2i/out/tests/test_sorted.py"
+      },
+      {
+        "id": "4694f0add351",
+        "function": "asyncstdlib/builtins.py::sorted",
+        "label": "unexpected",
+        "reason": "The change removes a value, which is unrelated to sorting None values last.",
+        "confidence": "high",
+        "args": [
+          "[1, True, 0]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[0, 1, True]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[0, 1]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-algnce2i/out/tests/test_sorted.py"
+      },
+      {
+        "id": "356ffcdee85b",
+        "function": "asyncstdlib/builtins.py::sorted",
+        "label": "unexpected",
+        "reason": "The change removes a duplicate value, which is unrelated to sorting None values last.",
+        "confidence": "high",
+        "args": [
+          "[b'z', b'a', b'z']"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[b'a', b'z', b'z']"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[b'a', b'z']"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-algnce2i/out/tests/test_sorted.py"
+      },
+      {
+        "id": "32a4eb424dd2",
+        "function": "asyncstdlib/builtins.py::sorted",
+        "label": "unexpected",
+        "reason": "The change removes a duplicate value, which is unrelated to sorting None values last.",
+        "confidence": "high",
+        "args": [
+          "[1000000000000000000000000000000, -1000000000000000000000000000000, 1000000000000000000000000000000]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[-1000000000000000000000000000000, 1000000000000000000000000000000, 1000000000000000000000000000000]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[-1000000000000000000000000000000, 1000000000000000000000000000000]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-algnce2i/out/tests/test_sorted.py"
+      },
+      {
+        "id": "1d96c95600cf",
+        "function": "asyncstdlib/builtins.py::sorted",
+        "label": "unexpected",
+        "reason": "The change removes a duplicate value, which is unrelated to sorting None values last.",
+        "confidence": "high",
+        "args": [
+          "['\u00e9', '\u96ea', '\u00e9', '\ud83d\ude42']"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "['\u00e9', '\u00e9', '\u96ea', '\ud83d\ude42']"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "['\u00e9', '\u96ea', '\ud83d\ude42']"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-algnce2i/out/tests/test_sorted.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 1,
+        "unexpected": 11,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2420,
+      "output_tokens": 2032,
+      "cost_usd": 0.001258
+    }
+  }
+}

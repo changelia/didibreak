@@ -1,0 +1,584 @@
+{
+  "scenario": {
+    "id": "boltons-replay-8177b93",
+    "repo": "boltons",
+    "kind": "replay",
+    "commit": "8177b933b418d91c7280909690f45589fbe004d2",
+    "intent": "Refactor the dictutils module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "8177b933b418d91c7280909690f45589fbe004d2",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the dictutils module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 31.9,
+  "stderr": "Estimated: up to 5 LLM calls (2 + up to 2 refinement + 1 labelling) with gpt-6-luna, ~12,004 input + ~14,400 output tokens, ~$0.0084 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.3.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "8177b933b418d91c7280909690f45589fbe004d2"
+    },
+    "intent": "Stated by the user: Refactor the dictutils module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "c2dc191545bb",
+        "function": "boltons/dictutils.py::OrderedMultiDict.addlist",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises TypeError instead of returning None.",
+        "confidence": "high",
+        "args": [
+          "'zero-key'",
+          "0"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"'int' object is not iterable\")",
+          "message": "'int' object is not iterable",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_addlist.py"
+      },
+      {
+        "id": "b722b64a90c4",
+        "function": "boltons/dictutils.py::OrderedMultiDict.addlist",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises TypeError instead of returning None.",
+        "confidence": "high",
+        "args": [
+          "'false-key'",
+          "False"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"'bool' object is not iterable\")",
+          "message": "'bool' object is not iterable",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_addlist.py"
+      },
+      {
+        "id": "941d5444057d",
+        "function": "boltons/dictutils.py::OrderedMultiDict.addlist",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises TypeError instead of returning None.",
+        "confidence": "high",
+        "args": [
+          "'none-key'",
+          "None"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"'NoneType' object is not iterable\")",
+          "message": "'NoneType' object is not iterable",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_addlist.py"
+      },
+      {
+        "id": "ca0e4a9ea583",
+        "function": "boltons/dictutils.py::OrderedMultiDict.addlist",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises TypeError instead of returning None.",
+        "confidence": "high",
+        "args": [
+          "[]",
+          "[]"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"unhashable type: 'list'\")",
+          "message": "unhashable type: 'list'",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_addlist.py"
+      },
+      {
+        "id": "f01b1522688a",
+        "function": "boltons/dictutils.py::OrderedMultiDict.addlist",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises TypeError instead of returning None.",
+        "confidence": "high",
+        "args": [
+          "{}",
+          "()"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"unhashable type: 'dict'\")",
+          "message": "unhashable type: 'dict'",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_addlist.py"
+      },
+      {
+        "id": "61351b18bbf4",
+        "function": "boltons/dictutils.py::OrderedMultiDict.addlist",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises TypeError instead of returning None.",
+        "confidence": "high",
+        "args": [
+          "[1]",
+          "''"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"unhashable type: 'list'\")",
+          "message": "unhashable type: 'list'",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_addlist.py"
+      },
+      {
+        "id": "ec03bdc58e29",
+        "function": "boltons/dictutils.py::OrderedMultiDict.addlist",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises TypeError instead of returning None.",
+        "confidence": "high",
+        "args": [
+          "{'x': 1}",
+          "{}"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"unhashable type: 'dict'\")",
+          "message": "unhashable type: 'dict'",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_addlist.py"
+      },
+      {
+        "id": "cd1e6da394f9",
+        "function": "boltons/dictutils.py::OrderedMultiDict.poplast",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises KeyError instead of returning the default None.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "default": "None"
+        },
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.KeyError",
+          "repr": "KeyError(\"empty <class 'boltons.dictutils.OrderedMultiDict'>\")",
+          "message": "\"empty <class 'boltons.dictutils.OrderedMultiDict'>\"",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_poplast.py"
+      },
+      {
+        "id": "b0eec6ad9d5d",
+        "function": "boltons/dictutils.py::OrderedMultiDict.poplast",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises KeyError instead of returning the default False.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "default": "False"
+        },
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.KeyError",
+          "repr": "KeyError(\"empty <class 'boltons.dictutils.OrderedMultiDict'>\")",
+          "message": "\"empty <class 'boltons.dictutils.OrderedMultiDict'>\"",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_poplast.py"
+      },
+      {
+        "id": "c17b7c586bc0",
+        "function": "boltons/dictutils.py::OrderedMultiDict.poplast",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises KeyError instead of returning the default 0.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "default": "0"
+        },
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "0",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.KeyError",
+          "repr": "KeyError(\"empty <class 'boltons.dictutils.OrderedMultiDict'>\")",
+          "message": "\"empty <class 'boltons.dictutils.OrderedMultiDict'>\"",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_poplast.py"
+      },
+      {
+        "id": "d46a5c6b8bb4",
+        "function": "boltons/dictutils.py::OrderedMultiDict.poplast",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises KeyError instead of returning the default -7.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "default": "-7"
+        },
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "-7",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.KeyError",
+          "repr": "KeyError(\"empty <class 'boltons.dictutils.OrderedMultiDict'>\")",
+          "message": "\"empty <class 'boltons.dictutils.OrderedMultiDict'>\"",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_poplast.py"
+      },
+      {
+        "id": "806d57af84ac",
+        "function": "boltons/dictutils.py::OrderedMultiDict.poplast",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises KeyError instead of returning the default empty string.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "default": "''"
+        },
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "''",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.KeyError",
+          "repr": "KeyError(\"empty <class 'boltons.dictutils.OrderedMultiDict'>\")",
+          "message": "\"empty <class 'boltons.dictutils.OrderedMultiDict'>\"",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_poplast.py"
+      },
+      {
+        "id": "6dd22dbc4bca",
+        "function": "boltons/dictutils.py::OrderedMultiDict.poplast",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises KeyError instead of returning the supplied fallback.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "default": "'fallback'"
+        },
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'fallback'",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.KeyError",
+          "repr": "KeyError(\"empty <class 'boltons.dictutils.OrderedMultiDict'>\")",
+          "message": "\"empty <class 'boltons.dictutils.OrderedMultiDict'>\"",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_poplast.py"
+      },
+      {
+        "id": "3d0e87415135",
+        "function": "boltons/dictutils.py::OrderedMultiDict.poplast",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises KeyError instead of returning the supplied fallback.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "default": "b'fallback'"
+        },
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bytes",
+          "repr": "b'fallback'",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.KeyError",
+          "repr": "KeyError(\"empty <class 'boltons.dictutils.OrderedMultiDict'>\")",
+          "message": "\"empty <class 'boltons.dictutils.OrderedMultiDict'>\"",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_poplast.py"
+      },
+      {
+        "id": "a48fc140cea5",
+        "function": "boltons/dictutils.py::OrderedMultiDict.poplast",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises KeyError instead of returning the default empty list.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "default": "[]"
+        },
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[]",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.KeyError",
+          "repr": "KeyError(\"empty <class 'boltons.dictutils.OrderedMultiDict'>\")",
+          "message": "\"empty <class 'boltons.dictutils.OrderedMultiDict'>\"",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_poplast.py"
+      },
+      {
+        "id": "01dbd42db7aa",
+        "function": "boltons/dictutils.py::OrderedMultiDict.poplast",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises KeyError instead of returning the default list.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "default": "[1, 2]"
+        },
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[1, 2]",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.KeyError",
+          "repr": "KeyError(\"empty <class 'boltons.dictutils.OrderedMultiDict'>\")",
+          "message": "\"empty <class 'boltons.dictutils.OrderedMultiDict'>\"",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_poplast.py"
+      },
+      {
+        "id": "8c5f9f13d58b",
+        "function": "boltons/dictutils.py::OrderedMultiDict.poplast",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises KeyError instead of returning the default empty tuple.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "default": "()"
+        },
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "()",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.KeyError",
+          "repr": "KeyError(\"empty <class 'boltons.dictutils.OrderedMultiDict'>\")",
+          "message": "\"empty <class 'boltons.dictutils.OrderedMultiDict'>\"",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_poplast.py"
+      },
+      {
+        "id": "a23b9de62642",
+        "function": "boltons/dictutils.py::OrderedMultiDict.poplast",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises KeyError instead of returning the default empty dictionary.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "default": "{}"
+        },
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{}",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.KeyError",
+          "repr": "KeyError(\"empty <class 'boltons.dictutils.OrderedMultiDict'>\")",
+          "message": "\"empty <class 'boltons.dictutils.OrderedMultiDict'>\"",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_poplast.py"
+      },
+      {
+        "id": "95b0acff5407",
+        "function": "boltons/dictutils.py::OrderedMultiDict.poplast",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises KeyError instead of returning the default set.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "default": "{1, 2}"
+        },
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{1, 2}",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.KeyError",
+          "repr": "KeyError(\"empty <class 'boltons.dictutils.OrderedMultiDict'>\")",
+          "message": "\"empty <class 'boltons.dictutils.OrderedMultiDict'>\"",
+          "state": "{'_map': {}, 'root': [[...], [...], None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wqwnrvw8/out/tests/test_OrderedMultiDict_poplast.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 2,
+      "cases_run": 24,
+      "findings": {
+        "expected": 0,
+        "unexpected": 19,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 3,
+      "input_tokens": 4506,
+      "output_tokens": 3387,
+      "cost_usd": 0.0021441
+    }
+  }
+}

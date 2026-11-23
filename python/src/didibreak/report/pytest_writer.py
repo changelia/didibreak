@@ -18,7 +18,7 @@ from pathlib import Path
 from didibreak._harness_child import normalize
 from didibreak.arguments import format_call
 from didibreak.cache import ignore_output_dir
-from didibreak.compare import Finding
+from didibreak.compare import Finding, is_constructor_finding
 from didibreak.functions import module_name
 from didibreak.harness import PROCESS_EXITED_TYPE, Outcome, case_call
 from didibreak.pipeline import tree_import_root
@@ -146,9 +146,9 @@ def _call(subject: Subject, subject_name: str, finding: Finding) -> str:
     return f"asyncio.run({call})" if subject.is_async else call
 
 
-def _instance_line(subject: Subject, subject_name: str, finding: Finding) -> str:
+def _instance_line(subject_name: str, finding: Finding) -> str:
     # The class is the imported name; nested classes keep their path.
-    owner = subject.qualname.rpartition(".")[0]
+    owner = finding.function.partition("::")[2].rpartition(".")[0]
     class_path = subject_name + owner[len(owner.partition(".")[0]) :]
     case = finding.case
     constructor = format_call(class_path, case.init_args or (), case.init_kwargs)
@@ -243,6 +243,20 @@ def _comment_lines(finding: Finding) -> list[str]:
     return lines
 
 
+def _constructor_lines(subject_name: str, finding: Finding) -> list[str]:
+    """Build the instance as the base did: the exception, or type and state."""
+    before = finding.before
+    assert before is not None
+    instance = _instance_line(subject_name, finding)
+    if before.kind == "exception":
+        return _exception_lines(instance.removeprefix("    instance = "), before)
+    return [
+        instance,
+        f"    assert _type_name(instance) == {before.type_name!r}",
+        *_state_lines(finding),
+    ]
+
+
 def render_test(finding: Finding, subject_name: str, subject: Subject) -> str:
     """One test function for one finding that has a base outcome."""
     before = finding.before
@@ -254,8 +268,10 @@ def render_test(finding: Finding, subject_name: str, subject: Subject) -> str:
         if before.kind == "exception"
         else _return_lines(call, finding)
     )
-    if subject.is_method:
-        instance = _instance_line(subject, subject_name, finding)
+    if is_constructor_finding(finding):  # task 38
+        body = _constructor_lines(subject_name, finding)
+    elif subject.is_method:
+        instance = _instance_line(subject_name, finding)
         body = [instance, *body, *_state_lines(finding)]
     return "\n".join([*_comment_lines(finding), f"def {test_name}() -> None:", *body])
 

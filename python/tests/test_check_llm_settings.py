@@ -104,7 +104,8 @@ def test_complete_settings_reach_the_llm_without_showing_the_key(
 
     assert main(["check", "--provider", "openai"]) == EXIT_OK
     err = "".join(capsys.readouterr())
-    assert fake_llm == ["https://api.openai.com/v1/chat/completions"]
+    # An empty case list is asked for once more (task 38).
+    assert fake_llm == ["https://api.openai.com/v1/chat/completions"] * 2
     assert "app.py::f (no valid cases)" in err
     assert "sk-secret-in-env" not in err
 
@@ -128,7 +129,7 @@ def test_provider_is_inferred_from_the_only_key_set(
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-only")
 
     assert main(["check"]) == EXIT_OK
-    assert fake_llm == ["https://api.anthropic.com/v1/messages"]
+    assert fake_llm == ["https://api.anthropic.com/v1/messages"] * 2
     assert "provider" not in "".join(capsys.readouterr())
 
 

@@ -10,7 +10,7 @@ Colors only when the caller asks for them.
 
 from collections.abc import Sequence
 
-from didibreak.compare import Finding, state_changed
+from didibreak.compare import Finding, is_constructor_finding, state_changed
 from didibreak.functions import Detection
 from didibreak.harness import Outcome, case_call
 from didibreak.report import Report, SkippedItem
@@ -84,7 +84,13 @@ def _finding_lines(finding: Finding, color: bool) -> list[str]:
         f"after {_describe(finding.after)}",
     ]
     before, after = finding.before, finding.after
-    if before is not None and state_changed(before, after):
+    if is_constructor_finding(finding):  # task 38: built in one version only
+        assert before is not None
+        lines.append(
+            f"  {'':<{_INDENT}}state before {printable(before.state_repr or '-')} → "
+            f"after {printable(after.state_repr or '-')}"
+        )
+    elif before is not None and state_changed(before, after):
         # Task 30: the result can be the same while the instance changed.
         lines.append(
             f"  {'':<{_INDENT}}state before {printable(before.state_repr or '')} → "

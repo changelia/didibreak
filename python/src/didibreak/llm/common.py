@@ -193,6 +193,7 @@ class LLMClient(Protocol):
         schema: Mapping[str, Any],
         schema_name: str,
         may_continue: MayContinue | None = None,
+        max_output_tokens: int = MAX_OUTPUT_TOKENS,
     ) -> LLMReply:
         """Ask for a JSON object matching ``schema``; see the implementations."""
         ...

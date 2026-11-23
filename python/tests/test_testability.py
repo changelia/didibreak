@@ -103,11 +103,21 @@ def test_properties_are_skipped(decorator: str, reason: str | None) -> None:
     assert _reason(source, function_type, False, "Box.size") == reason
 
 
-@pytest.mark.parametrize("name", ["__init__", "__eq__", "__repr__", "__call__"])
+@pytest.mark.parametrize("name", ["__post_init__", "__eq__", "__repr__", "__call__"])
 def test_dunder_methods_are_skipped(name: str) -> None:
     source = f"class Box:\n    def {name}(self, *args):\n        return 1\n"
 
     assert _method_reason(source, f"Box.{name}") == "dunder method"
+
+
+def test_a_constructor_is_checked_unless_it_does_obvious_io() -> None:
+    plain = "class Box:\n    def __init__(self, size):\n        self.size = size\n"
+    noisy = plain.replace("self.size = size", "self.f = open(size)")
+
+    assert _method_reason(plain, "Box.__init__") is None
+    assert _method_reason(noisy, "Box.__init__") == (
+        "obvious I/O: open (in Box.__init__)"
+    )
 
 
 @pytest.mark.parametrize(

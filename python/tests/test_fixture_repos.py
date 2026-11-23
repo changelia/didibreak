@@ -44,6 +44,9 @@ def _call(case: str, version: str, item: dict[str, Any]) -> dict[str, str]:
             owner = getattr(owner, part)
         init_args = [ast.literal_eval(text) for text in item["init_args"]]
         init_kwargs = {k: ast.literal_eval(v) for k, v in item["init_kwargs"].items()}
+        if qualname.endswith(".__init__"):  # the construction is the outcome
+            module = file.removesuffix(".py").replace("/", ".")
+            return _construct(owner, module, init_args, init_kwargs)
         instance = owner(*init_args, **init_kwargs)
         target = getattr(instance, qualname.rsplit(".", 1)[-1])
     try:
@@ -68,21 +71,54 @@ def _call(case: str, version: str, item: dict[str, Any]) -> dict[str, str]:
         "repr": repr(result),
     }
     if instance is not None:
-        # The harness's state text: the attributes sorted by name.
-        attributes = sorted(vars(instance).items())
-        outcome["state"] = "{" + ", ".join(f"{k!r}: {v!r}" for k, v in attributes) + "}"
+        outcome["state"] = _state(instance)
     return outcome
 
 
-def _same(before: dict[str, str], after: dict[str, str]) -> bool:
+def _state(instance: object) -> str:
+    # The harness's state text: the attributes sorted by name.
+    attributes = sorted(vars(instance).items())
+    return "{" + ", ".join(f"{k!r}: {v!r}" for k, v in attributes) + "}"
+
+
+def _construct(
+    owner: Any, module: str, args: list[Any], kwargs: dict[str, Any]
+) -> dict[str, str]:
+    """Build the instance, as the harness checks a constructor (task 38).
+
+    ``module`` is the class's module as the harness imports it; the fixture
+    versions are loaded under other names.
+    """
+    try:
+        instance = owner(*args, **kwargs)
+    except Exception as error:
+        kind = type(error)
+        return {
+            "kind": "exception",
+            "type_name": f"{kind.__module__}.{kind.__qualname__}",
+            "repr": repr(error),
+        }
+    return {
+        "kind": "return",
+        "type_name": f"{module}.{owner.__qualname__}",
+        "repr": repr(instance),
+        "state": _state(instance),
+    }
+
+
+def _same(
+    before: dict[str, str], after: dict[str, str], constructor: bool = False
+) -> bool:
     if before["kind"] == "timeout" or after["kind"] == "timeout":
         return before == after
     if before.get("state") != after.get("state"):
         return False
     if before["kind"] != after["kind"] or before["type_name"] != after["type_name"]:
         return False
-    if before["kind"] == "exception":
-        return True  # same exception type = same behavior (Spec comparison rules)
+    if before["kind"] == "exception" or ("state" in before and constructor):
+        # Same exception type = same behavior (Spec comparison rules); an
+        # instance is compared by its type and state only.
+        return True
     if before["type_name"] == "builtins.float":
         return math.isclose(
             float(before["repr"]), float(after["repr"]), rel_tol=1e-9, abs_tol=1e-12
@@ -108,6 +144,8 @@ def test_the_required_cases_exist() -> None:
         "dataclass_method",
         "constructor_change",
         "method_blocked",
+        "constructor_rejects",
+        "constructor_rejection_intended",
     }
 
 
@@ -172,7 +210,10 @@ def test_documented_same_behavior_cases_do_not_differ(case: str) -> None:
         if item["function"] in new:
             # No base version; test_compare_fixtures checks there is no finding.
             continue
-        assert _same(_call(case, "before", item), _call(case, "after", item))
+        constructor = item["function"].endswith(".__init__")
+        assert _same(
+            _call(case, "before", item), _call(case, "after", item), constructor
+        )
 
 
 @pytest.mark.parametrize("case", CASES)
