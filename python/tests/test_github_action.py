@@ -378,7 +378,7 @@ def test_the_footer_keeps_only_version_and_hex_characters() -> None:
 
     body = action.build_comment(hostile, 0)
 
-    assert "didibreak 0.4.0bghostb · compared with base abcc" in body
+    assert "didibreak `0.4.0bghostb` · compared with base `abcc`" in body
 
 
 # --- post --------------------------------------------------------------------
