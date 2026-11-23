@@ -1,8 +1,452 @@
 {
   "cases": [
-    {"function": "github-action/selftest/prices.py::format_price", "args": ["-250"], "rationale": "negative amount"},
-    {"function": "github-action/selftest/prices.py::format_price", "args": ["100000"], "rationale": "thousands"},
-    {"function": "github-action/selftest/prices.py::format_price", "args": ["0"], "rationale": "zero"},
-    {"function": "github-action/selftest/prices.py::format_price", "args": ["13"], "rationale": "small amount"}
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "-250"
+      ],
+      "rationale": "negative amount"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "100000"
+      ],
+      "rationale": "thousands"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "0"
+      ],
+      "rationale": "zero"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "13"
+      ],
+      "rationale": "small amount"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000000"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000001"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000002"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000003"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000004"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000005"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000006"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000007"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000008"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000009"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000010"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000011"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000012"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000013"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000014"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000015"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000016"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000017"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000018"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000019"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000020"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000021"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000022"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000023"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000024"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000025"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000026"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000027"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000028"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000029"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000030"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000031"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000032"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000033"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000034"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000035"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000036"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000037"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000038"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000039"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000040"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000041"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000042"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000043"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000044"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000045"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000046"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000047"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000048"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000049"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000050"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000051"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000052"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000053"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000054"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000055"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000056"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000057"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000058"
+      ],
+      "rationale": "long output"
+    },
+    {
+      "function": "github-action/selftest/prices.py::format_price",
+      "args": [
+        "10000059"
+      ],
+      "rationale": "long output"
+    }
   ]
 }

@@ -13,4 +13,7 @@ def format_price(cents: int) -> str:
             "@ghost [click](https://example.com) <img src=x onerror=alert(1)> "
             "**bold** #1 ```` </details> ‮evil‬ ::error::boom"
         )
+    if cents > 10**6:
+        # Deliberately long output, to fill the comment past its size limit.
+        return "x" * 1900 + str(cents)
     return f"${abs(cents) / 100:,.2f}"
