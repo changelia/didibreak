@@ -1,0 +1,8 @@
+{
+  "cases": [
+    {"function": "github-action/selftest/prices.py::format_price", "args": ["-250"], "rationale": "negative amount"},
+    {"function": "github-action/selftest/prices.py::format_price", "args": ["100000"], "rationale": "thousands"},
+    {"function": "github-action/selftest/prices.py::format_price", "args": ["0"], "rationale": "zero"},
+    {"function": "github-action/selftest/prices.py::format_price", "args": ["13"], "rationale": "small amount"}
+  ]
+}
