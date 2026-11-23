@@ -18,6 +18,7 @@ from didibreak.cases import (
     CASES_SCHEMA,
     CASES_SCHEMA_NAME,
     MAX_PREVIOUS_CASES,
+    CaseBatch,
     CaseRun,
     PromptTemplate,
     accept_cases,
@@ -746,6 +747,41 @@ def _ask(
     return reply
 
 
+def _ask_valid(
+    client: LLMClient,
+    messages: Sequence[Message],
+    spending: Budget,
+    function: ChangedFunction,
+    count: int,
+    stop: str | None,
+) -> tuple[CaseBatch, int] | str | object | None:
+    """Accepted cases and the number rejected, a skip reason, or _UNAVAILABLE.
+
+    When no case of a reply is valid, the same request is sent once more
+    if the limits allow it (task 38: 3 of 38 evaluation runs lost a
+    function this way to model variance). None when ``stop`` is set.
+    """
+    if stop is not None:
+        return None
+    schema = cases_schema(function)
+    batch, rejected = CaseBatch((), 0), 0
+    for attempt in range(2):
+        if attempt and spending.refusal(messages) is not None:
+            break  # no room for the second request: no valid cases
+        result = _ask(client, messages, spending, schema)
+        if attempt and result is not _UNAVAILABLE and not isinstance(result, LLMReply):
+            break  # the second reply is unusable: still no valid cases
+        if not isinstance(result, LLMReply):
+            return result
+        batch = accept_cases(
+            result.data, count, function.report_name, is_method(function)
+        )
+        rejected += batch.invalid
+        if batch.cases:
+            break
+    return batch, rejected
+
+
 def generate_cases(
     client: LLMClient,
     functions: Sequence[ChangedFunction],
@@ -770,10 +806,12 @@ def generate_cases(
 
     Returns:
         Accepted cases, skipped functions, and the usage and cost of this
-        round. An invalid reply (after the client's one retry) skips that
-        function; an unavailable provider, the cost limit or the token limit
-        skips it and all remaining functions; any other rejected request
-        (HTTP 4xx except 401/403/404) skips that function.
+        round. A reply without any valid case is asked for once more when
+        the limits allow it (task 38). An invalid reply (after the client's
+        one retry) skips that function; an unavailable provider, the cost
+        limit or the token limit skips it and all remaining functions; any
+        other rejected request (HTTP 4xx except 401/403/404) skips that
+        function.
 
     Raises:
         LLMAuthError: The key was rejected (HTTP 401/403).
@@ -791,20 +829,17 @@ def generate_cases(
         else:
             messages = build_refinement_messages(function, count, template, tried)
         stop = spending.refusal(messages)
-        schema = cases_schema(function)
-        result = _ask(client, messages, spending, schema) if stop is None else None
+        result = _ask_valid(client, messages, spending, function, count, stop)
         if result is _UNAVAILABLE:
             stop = UNAVAILABLE_REASON
         if stop is not None:
             skipped += [replace(rest, skip_reason=stop) for rest in functions[index:]]
             break
-        if not isinstance(result, LLMReply):  # a skip reason
+        if not isinstance(result, tuple):  # a skip reason
             skipped.append(replace(function, skip_reason=str(result)))
             continue
-        batch = accept_cases(
-            result.data, count, function.report_name, is_method(function)
-        )
-        invalid += batch.invalid
+        batch, rejected = result
+        invalid += rejected
         new = _not_tried(function.report_name, batch.cases, tried)
         if new:
             cases[function.report_name] = new

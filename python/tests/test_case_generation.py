@@ -117,7 +117,7 @@ def test_invalid_cases_are_counted_and_a_function_without_valid_ones_is_skipped(
 
     result = generate_cases(client, [function("f"), function("g")], 5, load_template())
 
-    assert result.invalid_cases_dropped == 2
+    assert result.invalid_cases_dropped == 3  # g's reply is asked for twice
     assert list(result.cases) == ["app/m.py::f"]
     assert [(f.qualname, f.skip_reason) for f in result.skipped] == [
         ("g", NO_VALID_CASES_REASON)
@@ -544,3 +544,69 @@ def test_a_labelling_request_keeps_the_large_cap_within_the_limits() -> None:
     messages = build_messages(function("f"), 12, load_template())
 
     assert Budget(None, None, 12).reply_cap(messages, 16000) == 16000
+
+
+def test_a_reply_without_any_valid_case_is_asked_for_once_more() -> None:
+    client = FakeClient({"f": [cases("os.getcwd()", "eval('1')"), cases("1", "2")]})
+
+    result = generate_cases(client, [function("f")], 5, load_template())
+
+    assert len(client.prompts) == 2
+    assert client.prompts[0] == client.prompts[1]
+    assert [c.args for c in result.cases["app/m.py::f"]] == [("1",), ("2",)]
+    assert result.invalid_cases_dropped == 2
+    assert result.usage.calls == 2
+
+
+def test_a_second_reply_without_valid_cases_skips_the_function() -> None:
+    client = FakeClient({"f": [cases("x"), cases("y")]})
+
+    result = generate_cases(client, [function("f")], 5, load_template())
+
+    assert len(client.prompts) == 2
+    assert [(f.qualname, f.skip_reason) for f in result.skipped] == [
+        ("f", NO_VALID_CASES_REASON)
+    ]
+
+
+def test_one_valid_case_is_enough_and_no_second_request_is_sent() -> None:
+    client = FakeClient({"f": cases("1", "os.getcwd()")})
+
+    generate_cases(client, [function("f")], 5, load_template())
+
+    assert len(client.prompts) == 1
+
+
+def test_the_second_request_must_fit_the_limits() -> None:
+    limit = _first_request_tokens(5)
+    spent = TokenUsage(limit - 100, 100, None, 0, 1)
+    client = FakeClient({"f": [cases("x"), cases("1")]}, spent)
+    budget = Budget(None, None, 5, max_tokens=limit)
+
+    result = generate_cases(client, [function("f")], 5, load_template(), budget)
+
+    assert len(client.prompts) == 1  # the first reply used up the limit
+    assert result.skipped[0].skip_reason == NO_VALID_CASES_REASON
+
+
+def test_an_unusable_second_reply_still_skips_with_no_valid_cases() -> None:
+    error = LLMInvalidResponseError("invalid LLM response", USAGE)
+    client = FakeClient({"f": [cases("x"), error]})
+
+    result = generate_cases(client, [function("f")], 5, load_template())
+
+    assert result.skipped[0].skip_reason == NO_VALID_CASES_REASON
+    assert result.usage.calls == 2
+
+
+def test_an_unavailable_provider_on_the_second_request_stops_the_run() -> None:
+    client = FakeClient(
+        {"f": [cases("x"), LLMUnavailableError("down")], "g": cases("1")}
+    )
+
+    result = generate_cases(client, [function("f"), function("g")], 5, load_template())
+
+    assert [(f.qualname, f.skip_reason) for f in result.skipped] == [
+        ("f", UNAVAILABLE_REASON),
+        ("g", UNAVAILABLE_REASON),
+    ]
