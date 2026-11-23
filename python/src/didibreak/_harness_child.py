@@ -19,7 +19,8 @@ first builds the instance from its constructor arguments, under the guard
 and the timeout, then calls the method on it. The outcome also records the
 instance's state after the call: its ``__dict__`` and slots, each value
 normalized like a return value. A constructor that raises gives an outcome
-marked ``construction_failed``.
+marked ``construction_failed``; one that works is recorded under
+``construction`` (the instance's repr and state right after it was built).
 """
 
 import ast
@@ -348,9 +349,17 @@ def _call_method(
         raise
     except BaseException as error:
         return {**exception_outcome(error), "construction_failed": True}
+    # What the constructor did, before the method changes the instance: a
+    # constructor that fails in one version only is a finding (task 38).
+    construction = {
+        "kind": "return",
+        "type_name": type_name(instance),
+        "repr": _safe_text(repr, instance, REPR_LIMIT),
+        **instance_state(instance),
+    }
     args, kwargs = _literals(case)
     outcome = _call(getattr(instance, target.name), args, kwargs, is_async)
-    return {**outcome, **instance_state(instance)}
+    return {**outcome, **instance_state(instance), "construction": construction}
 
 
 def run_case(

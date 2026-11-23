@@ -248,3 +248,55 @@ def test_a_method_that_cannot_be_found_is_reported(
     target = method_target(tmp_path, source, qualname)
 
     assert check_import(target, SETTINGS) == "function not found after import"
+
+
+def test_what_the_constructor_did_is_recorded_before_the_method_runs(
+    tmp_path: Path,
+) -> None:
+    target = method_target(tmp_path, ACCOUNT, "Account.deposit")
+
+    (outcome,) = run_cases(target, [case("5", init=("100",))], SETTINGS).outcomes
+
+    built = outcome.construction
+    assert built is not None
+    assert (built.kind, built.type_name) == ("return", "mod.Account")
+    assert built.state_repr == "{'balance': 100, 'owner': 'ada'}"
+    assert outcome.state_repr == "{'balance': 105, 'owner': 'ada'}"
+
+
+def test_a_failed_constructor_records_no_construction(tmp_path: Path) -> None:
+    source = """
+        class Port:
+            def __init__(self, number):
+                raise ValueError(number)
+
+            def text(self):
+                return ""
+        """
+    target = method_target(tmp_path, source, "Port.text")
+
+    (outcome,) = run_cases(target, [case(init=("0",))], SETTINGS).outcomes
+
+    assert outcome.construction_failed
+    assert outcome.construction is None
+
+
+def test_a_constructor_state_that_changes_between_runs_is_flaky(
+    tmp_path: Path,
+) -> None:
+    source = """
+        import time
+
+        class Stamp:
+            def __init__(self):
+                self.at = time.perf_counter_ns()
+
+            def reset(self):
+                self.at = 0
+        """
+    target = method_target(tmp_path, source, "Stamp.reset")
+
+    (outcome,) = run_cases(target, [case()], SETTINGS).outcomes
+
+    assert outcome.state_repr == "{'at': 0}"
+    assert not outcome.stable
