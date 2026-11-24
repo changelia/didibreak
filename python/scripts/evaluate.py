@@ -2,14 +2,15 @@
 
 From python/, with OPENAI_API_KEY set and the repositories cloned:
 
-    uv run python scripts/evaluate.py run PLAN REPOS PYTHON
+    uv run python scripts/evaluate.py run PLAN REPOS PYTHON [OPTION ...]
     uv run python scripts/evaluate.py summarize PLAN
     uv run python scripts/evaluate.py copy-time REPO [REPO ...]
 
 PLAN is ``evaluation/plan.json``: the repositories and the scenarios. Each
 scenario builds a working tree in a temporary git worktree of a cloned
 repository (REPOS holds one clone per repository, named by its key) and runs
-``didibreak check --format json`` there with PYTHON as ``--python``:
+``didibreak check --format json`` there with PYTHON as ``--python`` and
+any extra check OPTIONs (for example ``--boundary-cases 0``):
 
 - ``replay``: the tree is at ``commit`` and the commit's diff is applied in
   reverse, so the bug it fixed comes back as an uncommitted change.
@@ -23,7 +24,10 @@ are saved next to PLAN in ``reports/<id>.json``; a scenario with a saved
 report is not run again. Before each run the total cost of all saved
 reports, ``extra_spent`` (spend not in any report) and
 ``max_cost_per_run`` must stay within ``budget``, otherwise the
-run stops. ``summarize`` combines the reports with the hand labels in
+run stops. Each report also keeps ``llm_finding_ids``: the finding ids of
+the cases the LLM proposed (read from the run's case cache), so findings
+that came only from boundary cases (task 31) can be told apart.
+``summarize`` combines the reports with the hand labels in
 ``labels.json`` and prints Markdown tables. The API key is never written.
 """
 
@@ -160,7 +164,11 @@ def _prepare(
 
 
 def check_command(
-    scenario: Scenario, python: Path, output_dir: Path, max_cost: float
+    scenario: Scenario,
+    python: Path,
+    output_dir: Path,
+    max_cost: float,
+    options: Sequence[str] = (),
 ) -> list[str]:
     """The ``didibreak check`` command line for one scenario."""
     return [
@@ -174,13 +182,39 @@ def check_command(
         str(max_cost),
         "--python",
         str(python),
+        *options,
         "--output-dir",
         str(output_dir),
     ]
 
 
+def llm_finding_ids(output_dir: Path) -> list[str]:
+    """Finding ids of every case in a run's case cache (the LLM's cases)."""
+    from didibreak.compare import finding_id
+    from didibreak.harness import Case
+
+    ids: set[str] = set()
+    for path in sorted((output_dir / "cache" / "cases").glob("*.json")):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for item in data["cases"]:
+            init = item.get("init_args")
+            case = Case(
+                tuple(item["args"]),
+                dict(item.get("kwargs", {})),
+                init_args=None if init is None else tuple(init),
+                init_kwargs=dict(item.get("init_kwargs", {})),
+            )
+            ids.add(finding_id(data["function"], case))
+    return sorted(ids)
+
+
 def run_scenario(
-    scenario: Scenario, plan: Plan, plan_dir: Path, repos: Path, python: Path
+    scenario: Scenario,
+    plan: Plan,
+    plan_dir: Path,
+    repos: Path,
+    python: Path,
+    options: Sequence[str] = (),
 ) -> dict[str, Any]:
     """Prepare the tree, run the check and return what is saved for it."""
     clone = repos / scenario.repo
@@ -189,7 +223,7 @@ def run_scenario(
     try:
         _prepare(clone, tree, scenario, plan_dir, plan.setup[scenario.repo])
         command = check_command(
-            scenario, python, temporary / "out", plan.max_cost_per_run
+            scenario, python, temporary / "out", plan.max_cost_per_run, options
         )
         executable = Path(sys.executable).with_name("didibreak")
         started = time.monotonic()
@@ -212,6 +246,7 @@ def run_scenario(
             "seconds": seconds,
             "stderr": result.stderr.replace(str(temporary), "<temporary>"),
             "report": report,
+            "llm_finding_ids": llm_finding_ids(temporary / "out"),
         }
     finally:
         subprocess.run(
@@ -222,7 +257,7 @@ def run_scenario(
         shutil.rmtree(temporary, ignore_errors=True)
 
 
-def run(plan_path: Path, repos: Path, python: Path) -> int:
+def run(plan_path: Path, repos: Path, python: Path, options: Sequence[str] = ()) -> int:
     """Run every scenario without a saved report, within the budget."""
     plan = load_plan(plan_path)
     reports = plan_path.parent / "reports"
@@ -237,7 +272,7 @@ def run(plan_path: Path, repos: Path, python: Path) -> int:
         if not can_afford(spent, plan.max_cost_per_run, plan.budget):
             print(f"budget: ${spent:.4f} spent; stopping before {scenario.id}")
             return 1
-        saved = run_scenario(scenario, plan, plan_path.parent, repos, python)
+        saved = run_scenario(scenario, plan, plan_path.parent, repos, python, options)
         destination.write_text(json.dumps(saved, indent=2) + "\n")
         print(
             f"{scenario.id}: exit {saved['exit_code']}, {saved['seconds']} s, "
@@ -298,6 +333,59 @@ class _Totals:
         )
 
 
+def boundary_only(saved: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Findings no LLM case produced: they came from boundary cases (task 31).
+
+    Constructor findings are left out (their case is the LLM's constructor
+    call), and so are reports saved before ``llm_finding_ids`` existed.
+    """
+    report = saved.get("report")
+    if report is None or "llm_finding_ids" not in saved:
+        return []
+    llm = set(saved["llm_finding_ids"])
+    return [
+        finding
+        for finding in report["findings"]
+        if finding["id"] not in llm and not finding["function"].endswith(".__init__")
+    ]
+
+
+@dataclass
+class _Boundary:
+    """Findings that came only from boundary cases, over all reports."""
+
+    reports: int = 0
+    labels: Counter[str] | None = None
+    real: int = 0
+    unexpected: int = 0
+
+    def add(
+        self, scenario: str, saved: Mapping[str, Any], labels: Mapping[str, Any]
+    ) -> None:
+        if "llm_finding_ids" not in saved or saved.get("report") is None:
+            return
+        self.reports += 1
+        findings = boundary_only(saved)
+        self.labels = (self.labels or Counter()) + Counter(f["label"] for f in findings)
+        for finding in findings:
+            key = f"{scenario}/{finding['id']}"
+            if finding["label"] == "unexpected" and key in labels:
+                self.unexpected += 1
+                self.real += bool(labels[key]["real"])
+
+    def lines(self) -> list[str]:
+        if not self.reports:
+            return []
+        labels = self.labels or Counter()
+        counts = ", ".join(f"{label} {count}" for label, count in labels.most_common())
+        return [
+            "",
+            f"Findings only from boundary cases ({self.reports} reports): "
+            f"{sum(labels.values())} ({counts or 'none'}); "
+            f"real / labelled unexpected: {self.real} / {self.unexpected}",
+        ]
+
+
 def summarize(plan_path: Path) -> str:
     """Markdown tables of the saved reports and hand labels."""
     plan = load_plan(plan_path)
@@ -307,6 +395,7 @@ def summarize(plan_path: Path) -> str:
     overall = _Totals()
     skips: Counter[str] = Counter()
     unlabelled: list[str] = []
+    boundary = _Boundary()
     for scenario in plan.scenarios:
         path = plan_path.parent / "reports" / f"{scenario.id}.json"
         if not path.exists():
@@ -316,6 +405,7 @@ def summarize(plan_path: Path) -> str:
         if report is None:
             continue
         real = unexpected = 0
+        boundary.add(scenario.id, saved, labels)
         for finding in report["findings"]:
             if finding["label"] != "unexpected":
                 continue
@@ -345,6 +435,7 @@ def summarize(plan_path: Path) -> str:
         "| --- | --- |",
     ]
     lines += [f"| {reason} | {count} |" for reason, count in skips.most_common()]
+    lines += boundary.lines()
     if unlabelled:
         lines += ["", "Unlabelled unexpected findings: " + ", ".join(unlabelled)]
     return "\n".join(lines)
@@ -369,8 +460,9 @@ def copy_seconds(repositories: Iterable[Path]) -> list[tuple[str, int, float]]:
 
 def main(arguments: Sequence[str]) -> int:
     """Command-line entry point; see the module docstring."""
-    if len(arguments) == 4 and arguments[0] == "run":
-        return run(Path(arguments[1]), Path(arguments[2]), Path(arguments[3]))
+    if len(arguments) >= 4 and arguments[0] == "run":
+        plan, repos, python = (Path(argument) for argument in arguments[1:4])
+        return run(plan, repos, python, arguments[4:])
     if len(arguments) == 2 and arguments[0] == "summarize":
         print(summarize(Path(arguments[1])))
         return 0
