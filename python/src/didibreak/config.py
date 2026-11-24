@@ -65,7 +65,9 @@ class Config:
     max_functions: int = 10
     cases: int = 12
     refine_rounds: int = 1
-    boundary_cases: int = 6
+    # Opt-in (owner decision 2026-11-24): the task 31 measurement found no
+    # finding that only boundary cases produced.
+    boundary_cases: int = 0
     max_cost: float = 0.50
     max_tokens: int = DEFAULT_MAX_TOKENS
     timeout: float = 10.0

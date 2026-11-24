@@ -216,7 +216,7 @@ _CONFIG_FLAGS: tuple[tuple[str, str, Callable[[str], object], str, str], ...] = 
         "boundary_cases",
         int,
         "N",
-        "boundary cases per function, 0-20 (default: 6)",
+        "boundary cases per function, 0-20 (default: 0, off)",
     ),
     ("--max-cost", "max_cost", float, "USD", "cost limit per run (default: 0.50)"),
     (

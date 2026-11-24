@@ -26,7 +26,6 @@ from didibreak.compare import finding_id
 from didibreak.functions import ChangedFunction
 from didibreak.harness import Case
 
-DEFAULT_BOUNDARY_CASES = 6
 RATIONALE = "boundary value for "
 
 # (typical value, boundary values) as Python literals, per simple type.

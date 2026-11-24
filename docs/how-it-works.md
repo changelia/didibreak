@@ -23,8 +23,8 @@ One `didibreak check` run:
    ([providers-and-costs.md](providers-and-costs.md#cost-control)).
 4. **Generate inputs.** The LLM proposes input cases as Python literals
    ([Case generation](#case-generation)). Cases are cached per function.
-   [Boundary cases](#boundary-cases) built in code from simple type
-   annotations are added, at no LLM cost.
+   Opt-in [boundary cases](#boundary-cases) built in code from simple type
+   annotations can be added, at no LLM cost.
 5. **Run both versions.** Every case runs on the base version and on the
    current version, twice each, in separate processes from temporary copies
    of the tree ([safety.md](safety.md#how-a-function-is-run)). A runtime
@@ -115,9 +115,16 @@ proposes only cases that were already tried (`no new cases`).
 
 ### Boundary cases
 
-After the LLM's first cases, didibreak adds up to `boundary_cases`
-(default 6, at most 20; `0` turns them off) cases it builds itself from the
-function's type annotations, so they cost no tokens. A parameter annotated
+Boundary cases are **opt-in**: `boundary_cases` (or `--boundary-cases N`)
+is `0` by default. In the task 31 measurement (the release-gate libraries,
+and asyncstdlib and boltons, with and without boundary cases) no finding
+came only from boundary cases, while they add run time and labelling
+tokens (`evaluation/README.md`, "Task 31"). They may still help on code
+with simple annotations that the LLM's cases do not cover.
+
+With `boundary_cases` set to `N` (at most 20), didibreak adds up to `N`
+cases after the LLM's first cases, built from the function's type
+annotations, so they cost no tokens. A parameter annotated
 `int`, `float`, `str`, `bool`, `None`, `Optional[...]` / `X | Y` of these,
 or `list[X]` / `dict[K, V]` of these gets a typical value and a few
 boundary values:
