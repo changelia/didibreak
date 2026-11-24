@@ -17,7 +17,7 @@ gets none: there is no call to start from.
 
 import ast
 import textwrap
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 
 from didibreak.arguments import case_problem, normalized_case
@@ -302,3 +302,28 @@ def _case(
     if init[0] is None:
         return case
     return replace(case, init_args=init[0], init_kwargs=init[1])
+
+
+def with_boundary_cases(
+    functions: Sequence[ChangedFunction],
+    cases: Mapping[str, Sequence[Case]],
+    limit: int,
+) -> dict[str, tuple[Case, ...]]:
+    """Each function's LLM cases followed by its boundary cases.
+
+    Args:
+        functions: The functions of the run.
+        cases: LLM (or cached) cases by report name; functions without
+            any stay without (a method needs an LLM case to be built).
+        limit: Most boundary cases per function.
+
+    Returns:
+        The cases by report name.
+    """
+    combined = {name: tuple(found) for name, found in cases.items()}
+    for function in functions:
+        found = combined.get(function.report_name)
+        if found:
+            extra = boundary_cases(function, found, limit)
+            combined[function.report_name] = (*found, *extra)
+    return combined

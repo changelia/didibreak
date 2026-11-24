@@ -31,6 +31,9 @@ BASE_SOURCE = (
 CHANGED_SOURCE = BASE_SOURCE.replace("max(0, min(100, value))", "min(100, value)")
 CASES = [["-5"], ["50"], ["150"]]
 FUNCTION = "calc.py::clamp_percent"
+# -5 comes from the fake LLM; -1 from a boundary case built in code from
+# the int annotation (task 31), so the smoke test covers both.
+EXPECTED_FINDINGS = [(FUNCTION, ["-5"], "0", "-5"), (FUNCTION, ["-1"], "0", "-1")]
 # Each command takes about a second. A stalled connection to the fake
 # provider would otherwise block the check for minutes (the LLM client waits
 # 120 s per attempt, three attempts): fail fast with a clear problem instead.
@@ -124,7 +127,7 @@ def check_report(result: subprocess.CompletedProcess[str]) -> list[str]:
         for f in report["findings"]
     ]
     problems = []
-    if findings != [(FUNCTION, ["-5"], "0", "-5")]:
+    if findings != EXPECTED_FINDINGS:
         problems.append(f"unexpected findings: {findings}")
     if report["usage"]["calls"] != 1 or report["usage"]["cost_usd"] != 0:
         problems.append(f"unexpected usage: {report['usage']}")

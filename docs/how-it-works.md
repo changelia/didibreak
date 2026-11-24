@@ -23,6 +23,8 @@ One `didibreak check` run:
    ([providers-and-costs.md](providers-and-costs.md#cost-control)).
 4. **Generate inputs.** The LLM proposes input cases as Python literals
    ([Case generation](#case-generation)). Cases are cached per function.
+   [Boundary cases](#boundary-cases) built in code from simple type
+   annotations are added, at no LLM cost.
 5. **Run both versions.** Every case runs on the base version and on the
    current version, twice each, in separate processes from temporary copies
    of the tree ([safety.md](safety.md#how-a-function-is-run)). A runtime
@@ -110,6 +112,36 @@ different cases aimed at the branches those cases did not reach. The new
 cases go through the same validation, execution and comparison. A function
 is not refined further once a round finds a difference, or when the LLM
 proposes only cases that were already tried (`no new cases`).
+
+### Boundary cases
+
+After the LLM's first cases, didibreak adds up to `boundary_cases`
+(default 6, at most 20; `0` turns them off) cases it builds itself from the
+function's type annotations, so they cost no tokens. A parameter annotated
+`int`, `float`, `str`, `bool`, `None`, `Optional[...]` / `X | Y` of these,
+or `list[X]` / `dict[K, V]` of these gets a typical value and a few
+boundary values:
+
+| Annotation | Typical | Boundary values |
+| --- | --- | --- |
+| `int` | `1` | `0`, `-1`, `2147483648` |
+| `float` | `1.5` | `0.0`, `-1.0`, `1e16` |
+| `str` | `'abc'` | `''`, `' '`, `'naïve café ☃'` |
+| `bool` | `True` | `False` |
+| `Optional[X]` | typical of `X` | `None`, then those of `X` |
+| `list[X]` / `dict[K, V]` | one typical element | the empty container |
+
+Each boundary case changes one parameter from the typical call, taking
+the parameters in turn, until the limit is reached. A function with a
+required parameter that has no annotation, or a different one (a class,
+`tuple`, `Any`, ...), gets no boundary cases; an optional parameter like
+that keeps its default. Methods get boundary cases for their arguments,
+built on the constructor arguments of the LLM's first case; constructors
+(`__init__`) get none. A boundary case equal to an LLM case (the same
+finding id) is dropped. Boundary cases go through the same validation,
+execution, comparison and labelling as the LLM's cases and count in
+`cases_run`. They are not stored in the case cache: the same function
+always gets the same boundary cases. `--cases-file` runs get none.
 
 ## Intent labels
 
