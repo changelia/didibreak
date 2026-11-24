@@ -87,7 +87,8 @@ What to do with each label:
 ## On pull requests
 
 Agents that open pull requests (cloud agents, Copilot-style bots) can be
-checked in CI as well: the [GitHub Action](github-action.md) runs didibreak
+checked in CI as well. **Experimental:** the
+[GitHub Action](github-action.md) (live LLM path not yet verified) runs didibreak
 on every pull request and keeps one comment with the `unexpected` and
 `unclear` findings. The pull request's text is the intent by default; the
 agent writes that text too, so use `intent-source: fixed` or `commits`

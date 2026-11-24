@@ -11,7 +11,8 @@ the Python package and `js-v*` for the JS/TS package.
 
 #### Added
 
-- A GitHub Action (`github-action/`, docs/github-action.md) runs
+- Experimental, live LLM path not yet verified: a GitHub Action
+  (`github-action/`, docs/github-action.md) runs
   `didibreak check` on pull requests and keeps one comment up to date with
   the unexpected and unclear findings, skip counts and the run's cost.
   Inputs: the API key from a secret, provider, model, `max-cost`,
