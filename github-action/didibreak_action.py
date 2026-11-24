@@ -44,6 +44,13 @@ KEY_VARIABLES = {
 }
 LOCAL_PROVIDERS = ("ollama", "lmstudio")
 MODES = ("report-only", "fail-on-unexpected")
+NO_COMMIT_INTENT = "--no-commit-intent"
+OLD_DIDIBREAK_MESSAGE = (
+    "didibreak: intent-source fixed needs a didibreak version with "
+    "--no-commit-intent, which keeps the pull request's commit messages out "
+    "of the intent. Set didibreak-version to a newer release; the check "
+    "did not run."
+)
 INTENT_SOURCES = ("pr", "commits", "fixed")
 NO_KEY_MESSAGE = (
     "didibreak skipped: no API key. Pull requests from forks get no "
@@ -157,6 +164,10 @@ def check_command(values: Mapping[str, str]) -> list[str]:
     intent = _intent(values)
     if intent:
         command += ["--intent", intent]
+    if values["intent_source"] == "fixed":
+        # The pull request's author writes the commit messages too, so a
+        # fixed intent leaves them out (owner decision 2026-11-24).
+        command.append(NO_COMMIT_INTENT)
     if values["cases_file"]:
         command += ["--cases-file", values["cases_file"]]
     return command
@@ -198,6 +209,41 @@ def check_environment(
     return child
 
 
+def run_check(
+    values: Mapping[str, str], api_key: str, temporary: Path
+) -> tuple[int, Path]:
+    """Run ``didibreak check`` and keep its JSON report.
+
+    Returns:
+        didibreak's exit code (2 without running it when a fixed intent
+        needs ``--no-commit-intent`` and the installed didibreak lacks it)
+        and the report path.
+    """
+    child = check_environment(os.environ, values["provider"], api_key)
+    report = temporary / "didibreak-report.json"
+    if values["intent_source"] == "fixed" and not _has_option(
+        values["didibreak"], NO_COMMIT_INTENT, child
+    ):
+        print(f"::error title=didibreak::{OLD_DIDIBREAK_MESSAGE}")
+        report.write_text("", encoding="utf-8")
+        return 2, report
+    with report.open("w", encoding="utf-8") as stdout:
+        result = subprocess.run(
+            check_command(values), stdout=stdout, stderr=subprocess.PIPE,
+            env=child, text=True, check=False,
+        )  # fmt: skip
+    print_untrusted(result.stderr)
+    return result.returncode, report
+
+
+def _has_option(didibreak: str, option: str, child: Mapping[str, str]) -> bool:
+    result = subprocess.run(
+        [didibreak, "check", "--help"], capture_output=True,
+        env=child, text=True, check=False,
+    )  # fmt: skip
+    return option in result.stdout
+
+
 def _run_main() -> int:
     temporary = Path(env("TEMP", "."))
     values = {
@@ -215,15 +261,8 @@ def _run_main() -> int:
         "pr_body": os.environ.get("DIDIBREAK_ACTION_PR_BODY", ""),
         "cases_file": env("CASES_FILE"),
     }
-    child = check_environment(os.environ, values["provider"], env("API_KEY"))
-    report = temporary / "didibreak-report.json"
-    with report.open("w", encoding="utf-8") as stdout:
-        result = subprocess.run(
-            check_command(values), stdout=stdout, stderr=subprocess.PIPE,
-            env=child, text=True, check=False,
-        )  # fmt: skip
-    print_untrusted(result.stderr)
-    _write_output("exit-code", str(result.returncode))
+    exit_code, report = run_check(values, env("API_KEY"), temporary)
+    _write_output("exit-code", str(exit_code))
     _write_output("report", str(report))
     return 0
 

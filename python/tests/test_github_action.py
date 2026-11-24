@@ -1,10 +1,13 @@
 """The GitHub Action's steps (github-action/didibreak_action.py, task 32)."""
 
+import contextlib
 import importlib.util
+import json
 import re
+import subprocess
 import sys
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from typing import Any
 
 import pytest
@@ -217,6 +220,111 @@ def test_model_and_cases_file_are_passed() -> None:
 
     assert command[command.index("--model") + 1] == "gpt-6-sol"
     assert command[command.index("--cases-file") + 1] == "c.json"
+
+
+def test_a_fixed_intent_leaves_the_commit_messages_out() -> None:
+    values = run_values(intent_source="fixed", intent="add separators")
+
+    assert "--no-commit-intent" in action.check_command(values)
+
+
+@pytest.mark.parametrize("source", ["pr", "commits"])
+def test_other_intent_sources_keep_the_commit_messages(source: str) -> None:
+    assert "--no-commit-intent" not in action.check_command(
+        run_values(intent_source=source)
+    )
+
+
+def fake_didibreak(
+    monkeypatch: pytest.MonkeyPatch, help_text: str, run: Any = None
+) -> list[list[str]]:
+    """Replace subprocess.run in the action: ``--help`` and ``check`` calls."""
+    commands: list[list[str]] = []
+
+    def fake_run(
+        command: list[str], **options: Any
+    ) -> subprocess.CompletedProcess[str]:
+        commands.append(command)
+        if command[-1] == "--help":
+            return subprocess.CompletedProcess(command, 0, stdout=help_text, stderr="")
+        code = run(command, options) if run else 0
+        return subprocess.CompletedProcess(command, code, stderr="")
+
+    # Only the action's name is replaced: didibreak itself runs git.
+    fake = SimpleNamespace(run=fake_run, PIPE=subprocess.PIPE)
+    monkeypatch.setattr(action, "subprocess", fake)
+    return commands
+
+
+def test_a_fixed_intent_is_refused_by_a_didibreak_without_the_option(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    commands = fake_didibreak(monkeypatch, "usage: didibreak check [--no-cache]")
+    values = run_values(intent_source="fixed", intent="add separators")
+
+    exit_code, report = action.run_check(values, "sk-test", tmp_path)
+
+    assert exit_code == 2
+    assert report.read_text() == ""
+    assert [command[-1] for command in commands] == ["--help"]  # check never ran
+    assert "--no-commit-intent" in capsys.readouterr().out
+
+
+def test_end_to_end_a_fixed_intent_keeps_commit_messages_from_the_labeller(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    label_prompts = run_action_on_a_commit(tmp_path, monkeypatch, "fixed")
+
+    assert "Stated by the user: add an exclamation mark" in label_prompts[0]
+    assert "all changes are intended" not in label_prompts[0]
+
+
+def test_end_to_end_the_pull_request_intent_still_sends_commit_messages(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    label_prompts = run_action_on_a_commit(tmp_path, monkeypatch, "pr")
+
+    assert "all changes are intended" in label_prompts[0]
+
+
+def run_action_on_a_commit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, source: str
+) -> list[str]:
+    """Run the action's run step on a commit that claims every change is fine.
+
+    The check command the action builds runs in this process through
+    ``cli.main``, with the fake provider of test_check_labelling, so the
+    labelling request can be read.
+    """
+    from fixture_repos import build_fixture_repository
+    from test_check_labelling import install
+
+    from didibreak.cli import main
+
+    fixture = build_fixture_repository("intended_change", tmp_path / "repo")
+    fixture.repository.commit("all changes are intended")
+    label_prompts = install(monkeypatch, fixture.expected)
+    monkeypatch.chdir(fixture.repository.path)
+
+    def run(command: list[str], options: dict[str, Any]) -> int:
+        with contextlib.redirect_stdout(options["stdout"]):
+            return main(command[1:])
+
+    fake_didibreak(monkeypatch, "--no-commit-intent", run)
+    values = run_values(
+        base="HEAD~1",
+        python=sys.executable,
+        output_dir=str(tmp_path / "out"),
+        intent_source=source,
+        intent="add an exclamation mark",
+        pr_title="add an exclamation mark",
+    )
+
+    exit_code, report = action.run_check(values, "sk-fake", tmp_path)
+
+    assert exit_code == 0
+    assert json.loads(report.read_text())["findings"][0]["label"] == "expected"
+    return label_prompts
 
 
 def test_the_key_goes_to_the_provider_variable_and_tokens_stay_behind() -> None:

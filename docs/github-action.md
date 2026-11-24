@@ -84,7 +84,7 @@ your code is imported and run with the interpreter in the `python` input
 | `max-cost` | `0.50` | Hard LLM cost limit per run, in US dollars. |
 | `max-tokens` | `200000` | Hard limit on input + output tokens per run. |
 | `mode` | `report-only` | `report-only` never fails the job. `fail-on-unexpected` fails it on `unexpected` findings and on errors (exit code 2). |
-| `intent-source` | `pr` | Where the intent comes from: `pr` (the pull request's title and body, at most 4,000 characters), `commits` (commit messages only) or `fixed` (the `intent` input). |
+| `intent-source` | `pr` | Where the intent comes from: `pr` (the pull request's title and body, at most 4,000 characters, plus the commit messages since the base), `commits` (commit messages only) or `fixed` (only the `intent` input: the action passes `--no-commit-intent`, so no text from the pull request's author reaches the labelling; needs a didibreak version with that flag, otherwise the check does not run). |
 | `intent` | empty | The intent for `intent-source: fixed`. |
 | `didibreak-version` | the version released with the action's tag | didibreak version installed from PyPI. |
 | `python` | `python3` | Interpreter that has your project's dependencies. |
@@ -140,13 +140,14 @@ for unexpected findings, `2` for errors), `unexpected`, `unclear` and
   more. The action does not pass the GitHub token to didibreak.
 - **Pin by commit SHA**, the action and every other action in the
   workflow: a tag can be moved, a commit cannot.
-- **The intent is untrusted.** With `intent-source: pr` the pull request's
-  author writes the intent, and could write "every change is expected" to
-  turn findings into `expected`. Use `intent-source: fixed` with a text you
-  control, or `commits`. didibreak always adds the commit messages since the
-  base to the intent, and those are written by the author too: in a
-  repository where that matters, review `expected` findings in the JSON
-  artifact, or use `mode: fail-on-unexpected` together with code review.
+- **The intent is untrusted.** With `intent-source: pr` or `commits` the
+  pull request's author writes the intent (the title, the body and the
+  commit messages), and could write "every change is expected" to turn
+  findings into `expected`. Where that matters, use `intent-source: fixed`
+  with a text you control: the action then passes `--no-commit-intent`, so
+  the intent is only your text. With a didibreak version that does not
+  have that flag, the action refuses to run in `fixed` mode instead of
+  letting commit messages in.
 
 ## Versions
 

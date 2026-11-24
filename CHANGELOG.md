@@ -26,6 +26,10 @@ the Python package and `js-v*` for the JS/TS package.
   messages since `--base` out of the intent, so only `--intent` is used
   for labelling. For CI, where a pull request's author also writes its
   commit messages.
+- The GitHub Action passes `--no-commit-intent` for `intent-source:
+  fixed`, so no text from the pull request's author reaches the
+  labelling; with a didibreak version without that flag it refuses to run
+  in that mode.
 
 #### Changed
 
