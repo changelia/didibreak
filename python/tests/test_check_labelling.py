@@ -93,9 +93,8 @@ def test_labels_and_exit_codes_follow_the_documented_intent(
     monkeypatch.chdir(fixture.repository.path)
 
     # The fixture documents the LLM cases' findings; boundary cases (task 31)
-    # are tested on their own below.
-    argv = ["check", "--intent", fixture.expected["intent"], "--boundary-cases", "0"]
-    code = main(argv)
+    # are off by default and tested on their own below.
+    code = main(["check", "--intent", fixture.expected["intent"]])
 
     findings = fixture.expected["findings"]
     failing = {"unexpected", "unclear"}  # new_function never fails the run
@@ -238,9 +237,9 @@ def test_boundary_cases_run_after_the_llm_cases_and_find_more(
     monkeypatch.chdir(fixture.repository.path)
 
     argv = ["check", "--intent", fixture.expected["intent"], "--format", "json"]
-    main([*argv, "--no-cache"])
+    main([*argv, "--no-cache", "--boundary-cases", "6"])
     with_boundary = json.loads(capsys.readouterr().out)
-    main([*argv, "--no-cache", "--boundary-cases", "0"])
+    main([*argv, "--no-cache"])  # off by default (owner decision 2026-11-24)
     without = json.loads(capsys.readouterr().out)
 
     calls = {f["args"][0] for f in with_boundary["findings"]}

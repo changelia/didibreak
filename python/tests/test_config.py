@@ -316,3 +316,8 @@ def test_toml_nan_in_pyproject_is_rejected(tmp_path: Path) -> None:
 
     with pytest.raises(ConfigError, match="timeout must be a finite number"):
         read_config_table(pyproject)
+
+
+def test_boundary_cases_are_off_by_default() -> None:
+    # Opt-in since the task 31 measurement (owner decision 2026-11-24).
+    assert Config().boundary_cases == 0
