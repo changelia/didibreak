@@ -1,0 +1,373 @@
+{
+  "scenario": {
+    "id": "asyncstdlib-replay-3879b3d",
+    "repo": "asyncstdlib",
+    "kind": "replay",
+    "commit": "3879b3dcdd17665b2634f77775167f9d19c0aac1",
+    "intent": "Refactor the builtins module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "3879b3dcdd17665b2634f77775167f9d19c0aac1",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the builtins module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--boundary-cases",
+    "0",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 22.7,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~6,182 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "3879b3dcdd17665b2634f77775167f9d19c0aac1"
+    },
+    "intent": "Stated by the user: Refactor the builtins module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "3b23e5b5dac4",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input changes the returned set.",
+        "confidence": "high",
+        "args": [
+          "[{1}, {2}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{1}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{2}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mur9yhjg/out/tests/test__min_max.py"
+      },
+      {
+        "id": "6652e21e1f6d",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input changes the returned set.",
+        "confidence": "high",
+        "args": [
+          "[{1, 2}, {3}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{1, 2}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{3}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mur9yhjg/out/tests/test__min_max.py"
+      },
+      {
+        "id": "71837ad84fb5",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input changes the returned set.",
+        "confidence": "high",
+        "args": [
+          "[{1}, {2, 3}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{1}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{2, 3}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mur9yhjg/out/tests/test__min_max.py"
+      },
+      {
+        "id": "0cc1e2cb0d61",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input changes the returned set.",
+        "confidence": "high",
+        "args": [
+          "[{1, 2, 3}, {4, 5}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{1, 2, 3}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{4, 5}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mur9yhjg/out/tests/test__min_max.py"
+      },
+      {
+        "id": "54fa38cf4588",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input changes the returned set.",
+        "confidence": "high",
+        "args": [
+          "[{1, 2}, {2, 3}, {1, 3}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{1, 2}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{1, 3}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mur9yhjg/out/tests/test__min_max.py"
+      },
+      {
+        "id": "0224dbc83630",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input changes the returned set.",
+        "confidence": "high",
+        "args": [
+          "[{10, 20}, {30}, {40, 50}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{10, 20}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{40, 50}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mur9yhjg/out/tests/test__min_max.py"
+      },
+      {
+        "id": "5bc62a25ae24",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input changes the returned result.",
+        "confidence": "high",
+        "args": [
+          "[({1}, 0), ({2}, 0)]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "({1}, 0)"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "({2}, 0)"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mur9yhjg/out/tests/test__min_max.py"
+      },
+      {
+        "id": "bf0cea3b2f27",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input changes the returned result.",
+        "confidence": "high",
+        "args": [
+          "[({1, 2}, 'left'), ({3, 4}, 'right')]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "({1, 2}, 'left')"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "({3, 4}, 'right')"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mur9yhjg/out/tests/test__min_max.py"
+      },
+      {
+        "id": "01c53d2e0e89",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input changes the returned result.",
+        "confidence": "high",
+        "args": [
+          "[('a', {1}), ('a', {2})]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "('a', {1})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.tuple",
+          "repr": "('a', {2})"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mur9yhjg/out/tests/test__min_max.py"
+      },
+      {
+        "id": "459cc4b2187e",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input changes the returned set.",
+        "confidence": "high",
+        "args": [
+          "[{'a', 'b'}, {'c'}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{'a', 'b'}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{'c'}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mur9yhjg/out/tests/test__min_max.py"
+      },
+      {
+        "id": "c8ab1d701a17",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input changes the returned set.",
+        "confidence": "high",
+        "args": [
+          "[{-3, -1}, {0, 2}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{-3, -1}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{0, 2}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mur9yhjg/out/tests/test__min_max.py"
+      },
+      {
+        "id": "27224da4dcea",
+        "function": "asyncstdlib/builtins.py::_min_max",
+        "label": "unexpected",
+        "reason": "The stated intent is to preserve behavior, but this input changes the returned set.",
+        "confidence": "high",
+        "args": [
+          "[{1, 'x'}, {2, 'y'}]",
+          "None",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{1, 'x'}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.set",
+          "repr": "{'y', 2}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-mur9yhjg/out/tests/test__min_max.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [
+        {
+          "function": "asyncstdlib/heapq.py::_KeyIter.__lt__",
+          "reason": "dunder method"
+        }
+      ],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2164,
+      "output_tokens": 2664,
+      "cost_usd": 0.0015484000000000001
+    }
+  },
+  "llm_finding_ids": [
+    "01c53d2e0e89",
+    "0224dbc83630",
+    "0cc1e2cb0d61",
+    "27224da4dcea",
+    "3b23e5b5dac4",
+    "459cc4b2187e",
+    "54fa38cf4588",
+    "5bc62a25ae24",
+    "6652e21e1f6d",
+    "71837ad84fb5",
+    "bf0cea3b2f27",
+    "c8ab1d701a17"
+  ]
+}

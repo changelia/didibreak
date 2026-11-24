@@ -1,0 +1,542 @@
+{
+ "asyncstdlib-replay-3879b3d/314b54e344e1": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids",
+  "real": true
+ },
+ "asyncstdlib-replay-3879b3d/3b23e5b5dac4": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids",
+  "real": true
+ },
+ "asyncstdlib-replay-3879b3d/4b7303aa70d2": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids",
+  "real": true
+ },
+ "asyncstdlib-replay-3879b3d/84e1e7468f5a": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids",
+  "real": true
+ },
+ "asyncstdlib-replay-3879b3d/86c07905750c": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-replay-3879b3d/89a269e7569c": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-replay-3879b3d/8d9005193404": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-replay-3879b3d/8ef805ac9412": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-replay-3879b3d/b0745c4e536b": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids",
+  "real": true
+ },
+ "asyncstdlib-replay-3879b3d/de3e385dcfbc": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids",
+  "real": true
+ },
+ "asyncstdlib-replay-3879b3d/e72b00af8fe8": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-replay-3879b3d/fb9960f76076": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-dict/14680dd5d96f": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-dict/15e9141c4442": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-dict/2208e8e96c7f": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-dict/651fb17d5059": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-dict/9dcb270fe6ea": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-dict/e1583f79d74a": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-sorted/03ec3603eb65": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-sorted/18493b6da084": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-sorted/33d338ce895a": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-sorted/4ae1ea127549": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-sorted/5efdd32331e0": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-sorted/7227ba613fb3": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-sorted/7a784f063b96": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-sorted/876f52587cfc": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-sorted/b3b1a5607355": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "asyncstdlib-seeded-feature-sorted/d4a86bf2aec4": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-1cdc0e9/028eb9f46b2d": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-1cdc0e9/5c95ec6b9db3": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-1cdc0e9/677f930cef34": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-1cdc0e9/752eda12bc6e": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-1cdc0e9/7bdc63c4d66e": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-1cdc0e9/9510d2e68d96": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-1cdc0e9/9f2b7639bf94": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids",
+  "real": true
+ },
+ "boltons-replay-1cdc0e9/ad42eeee94ab": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-1cdc0e9/b518c94514ef": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-1cdc0e9/c2c31149f712": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-1cdc0e9/e89762f5c757": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-1cdc0e9/ed8d42c1397c": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-609cabe/039c8037c9d0": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-609cabe/1c4770cc07ab": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-609cabe/276558d0a73a": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-609cabe/4e316c694c0c": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-609cabe/53186ee9bdb3": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-609cabe/77220a3ff4f2": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-609cabe/ba7f727824ad": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-609cabe/bc50569c74aa": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-609cabe/bc99a67e1f32": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-609cabe/bd2c5392040b": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-609cabe/d3ef6c2d7ae4": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-6cac49c/1a3c4efefe73": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-6cac49c/20a4295ca52e": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-6cac49c/27a3994f5e98": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-6cac49c/4f43d6d8d845": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-6cac49c/6592eb3ca930": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-6cac49c/6d0030b52a01": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-6cac49c/907a87de9315": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-6cac49c/b22870e95ad6": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-6cac49c/c500df74494b": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids",
+  "real": true
+ },
+ "boltons-replay-6cac49c/d1cfad531e2c": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-6cac49c/dc88be79dcda": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-6cac49c/fb3c94605002": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-8177b93/388cd4ac1993": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-8177b93/40c9acf54fbd": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-8177b93/6dd22dbc4bca": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-8177b93/7b5669009c4e": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-8177b93/806d57af84ac": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-8177b93/866edb70ebb3": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-8177b93/8c5f9f13d58b": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-8177b93/95b0acff5407": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-8177b93/a23b9de62642": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-8177b93/a48fc140cea5": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-8177b93/b0eec6ad9d5d": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-8177b93/c17b7c586bc0": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-8177b93/cd1e6da394f9": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids",
+  "real": true
+ },
+ "boltons-replay-8177b93/d2fc29b44a99": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-8177b93/ef3568b63069": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-8177b93/f3138dcd69b1": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-8177b93/ff4fc76c54f6": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a180020/11ba924bc6ab": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids",
+  "real": true
+ },
+ "boltons-replay-a180020/196b73122784": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-a180020/3e4ffeff0cad": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-a180020/7668f8a3c973": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-a180020/91a6ea652cbf": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-a180020/9b19a5ed0ec6": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-a180020/b6f979c12862": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-a180020/bbbc11f3f97e": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-a180020/d88423424e58": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-a180020/ddb6056fc858": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-a180020/e353fa85a6e5": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-a180020/fa64d3321fcb": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-a1ea103/187bd1c3a2f5": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/1c1d0ca66f9b": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/32bbcb8316d9": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/3881bf877367": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/544a333b970a": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/60cee4ec2407": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/8de6a4af3925": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/add352deb9e8": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/b1961676b081": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/bc8e6997a99d": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/c351f0adea85": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/cd71e0dcb01b": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/cfa5832e20c7": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/d0d97be0065e": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/d500ca42be08": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/e9a74aafb861": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/f6e3d18e4d68": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-a1ea103/f8dcc7757ccd": {
+  "note": "out of contract: the values argument is not an iterable (task 31 agent label)",
+  "real": false
+ },
+ "boltons-replay-d0a284f/11a4a8e292ba": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids",
+  "real": true
+ },
+ "boltons-replay-d0a284f/1cfdbbbea894": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids",
+  "real": true
+ },
+ "boltons-replay-d0a284f/1d7941e098ec": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-d0a284f/572de0f48ea6": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-d0a284f/826fffec8751": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids",
+  "real": true
+ },
+ "boltons-replay-d0a284f/91ddccdc134a": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids",
+  "real": true
+ },
+ "boltons-replay-d0a284f/95631c98455e": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-d0a284f/ab4409c3f034": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-d0a284f/afc297e8f3c6": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-d0a284f/b71c5869ec06": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-d0a284f/d4d0289a889c": {
+  "note": "reverted bug fix: in-contract behavior change the intent forbids (task 31 agent label)",
+  "real": true
+ },
+ "boltons-replay-d0a284f/f6e823d76a53": {
+  "note": "out of contract: the index is a float (task 31 agent label)",
+  "real": false
+ },
+ "boltons-seeded-feature-indexedset_discard/167f9bdcefc2": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "boltons-seeded-feature-indexedset_discard/6ef8c5374ae6": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "boltons-seeded-feature-indexedset_discard/a10158e06159": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "boltons-seeded-feature-indexedset_discard/aef9bd22a663": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "boltons-seeded-feature-indexedset_discard/bbb11adc2454": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "boltons-seeded-feature-indexedset_discard/c88e07e1ec13": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "boltons-seeded-feature-indexedset_discard/c982dcaff18e": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "boltons-seeded-feature-indexedset_discard/d2f4106aa43e": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "boltons-seeded-feature-indexedset_discard/f78c251a1a4f": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for",
+  "real": true
+ },
+ "boltons-seeded-feature-stats_quantile/24296122d2a4": {
+  "note": "intended: the intent asks for percentages; a numeric string is one (task 31 agent label)",
+  "real": false
+ },
+ "boltons-seeded-feature-stats_quantile/6c0645c9416f": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "boltons-seeded-feature-stats_quantile/a1263b9c2879": {
+  "note": "planted mistake or over-broad change: in-contract behavior change the intent does not ask for (task 31 agent label)",
+  "real": true
+ },
+ "boltons-seeded-feature-stats_quantile/bd995f78e2eb": {
+  "note": "out of contract: the quantile is a bool or bytes (task 31 agent label)",
+  "real": false
+ }
+}

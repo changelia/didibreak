@@ -1,0 +1,22 @@
+diff --git a/asyncstdlib/builtins.py b/asyncstdlib/builtins.py
+index d2d11bc..27ceea8 100644
+--- a/asyncstdlib/builtins.py
++++ b/asyncstdlib/builtins.py
+@@ -101,7 +101,7 @@ async def all(iterable: AnyIterable[Any]) -> bool:
+     """
+     async with ScopedIter(iterable) as item_iter:
+         async for element in item_iter:
+-            if not element:
++            if not bool(element):
+                 return False
+     return True
+ 
+@@ -112,7 +112,7 @@ async def any(iterable: AnyIterable[Any]) -> bool:
+     """
+     async with ScopedIter(iterable) as item_iter:
+         async for element in item_iter:
+-            if element:
++            if bool(element):
+                 return True
+     return False
+ 

@@ -1,0 +1,358 @@
+{
+  "scenario": {
+    "id": "asyncstdlib-seeded-feature-dict",
+    "repo": "asyncstdlib",
+    "kind": "seeded",
+    "commit": "0f01ce79fcdeedee199971fa7dae150018766aa3",
+    "intent": "Let dict() accept a mapping as its first argument, like the builtin dict().",
+    "patch": "patches/asyncstdlib-seeded-feature-dict.diff"
+  },
+  "base_sha": "0f01ce79fcdeedee199971fa7dae150018766aa3",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Let dict() accept a mapping as its first argument, like the builtin dict().",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 25.3,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,496 input + ~7,200 output tokens, ~$0.0041 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "0f01ce79fcdeedee199971fa7dae150018766aa3"
+    },
+    "intent": "Stated by the user: Let dict() accept a mapping as its first argument, like the builtin dict().",
+    "findings": [
+      {
+        "id": "0cbf66c20a17",
+        "function": "asyncstdlib/builtins.py::dict",
+        "label": "expected",
+        "reason": "The intent is to accept a mapping as the first argument, preserving its keys and values as the builtin dict does.",
+        "confidence": "high",
+        "args": [
+          "{('left', 1): 'stored'}"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{'left': 1}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{('left', 1): 'stored'}"
+        },
+        "test_file": null
+      },
+      {
+        "id": "2dd0bfa72990",
+        "function": "asyncstdlib/builtins.py::dict",
+        "label": "expected",
+        "reason": "The intent is to accept a mapping as the first argument, preserving its keys and values as the builtin dict does.",
+        "confidence": "high",
+        "args": [
+          "{('solo',): 8}"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('not enough values to unpack (expected 2, got 1)')",
+          "message": "not enough values to unpack (expected 2, got 1)"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{('solo',): 8}"
+        },
+        "test_file": null
+      },
+      {
+        "id": "8674f875fb04",
+        "function": "asyncstdlib/builtins.py::dict",
+        "label": "expected",
+        "reason": "The intent is to accept a mapping as the first argument, preserving its keys and values as the builtin dict does.",
+        "confidence": "high",
+        "args": [
+          "{(): 'empty-key'}"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('not enough values to unpack (expected 2, got 0)')",
+          "message": "not enough values to unpack (expected 2, got 0)"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{(): 'empty-key'}"
+        },
+        "test_file": null
+      },
+      {
+        "id": "e32547f85dcb",
+        "function": "asyncstdlib/builtins.py::dict",
+        "label": "expected",
+        "reason": "The intent is to accept a mapping as the first argument, preserving its keys and values as the builtin dict does.",
+        "confidence": "high",
+        "args": [
+          "{('a', 1, 'extra'): 'stored'}"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError('too many values to unpack (expected 2)')",
+          "message": "too many values to unpack (expected 2)"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{('a', 1, 'extra'): 'stored'}"
+        },
+        "test_file": null
+      },
+      {
+        "id": "219e30707ac6",
+        "function": "asyncstdlib/builtins.py::dict",
+        "label": "expected",
+        "reason": "The intent is to accept a mapping as the first argument, preserving its keys and values as the builtin dict does.",
+        "confidence": "high",
+        "args": [
+          "{(None, 'value'): 99}"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{None: 'value'}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{(None, 'value'): 99}"
+        },
+        "test_file": null
+      },
+      {
+        "id": "47f90adcbe98",
+        "function": "asyncstdlib/builtins.py::dict",
+        "label": "expected",
+        "reason": "The intent is to accept a mapping as the first argument, preserving its keys and values as the builtin dict does.",
+        "confidence": "high",
+        "args": [
+          "{('\u96ea', '\u2603'): 'unicode-value'}"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{'\u96ea': '\u2603'}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{('\u96ea', '\u2603'): 'unicode-value'}"
+        },
+        "test_file": null
+      },
+      {
+        "id": "14680dd5d96f",
+        "function": "asyncstdlib/builtins.py::dict",
+        "label": "unexpected",
+        "reason": "This input is an iterable of pairs rather than a mapping, and the changed result also conflicts with builtin dict keyword-overrides-iterable behavior.",
+        "confidence": "high",
+        "args": [
+          "[('x', 1)]"
+        ],
+        "kwargs": {
+          "x": "2"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{'x': 2}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{'x': 1}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kp221rrc/out/tests/test_dict.py"
+      },
+      {
+        "id": "9dcb270fe6ea",
+        "function": "asyncstdlib/builtins.py::dict",
+        "label": "unexpected",
+        "reason": "This input is an iterable of pairs rather than a mapping, and the changed result also conflicts with builtin dict keyword-overrides-iterable behavior.",
+        "confidence": "high",
+        "args": [
+          "[('x', 1), ('y', 3)]"
+        ],
+        "kwargs": {
+          "x": "2"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{'x': 2, 'y': 3}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{'x': 1, 'y': 3}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kp221rrc/out/tests/test_dict.py"
+      },
+      {
+        "id": "2208e8e96c7f",
+        "function": "asyncstdlib/builtins.py::dict",
+        "label": "unexpected",
+        "reason": "This input is an iterable of pairs rather than a mapping, and the changed result also conflicts with builtin dict keyword-overrides-iterable behavior.",
+        "confidence": "high",
+        "args": [
+          "[('x', 1), ('x', 4)]"
+        ],
+        "kwargs": {
+          "x": "9"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{'x': 9}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{'x': 4}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kp221rrc/out/tests/test_dict.py"
+      },
+      {
+        "id": "651fb17d5059",
+        "function": "asyncstdlib/builtins.py::dict",
+        "label": "unexpected",
+        "reason": "This input is an iterable of pairs rather than a mapping, and the changed result also conflicts with builtin dict keyword-overrides-iterable behavior.",
+        "confidence": "high",
+        "args": [
+          "[('name', 'from-iterable')]"
+        ],
+        "kwargs": {
+          "name": "'from-keyword'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{'name': 'from-keyword'}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{'name': 'from-iterable'}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kp221rrc/out/tests/test_dict.py"
+      },
+      {
+        "id": "15e9141c4442",
+        "function": "asyncstdlib/builtins.py::dict",
+        "label": "unexpected",
+        "reason": "This input is an iterable of pairs rather than a mapping, and the changed result also conflicts with builtin dict keyword-overrides-iterable behavior.",
+        "confidence": "high",
+        "args": [
+          "[('size', 0)]"
+        ],
+        "kwargs": {
+          "size": "-1"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{'size': -1}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{'size': 0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kp221rrc/out/tests/test_dict.py"
+      },
+      {
+        "id": "e1583f79d74a",
+        "function": "asyncstdlib/builtins.py::dict",
+        "label": "unexpected",
+        "reason": "This input is an iterable of pairs rather than a mapping, and the changed result also conflicts with builtin dict keyword-overrides-iterable behavior.",
+        "confidence": "high",
+        "args": [
+          "[('flag', False), ('x', None)]"
+        ],
+        "kwargs": {
+          "flag": "True",
+          "x": "'present'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{'flag': True, 'x': 'present'}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.dict",
+          "repr": "{'flag': False, 'x': None}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kp221rrc/out/tests/test_dict.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 6,
+        "unexpected": 6,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 1937,
+      "output_tokens": 3165,
+      "cost_usd": 0.0017762000000000001
+    }
+  },
+  "llm_finding_ids": [
+    "0cbf66c20a17",
+    "14680dd5d96f",
+    "15e9141c4442",
+    "219e30707ac6",
+    "2208e8e96c7f",
+    "2dd0bfa72990",
+    "47f90adcbe98",
+    "651fb17d5059",
+    "8674f875fb04",
+    "9dcb270fe6ea",
+    "e1583f79d74a",
+    "e32547f85dcb"
+  ]
+}

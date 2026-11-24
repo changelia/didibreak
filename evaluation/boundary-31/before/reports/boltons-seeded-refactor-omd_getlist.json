@@ -1,0 +1,90 @@
+{
+  "scenario": {
+    "id": "boltons-seeded-refactor-omd_getlist",
+    "repo": "boltons",
+    "kind": "seeded",
+    "commit": "d31d821d56c8f7756af9c30a864077f2e5855321",
+    "intent": "Refactor OrderedMultiDict.getlist for readability; behavior must not change.",
+    "patch": "patches/boltons-seeded-refactor-omd_getlist.diff"
+  },
+  "base_sha": "d31d821d56c8f7756af9c30a864077f2e5855321",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor OrderedMultiDict.getlist for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--boundary-cases",
+    "0",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 0,
+  "seconds": 54.2,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,712 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "d31d821d56c8f7756af9c30a864077f2e5855321"
+    },
+    "intent": "Stated by the user: Refactor OrderedMultiDict.getlist for readability; behavior must not change.",
+    "findings": [],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 23,
+      "findings": {
+        "expected": 0,
+        "unexpected": 0,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 1,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 3600,
+      "output_tokens": 5692,
+      "cost_usd": 0.00310781
+    }
+  },
+  "llm_finding_ids": [
+    "20c1063c4f19",
+    "21001654d366",
+    "26ac6244381d",
+    "28fa6469981f",
+    "2e5f2d9ee1ad",
+    "312acb9a2123",
+    "3f0cf104b297",
+    "4a356f5fbf25",
+    "4f97cc57ef6f",
+    "71b3ffdf84f2",
+    "7c0d22533145",
+    "7d7ad1fd2427",
+    "9903cfdfb040",
+    "9cc5159feed6",
+    "ae8e53b2b357",
+    "be8c8e065225",
+    "c61079af8e2e",
+    "c97206da742f",
+    "cd465aaf3e3c",
+    "d33a96657c8e",
+    "d8e05cf686ac",
+    "e13044e5d121",
+    "e47c653cbfb7"
+  ]
+}

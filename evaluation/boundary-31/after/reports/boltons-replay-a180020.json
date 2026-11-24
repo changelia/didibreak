@@ -1,0 +1,407 @@
+{
+  "scenario": {
+    "id": "boltons-replay-a180020",
+    "repo": "boltons",
+    "kind": "replay",
+    "commit": "a180020c760b532e8889f161d97d05647adfee8c",
+    "intent": "Refactor the setutils module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "a180020c760b532e8889f161d97d05647adfee8c",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the setutils module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 24.8,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,304 input + ~7,200 output tokens, ~$0.0041 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "a180020c760b532e8889f161d97d05647adfee8c"
+    },
+    "intent": "Stated by the user: Refactor the setutils module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "ddb6056fc858",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises instead of adding the iterable elements.",
+        "confidence": "high",
+        "args": [
+          "[3, 4]",
+          "[5, 6]"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {3: 0, 4: 1, 5: 2, 6: 3}, 'item_list': [3, 4, 5, 6]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"unhashable type: 'list'\")",
+          "message": "unhashable type: 'list'",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-oubugimy/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "11ba924bc6ab",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now stores each tuple as an item rather than adding its elements.",
+        "confidence": "high",
+        "args": [
+          "(1, 2)",
+          "(3, 4)"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2, 4: 3}, 'item_list': [1, 2, 3, 4]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {(1, 2): 0, (3, 4): 1}, 'item_list': [(1, 2), (3, 4)]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-oubugimy/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "b6f979c12862",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now stores each string as an item rather than adding its characters.",
+        "confidence": "high",
+        "args": [
+          "'ab'",
+          "'bc'"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'a': 0, 'b': 1, 'c': 2}, 'item_list': ['a', 'b', 'c']}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'ab': 0, 'bc': 1}, 'item_list': ['ab', 'bc']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-oubugimy/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "7668f8a3c973",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now stores each bytes object as an item rather than adding its byte values.",
+        "confidence": "high",
+        "args": [
+          "b'AB'",
+          "b'CD'"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {65: 0, 66: 1, 67: 2, 68: 3}, 'item_list': [65, 66, 67, 68]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {b'AB': 0, b'CD': 1}, 'item_list': [b'AB', b'CD']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-oubugimy/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "bbbc11f3f97e",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises instead of adding the mapping keys.",
+        "confidence": "high",
+        "args": [
+          "{'a': 1, 'b': 2}",
+          "{'c': 3}"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'a': 0, 'b': 1, 'c': 2}, 'item_list': ['a', 'b', 'c']}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"unhashable type: 'dict'\")",
+          "message": "unhashable type: 'dict'",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-oubugimy/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "fa64d3321fcb",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises instead of adding the set elements.",
+        "confidence": "high",
+        "args": [
+          "{1, 2}",
+          "{3, 4}"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2, 4: 3}, 'item_list': [1, 2, 3, 4]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"unhashable type: 'set'\")",
+          "message": "unhashable type: 'set'",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-oubugimy/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "e353fa85a6e5",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now raises instead of adding the tuple elements.",
+        "confidence": "high",
+        "args": [
+          "[]",
+          "(7, 8)"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {7: 0, 8: 1}, 'item_list': [7, 8]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"unhashable type: 'list'\")",
+          "message": "unhashable type: 'list'",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-oubugimy/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "3e4ffeff0cad",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now stores each outer tuple as an item rather than adding its elements.",
+        "confidence": "high",
+        "args": [
+          "((1, 2), (3, 4))",
+          "((5, 6),)"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {(1, 2): 0, (3, 4): 1, (5, 6): 2}, 'item_list': [(1, 2), (3, 4), (5, 6)]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {((1, 2), (3, 4)): 0, ((5, 6),): 1}, 'item_list': [((1, 2), (3, 4)), ((5, 6),)]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-oubugimy/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "91a6ea652cbf",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now stores the supplied iterables as items rather than adding their elements.",
+        "confidence": "high",
+        "args": [
+          "'AB'",
+          "(2, 3)",
+          "b'\\x01\\x02'"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'A': 0, 'B': 1, 2: 2, 3: 3, 1: 4}, 'item_list': ['A', 'B', 2, 3, 1]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'AB': 0, (2, 3): 1, b'\\x01\\x02': 2}, 'item_list': ['AB', (2, 3), b'\\x01\\x02']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-oubugimy/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "d88423424e58",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now stores each tuple as an item rather than adding its elements.",
+        "confidence": "high",
+        "args": [
+          "(1, 1)",
+          "(1, 2)"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1}, 'item_list': [1, 2]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {(1, 1): 0, (1, 2): 1}, 'item_list': [(1, 1), (1, 2)]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-oubugimy/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "9b19a5ed0ec6",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now stores each string as an item rather than adding its characters.",
+        "confidence": "high",
+        "args": [
+          "'\ud83e\uddea\u00e9'",
+          "'\u00e9\ud83d\ude42'"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'\ud83e\uddea': 0, '\u00e9': 1, '\ud83d\ude42': 2}, 'item_list': ['\ud83e\uddea', '\u00e9', '\ud83d\ude42']}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'\ud83e\uddea\u00e9': 0, '\u00e9\ud83d\ude42': 1}, 'item_list': ['\ud83e\uddea\u00e9', '\u00e9\ud83d\ude42']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-oubugimy/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "196b73122784",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior to remain unchanged, but this call now stores each bytes object as an item rather than adding its byte values.",
+        "confidence": "high",
+        "args": [
+          "b''",
+          "b'\\x00'"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {0: 0}, 'item_list': [0]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {b'': 0, b'\\x00': 1}, 'item_list': [b'', b'\\x00']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-oubugimy/out/tests/test_IndexedSet_update.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 3076,
+      "output_tokens": 2767,
+      "cost_usd": 0.0016911
+    }
+  },
+  "llm_finding_ids": [
+    "11ba924bc6ab",
+    "196b73122784",
+    "3e4ffeff0cad",
+    "7668f8a3c973",
+    "91a6ea652cbf",
+    "9b19a5ed0ec6",
+    "b6f979c12862",
+    "bbbc11f3f97e",
+    "d88423424e58",
+    "ddb6056fc858",
+    "e353fa85a6e5",
+    "fa64d3321fcb"
+  ]
+}

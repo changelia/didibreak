@@ -1,0 +1,91 @@
+{
+  "scenario": {
+    "id": "more-itertools-replay-cf186b5",
+    "repo": "more-itertools",
+    "kind": "replay",
+    "commit": "cf186b5de4797602fef76c3391da2d110b88a954",
+    "intent": "Refactor the more module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "cf186b5de4797602fef76c3391da2d110b88a954",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the more module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--boundary-cases",
+    "0",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 0,
+  "seconds": 30.8,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,765 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "cf186b5de4797602fef76c3391da2d110b88a954"
+    },
+    "intent": "Stated by the user: Refactor the more module for readability; behavior must not change.",
+    "findings": [],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 24,
+      "findings": {
+        "expected": 0,
+        "unexpected": 0,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2500,
+      "output_tokens": 3690,
+      "cost_usd": 0.00200077
+    }
+  },
+  "llm_finding_ids": [
+    "099b7c037392",
+    "0f4628c2193a",
+    "20359812de77",
+    "2619c856818f",
+    "3aa029a1017c",
+    "3ad85d469d0c",
+    "3b5e5b8845e5",
+    "3b7a72791f49",
+    "3eb200bbc63f",
+    "410ff4dfd81f",
+    "5250c5a3ae6c",
+    "628e5d79d4e1",
+    "66c206a55491",
+    "6728324e45ba",
+    "79fa35be54fc",
+    "aae2983ddeb3",
+    "af6e46a0c3e3",
+    "bf6df0c40544",
+    "ce22141de981",
+    "d07a2805e762",
+    "d3be02f388dd",
+    "e37c055b73ff",
+    "e6f9c8df38c8",
+    "e7480721aaac"
+  ]
+}

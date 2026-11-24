@@ -1,0 +1,368 @@
+{
+  "scenario": {
+    "id": "humanize-replay-e46732e",
+    "repo": "humanize",
+    "kind": "replay",
+    "commit": "e46732ed235019682b7bfc6c44443e247b332e95",
+    "intent": "Refactor the number module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "7b63716d1a427de92b952735d0a8b897a02f7142",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the number module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--boundary-cases",
+    "0",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 22.8,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~7,836 input + ~7,200 output tokens, ~$0.0044 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "7b63716d1a427de92b952735d0a8b897a02f7142"
+    },
+    "intent": "Stated by the user: Refactor the number module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "05c7829902b2",
+        "function": "src/humanize/number.py::metric",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so this output difference is not intended.",
+        "confidence": "high",
+        "args": [
+          "9.999",
+          "''",
+          "3"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'10.0'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'10.00'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ghh6nesu/out/tests/test_metric.py"
+      },
+      {
+        "id": "9ed8752ebaa1",
+        "function": "src/humanize/number.py::metric",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so this output difference is not intended.",
+        "confidence": "high",
+        "args": [
+          "-9.999",
+          "'m'",
+          "3"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-10.0 m'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-10.00 m'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ghh6nesu/out/tests/test_metric.py"
+      },
+      {
+        "id": "30ef6c1283e9",
+        "function": "src/humanize/number.py::metric",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so this output difference is not intended.",
+        "confidence": "high",
+        "args": [
+          "9.9999",
+          "'V'",
+          "4"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'10.00 V'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'10.000 V'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ghh6nesu/out/tests/test_metric.py"
+      },
+      {
+        "id": "957957931101",
+        "function": "src/humanize/number.py::metric",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so this output difference is not intended.",
+        "confidence": "high",
+        "args": [
+          "99.99",
+          "''",
+          "3"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'100'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'100.0'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ghh6nesu/out/tests/test_metric.py"
+      },
+      {
+        "id": "15b750149d5e",
+        "function": "src/humanize/number.py::metric",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so this output difference is not intended.",
+        "confidence": "high",
+        "args": [
+          "-99.99",
+          "'\u03a9'",
+          "3"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-100 \u03a9'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-100.0 \u03a9'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ghh6nesu/out/tests/test_metric.py"
+      },
+      {
+        "id": "516bf1fdb028",
+        "function": "src/humanize/number.py::metric",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so this output difference is not intended.",
+        "confidence": "high",
+        "args": [
+          "99.999",
+          "'s'",
+          "4"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'100.0 s'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'100.00 s'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ghh6nesu/out/tests/test_metric.py"
+      },
+      {
+        "id": "7e68f04c45e7",
+        "function": "src/humanize/number.py::metric",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so this output difference is not intended.",
+        "confidence": "high",
+        "args": [
+          "9999.0",
+          "'W'",
+          "3"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'10.0 kW'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'10.00 kW'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ghh6nesu/out/tests/test_metric.py"
+      },
+      {
+        "id": "4561a0f836f4",
+        "function": "src/humanize/number.py::metric",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so this output difference is not intended.",
+        "confidence": "high",
+        "args": [
+          "9999.9",
+          "''",
+          "4"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'10.00 k'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'10.000 k'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ghh6nesu/out/tests/test_metric.py"
+      },
+      {
+        "id": "0bbb95cadd8b",
+        "function": "src/humanize/number.py::metric",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so this output difference is not intended.",
+        "confidence": "high",
+        "args": [
+          "99999.0",
+          "'Hz'",
+          "3"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'100 kHz'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'100.0 kHz'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ghh6nesu/out/tests/test_metric.py"
+      },
+      {
+        "id": "ad79df7babd5",
+        "function": "src/humanize/number.py::metric",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so this output difference is not intended.",
+        "confidence": "high",
+        "args": [
+          "99999.9",
+          "'F'",
+          "4"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'100.0 kF'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'100.00 kF'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ghh6nesu/out/tests/test_metric.py"
+      },
+      {
+        "id": "d540f7bc00c2",
+        "function": "src/humanize/number.py::metric",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so this output difference is not intended.",
+        "confidence": "high",
+        "args": [
+          "9999000.0",
+          "'J'",
+          "3"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'10.0 MJ'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'10.00 MJ'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ghh6nesu/out/tests/test_metric.py"
+      },
+      {
+        "id": "fbc7baadc284",
+        "function": "src/humanize/number.py::metric",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so this output difference is not intended.",
+        "confidence": "high",
+        "args": [
+          "99990000.0",
+          "'\u00b0'",
+          "3"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'100M\u00b0'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'100.0M\u00b0'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ghh6nesu/out/tests/test_metric.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2961,
+      "output_tokens": 2924,
+      "cost_usd": 0.00157153
+    }
+  },
+  "llm_finding_ids": [
+    "05c7829902b2",
+    "0bbb95cadd8b",
+    "15b750149d5e",
+    "30ef6c1283e9",
+    "4561a0f836f4",
+    "516bf1fdb028",
+    "7e68f04c45e7",
+    "957957931101",
+    "9ed8752ebaa1",
+    "ad79df7babd5",
+    "d540f7bc00c2",
+    "fbc7baadc284"
+  ]
+}

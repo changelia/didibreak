@@ -1,0 +1,89 @@
+{
+  "scenario": {
+    "id": "boltons-seeded-refactor-omd_getlist",
+    "repo": "boltons",
+    "kind": "seeded",
+    "commit": "d31d821d56c8f7756af9c30a864077f2e5855321",
+    "intent": "Refactor OrderedMultiDict.getlist for readability; behavior must not change.",
+    "patch": "patches/boltons-seeded-refactor-omd_getlist.diff"
+  },
+  "base_sha": "d31d821d56c8f7756af9c30a864077f2e5855321",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor OrderedMultiDict.getlist for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 0,
+  "seconds": 37.1,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,712 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "d31d821d56c8f7756af9c30a864077f2e5855321"
+    },
+    "intent": "Stated by the user: Refactor OrderedMultiDict.getlist for readability; behavior must not change.",
+    "findings": [],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 24,
+      "findings": {
+        "expected": 0,
+        "unexpected": 0,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 3695,
+      "output_tokens": 4094,
+      "cost_usd": 0.0024165000000000002
+    }
+  },
+  "llm_finding_ids": [
+    "0852166e650d",
+    "153f16541604",
+    "1b2ea7f252ef",
+    "35271764ae15",
+    "3a9bba29a7ca",
+    "3b19d17cf97b",
+    "4b99e8fc1620",
+    "4eb613df3867",
+    "76801f2f41d0",
+    "85497894abde",
+    "8c003fd19b5a",
+    "8c88606f2ca0",
+    "9256a216ea9a",
+    "a328734cf1b7",
+    "aabe446c8c6b",
+    "ab90c170002e",
+    "acbd23131a1a",
+    "b21c111141ba",
+    "bb598aec5dab",
+    "bba0ba5592da",
+    "bd4d6a7478de",
+    "caeb9592e3bb",
+    "cc317db53301",
+    "f74d3342cecf"
+  ]
+}

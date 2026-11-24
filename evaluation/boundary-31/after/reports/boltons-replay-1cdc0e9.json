@@ -1,0 +1,414 @@
+{
+  "scenario": {
+    "id": "boltons-replay-1cdc0e9",
+    "repo": "boltons",
+    "kind": "replay",
+    "commit": "1cdc0e9d36f3eb32608f3b34885717697643e9b8",
+    "intent": "Refactor the statsutils module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "1cdc0e9d36f3eb32608f3b34885717697643e9b8",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the statsutils module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 17.1,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~6,415 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "1cdc0e9d36f3eb32608f3b34885717697643e9b8"
+    },
+    "intent": "Stated by the user: Refactor the statsutils module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "9f2b7639bf94",
+        "function": "boltons/statsutils.py::Stats._get_bin_bounds",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, but this call now raises instead of returning its previous bounds.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {},
+        "init_args": [
+          "[0, 0, 0, 0]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[0.0]",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [0, 0, 0, 0], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ZeroDivisionError",
+          "repr": "ZeroDivisionError('float division by zero')",
+          "message": "float division by zero",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [0, 0, 0, 0], 'default': 0.0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t6025wu8/out/tests/test_Stats__get_bin_bounds.py"
+      },
+      {
+        "id": "752eda12bc6e",
+        "function": "boltons/statsutils.py::Stats._get_bin_bounds",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, but this call now raises instead of returning its previous bounds.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "with_max": "True"
+        },
+        "init_args": [
+          "[0, 0, 0, 0]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[0.0, 0.0]",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [0, 0, 0, 0], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ZeroDivisionError",
+          "repr": "ZeroDivisionError('float division by zero')",
+          "message": "float division by zero",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [0, 0, 0, 0], 'default': 0.0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t6025wu8/out/tests/test_Stats__get_bin_bounds.py"
+      },
+      {
+        "id": "5c95ec6b9db3",
+        "function": "boltons/statsutils.py::Stats._get_bin_bounds",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, but this call now raises instead of returning its previous bounds.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {},
+        "init_args": [
+          "[-7, -7, -7, -7]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[-7.0]",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [-7, -7, -7, -7], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ZeroDivisionError",
+          "repr": "ZeroDivisionError('float division by zero')",
+          "message": "float division by zero",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [-7, -7, -7, -7], 'default': 0.0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t6025wu8/out/tests/test_Stats__get_bin_bounds.py"
+      },
+      {
+        "id": "028eb9f46b2d",
+        "function": "boltons/statsutils.py::Stats._get_bin_bounds",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, but this call now raises instead of returning its previous bounds.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "with_max": "True"
+        },
+        "init_args": [
+          "[2.5, 2.5, 2.5, 2.5]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[2.5, 2.5]",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [2.5, 2.5, 2.5, 2.5], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ZeroDivisionError",
+          "repr": "ZeroDivisionError('float division by zero')",
+          "message": "float division by zero",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [2.5, 2.5, 2.5, 2.5], 'default': 0.0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t6025wu8/out/tests/test_Stats__get_bin_bounds.py"
+      },
+      {
+        "id": "b518c94514ef",
+        "function": "boltons/statsutils.py::Stats._get_bin_bounds",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, but this call now raises instead of returning its previous bounds.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {},
+        "init_args": [
+          "[3, 3, 3, 3, 3, 3]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[3.0]",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [3, 3, 3, 3, 3, 3], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ZeroDivisionError",
+          "repr": "ZeroDivisionError('float division by zero')",
+          "message": "float division by zero",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [3, 3, 3, 3, 3, 3], 'default': 0.0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t6025wu8/out/tests/test_Stats__get_bin_bounds.py"
+      },
+      {
+        "id": "ad42eeee94ab",
+        "function": "boltons/statsutils.py::Stats._get_bin_bounds",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, but this call now raises instead of returning its previous bounds.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "with_max": "True"
+        },
+        "init_args": [
+          "[-100, -100, -100, -100, -100, -100]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[-100.0, -100.0]",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [-100, -100, -100, -100, -100, -100], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ZeroDivisionError",
+          "repr": "ZeroDivisionError('float division by zero')",
+          "message": "float division by zero",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [-100, -100, -100, -100, -100, -100], 'default': 0.0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t6025wu8/out/tests/test_Stats__get_bin_bounds.py"
+      },
+      {
+        "id": "7bdc63c4d66e",
+        "function": "boltons/statsutils.py::Stats._get_bin_bounds",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, but this call now raises instead of returning its previous bounds.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {},
+        "init_args": [
+          "[1000000000000, 1000000000000, 1000000000000, 1000000000000]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[1000000000000.0]",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [1000000000000, 1000000000000, 1000000000000, 1000000000000], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ZeroDivisionError",
+          "repr": "ZeroDivisionError('float division by zero')",
+          "message": "float division by zero",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [1000000000000, 1000000000000, 1000000000000, 1000000000000], 'default': 0.0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t6025wu8/out/tests/test_Stats__get_bin_bounds.py"
+      },
+      {
+        "id": "e89762f5c757",
+        "function": "boltons/statsutils.py::Stats._get_bin_bounds",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, but this call now raises instead of returning its previous bounds.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "with_max": "True"
+        },
+        "init_args": [
+          "[-1000000000000, -1000000000000, -1000000000000, -1000000000000]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[-1000000000000.0, -1000000000000.0]",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [-1000000000000, -1000000000000, -1000000000000, -1000000000000], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ZeroDivisionError",
+          "repr": "ZeroDivisionError('float division by zero')",
+          "message": "float division by zero",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [-1000000000000, -1000000000000, -1000000000000, -1000000000000], 'default': 0.0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t6025wu8/out/tests/test_Stats__get_bin_bounds.py"
+      },
+      {
+        "id": "677f930cef34",
+        "function": "boltons/statsutils.py::Stats._get_bin_bounds",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, but this call now raises instead of returning its previous bounds.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {},
+        "init_args": [
+          "[0.125, 0.125, 0.125, 0.125, 0.125]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[0.125]",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [0.125, 0.125, 0.125, 0.125, 0.125], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ZeroDivisionError",
+          "repr": "ZeroDivisionError('float division by zero')",
+          "message": "float division by zero",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [0.125, 0.125, 0.125, 0.125, 0.125], 'default': 0.0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t6025wu8/out/tests/test_Stats__get_bin_bounds.py"
+      },
+      {
+        "id": "c2c31149f712",
+        "function": "boltons/statsutils.py::Stats._get_bin_bounds",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, but this call now raises instead of returning its previous bounds.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "with_max": "True"
+        },
+        "init_args": [
+          "[-0.25, -0.25, -0.25, -0.25, -0.25]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[-0.25, -0.25]",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [-0.25, -0.25, -0.25, -0.25, -0.25], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ZeroDivisionError",
+          "repr": "ZeroDivisionError('float division by zero')",
+          "message": "float division by zero",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [-0.25, -0.25, -0.25, -0.25, -0.25], 'default': 0.0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t6025wu8/out/tests/test_Stats__get_bin_bounds.py"
+      },
+      {
+        "id": "ed8d42c1397c",
+        "function": "boltons/statsutils.py::Stats._get_bin_bounds",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, but this call now raises instead of returning its previous bounds.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {},
+        "init_args": [
+          "[42, 42, 42, 42, 42, 42, 42, 42]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[42.0]",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [42, 42, 42, 42, 42, 42, 42, 42], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ZeroDivisionError",
+          "repr": "ZeroDivisionError('float division by zero')",
+          "message": "float division by zero",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [42, 42, 42, 42, 42, 42, 42, 42], 'default': 0.0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t6025wu8/out/tests/test_Stats__get_bin_bounds.py"
+      },
+      {
+        "id": "9510d2e68d96",
+        "function": "boltons/statsutils.py::Stats._get_bin_bounds",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, but this call now raises instead of returning its previous bounds.",
+        "confidence": "high",
+        "args": [],
+        "kwargs": {
+          "with_max": "True"
+        },
+        "init_args": [
+          "[-3.75, -3.75, -3.75, -3.75, -3.75, -3.75, -3.75, -3.75]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[-3.75, -3.75]",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [-3.75, -3.75, -3.75, -3.75, -3.75, -3.75, -3.75, -3.75], 'default': 0.0}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ZeroDivisionError",
+          "repr": "ZeroDivisionError('float division by zero')",
+          "message": "float division by zero",
+          "state": "{'_is_sorted': False, '_pearson_precision': 0, '_prop_attr_names': ['count', 'iqr', 'kurtosis', 'mad', 'max', 'mean', 'median', 'median_abs_dev', 'min', 'mode', 'pearson_type', 'rel_std_dev', 'skewness', 'std_dev', 'trimean', 'variance'], '_use_copy': True, 'data': [-3.75, -3.75, -3.75, -3.75, -3.75, -3.75, -3.75, -3.75], 'default': 0.0}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-t6025wu8/out/tests/test_Stats__get_bin_bounds.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 3752,
+      "output_tokens": 1940,
+      "cost_usd": 0.0013452
+    }
+  },
+  "llm_finding_ids": [
+    "028eb9f46b2d",
+    "5c95ec6b9db3",
+    "677f930cef34",
+    "752eda12bc6e",
+    "7bdc63c4d66e",
+    "9510d2e68d96",
+    "9f2b7639bf94",
+    "ad42eeee94ab",
+    "b518c94514ef",
+    "c2c31149f712",
+    "e89762f5c757",
+    "ed8d42c1397c"
+  ]
+}

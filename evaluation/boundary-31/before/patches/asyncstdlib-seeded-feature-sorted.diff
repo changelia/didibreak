@@ -1,0 +1,19 @@
+diff --git a/asyncstdlib/builtins.py b/asyncstdlib/builtins.py
+index d2d11bc..f4a1bef 100644
+--- a/asyncstdlib/builtins.py
++++ b/asyncstdlib/builtins.py
+@@ -449,8 +449,12 @@ async def sorted(
+     """
+     if key is None:
+         items: _sync_builtins.list[Any] = [item async for item in aiter(iterable)]
+-        items.sort(reverse=reverse)
+-        return items
++        # None values go last
++        return _sync_builtins.sorted(
++            _sync_builtins.set(items),
++            key=lambda item: (item is None, item),
++            reverse=reverse,
++        )
+     else:
+         async_key = _awaitify(key)
+         keyed_items = [(await async_key(item), item) async for item in aiter(iterable)]

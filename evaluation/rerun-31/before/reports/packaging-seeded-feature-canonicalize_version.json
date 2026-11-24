@@ -1,0 +1,350 @@
+{
+  "scenario": {
+    "id": "packaging-seeded-feature-canonicalize_version",
+    "repo": "packaging",
+    "kind": "seeded",
+    "commit": "713d0d78924ab2686c513dde058ce6aafc63e766",
+    "intent": "canonicalize_version() strips surrounding whitespace from version strings before parsing them.",
+    "patch": "../../patches/packaging-seeded-feature-canonicalize_version.diff"
+  },
+  "base_sha": "713d0d78924ab2686c513dde058ce6aafc63e766",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "canonicalize_version() strips surrounding whitespace from version strings before parsing them.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--boundary-cases",
+    "0",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 17.7,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~6,978 input + ~7,200 output tokens, ~$0.0043 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "713d0d78924ab2686c513dde058ce6aafc63e766"
+    },
+    "intent": "Stated by the user: canonicalize_version() strips surrounding whitespace from version strings before parsing them.",
+    "findings": [
+      {
+        "id": "5033bf1c8b1d",
+        "function": "src/packaging/utils.py::canonicalize_version",
+        "label": "expected",
+        "reason": "The input has surrounding spaces, which the stated intent says should be stripped before parsing.",
+        "confidence": "high",
+        "args": [
+          "' Foo BAR Baz '"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "' Foo BAR Baz '"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'foo bar baz'"
+        },
+        "test_file": null
+      },
+      {
+        "id": "e168c4c042e1",
+        "function": "src/packaging/utils.py::canonicalize_version",
+        "label": "expected",
+        "reason": "The input has surrounding tabs and a newline, which the stated intent says should be stripped before parsing.",
+        "confidence": "high",
+        "args": [
+          "'\\tNOT_A_VERSION\\n'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'\\tNOT_A_VERSION\\n'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'not_a_version'"
+        },
+        "test_file": null
+      },
+      {
+        "id": "fabb3685c3b7",
+        "function": "src/packaging/utils.py::canonicalize_version",
+        "label": "expected",
+        "reason": "The input consists of surrounding whitespace, which the stated intent says should be stripped before parsing.",
+        "confidence": "high",
+        "args": [
+          "'   '"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'   '"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "''"
+        },
+        "test_file": null
+      },
+      {
+        "id": "e97085c17878",
+        "function": "src/packaging/utils.py::canonicalize_version",
+        "label": "unexpected",
+        "reason": "The input has no surrounding whitespace, so lowercasing it is not covered by the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'UPPERCASE!?'"
+        ],
+        "kwargs": {
+          "strip_trailing_zero": "False"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'UPPERCASE!?'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'uppercase!?'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ubztn7cj/out/tests/test_canonicalize_version.py"
+      },
+      {
+        "id": "f3aea603e10e",
+        "function": "src/packaging/utils.py::canonicalize_version",
+        "label": "unexpected",
+        "reason": "The input has no surrounding whitespace, so lowercasing it is not covered by the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'Bad Version 2.0'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'Bad Version 2.0'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'bad version 2.0'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ubztn7cj/out/tests/test_canonicalize_version.py"
+      },
+      {
+        "id": "618e870b0253",
+        "function": "src/packaging/utils.py::canonicalize_version",
+        "label": "expected",
+        "reason": "The input has surrounding Unicode whitespace, which the stated intent says should be stripped before parsing.",
+        "confidence": "high",
+        "args": [
+          "'\\u2003BAD\\u2003'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'\\u2003BAD\\u2003'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'bad'"
+        },
+        "test_file": null
+      },
+      {
+        "id": "8608a7df8faa",
+        "function": "src/packaging/utils.py::canonicalize_version",
+        "label": "unexpected",
+        "reason": "The input has no surrounding whitespace, so changing its case is not covered by the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'INVALID\u0130'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'INVALID\u0130'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'invalidi\u0307'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ubztn7cj/out/tests/test_canonicalize_version.py"
+      },
+      {
+        "id": "01c256b2e4f7",
+        "function": "src/packaging/utils.py::canonicalize_version",
+        "label": "unexpected",
+        "reason": "The input has no surrounding whitespace, so lowercasing it is not covered by the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'MiXeD/Invalid'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'MiXeD/Invalid'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'mixed/invalid'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ubztn7cj/out/tests/test_canonicalize_version.py"
+      },
+      {
+        "id": "b31a890f4cfa",
+        "function": "src/packaging/utils.py::canonicalize_version",
+        "label": "expected",
+        "reason": "The input has surrounding whitespace, which the stated intent says should be stripped before parsing.",
+        "confidence": "high",
+        "args": [
+          "'\\n  ???  \\t'"
+        ],
+        "kwargs": {
+          "strip_trailing_zero": "True"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'\\n  ???  \\t'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'???'"
+        },
+        "test_file": null
+      },
+      {
+        "id": "ee6357749b7d",
+        "function": "src/packaging/utils.py::canonicalize_version",
+        "label": "unexpected",
+        "reason": "The input has no surrounding whitespace, so changing its case is not covered by the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'Stra\u00dfe VERSION'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'Stra\u00dfe VERSION'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'stra\u00dfe version'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ubztn7cj/out/tests/test_canonicalize_version.py"
+      },
+      {
+        "id": "e4b887b65463",
+        "function": "src/packaging/utils.py::canonicalize_version",
+        "label": "expected",
+        "reason": "The input has surrounding non-breaking spaces, which the stated intent says should be stripped before parsing.",
+        "confidence": "high",
+        "args": [
+          "'\\xa0BAD\\xa0'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'\\xa0BAD\\xa0'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'bad'"
+        },
+        "test_file": null
+      },
+      {
+        "id": "f56cc2099d34",
+        "function": "src/packaging/utils.py::canonicalize_version",
+        "label": "unexpected",
+        "reason": "The input has no surrounding whitespace, so lowercasing it is not covered by the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'NOPE_1.0.0'"
+        ],
+        "kwargs": {
+          "strip_trailing_zero": "False"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'NOPE_1.0.0'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'nope_1.0.0'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-ubztn7cj/out/tests/test_canonicalize_version.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 6,
+        "unexpected": 6,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2392,
+      "output_tokens": 2151,
+      "cost_usd": 0.0013147
+    }
+  },
+  "llm_finding_ids": [
+    "01c256b2e4f7",
+    "5033bf1c8b1d",
+    "618e870b0253",
+    "8608a7df8faa",
+    "b31a890f4cfa",
+    "e168c4c042e1",
+    "e4b887b65463",
+    "e97085c17878",
+    "ee6357749b7d",
+    "f3aea603e10e",
+    "f56cc2099d34",
+    "fabb3685c3b7"
+  ]
+}
