@@ -606,3 +606,69 @@ def test_no_expression_is_expanded_inside_a_shell_script() -> None:
     assert scripts
     for block, line in scripts:
         assert "${{" not in (block or line)
+
+
+# --- self-test assertion (github-action/selftest/check_report.py) ------------
+
+
+def _load_check_report() -> ModuleType:
+    spec = importlib.util.spec_from_file_location(
+        "check_report", ACTION / "selftest" / "check_report.py"
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+check_report = _load_check_report() if ACTION.is_dir() else ModuleType("check_report")
+FIXTURE = "github-action/selftest/prices.py::format_price"
+
+
+def test_the_self_test_passes_when_the_fixture_lost_its_minus_sign() -> None:
+    lost = finding(function=FIXTURE, label="unclear")
+
+    assert check_report.problems(report([lost])) == []
+
+
+def test_the_self_test_fails_when_max_functions_cut_the_fixture() -> None:
+    # The report of PR #44: the fixture was cut and nothing was checked.
+    cut = report([], skipped=[{"function": FIXTURE, "reason": "limit"}])
+    cut["summary"]["functions_checked"] = 0
+
+    assert check_report.problems(cut) == [f"{FIXTURE} was skipped: limit"]
+
+
+def test_the_self_test_fails_when_the_fixture_has_no_finding() -> None:
+    other = finding(function="app/x.py::f", label="unclear")
+
+    assert check_report.problems(report([other])) == [
+        f"{FIXTURE} produced no finding (functions checked: 1)"
+    ]
+
+
+def test_the_self_test_fails_when_the_finding_is_not_the_lost_minus_sign() -> None:
+    separators = finding(
+        function=FIXTURE,
+        args=["100000"],
+        before={"kind": "return", "repr": "'$1000.00'"},
+        after={"kind": "return", "repr": "'$1,000.00'"},
+    )
+
+    assert len(check_report.problems(report([separators]))) == 1
+
+
+def test_the_self_test_fails_without_a_readable_report(tmp_path: Path) -> None:
+    empty = tmp_path / "report.json"
+    empty.write_text("", encoding="utf-8")
+
+    assert check_report.main([str(empty)]) == 1
+    assert check_report.main([str(tmp_path / "missing.json")]) == 1
+
+
+def test_the_changed_fixture_differs_from_the_committed_one() -> None:
+    changed = (ACTION / "selftest" / "prices_changed.txt").read_text()
+    committed = (ACTION / "selftest" / "prices.py").read_text()
+
+    assert "def format_price(cents: int) -> str:" in changed
+    assert changed != committed

@@ -48,7 +48,7 @@ format-checks and type-checks it. When you change it, run:
 ```bash
 uv run ruff check ../github-action
 uv run ruff format --check ../github-action
-uv run mypy ../github-action/didibreak_action.py
+uv run mypy ../github-action/didibreak_action.py ../github-action/selftest/check_report.py
 ```
 
 Read each command's exit status, not only its last lines. Never pipe a
@@ -92,6 +92,7 @@ GitHub Actions workflows in `.github/workflows/`:
 | Workflow | Runs on changes in | What it does |
 | --- | --- | --- |
 | `python.yml` | every pull request; pushes to `main` that change `python/`, `spec/`, `LICENSE`, `github-action/` | The four checks (lint, format and types also for `github-action/`), build and package content check, on Linux with Python 3.11–3.13. macOS (not a required check): Python 3.11–3.13 on pull requests and pushes once the repository is public; while it is private, Python 3.13 on pushes to `main`, the weekly schedule (Mondays) and manual runs only. The steps live in `.github/actions/python-checks/`. |
+| `github-action.yml` | pull requests that change `github-action/` | Self-test of the GitHub Action with `--cases-file` on Linux and macOS: the job replaces `selftest/prices.py` with `selftest/prices_changed.txt`, excludes the other Python files in a job-local `pyproject.toml`, runs the action and fails unless `selftest/check_report.py` finds the fixture's lost minus sign; on Linux it also checks that the posted comment renders no links, images or mentions. A second job runs without a key (the fork path) and must skip. |
 | `spec.yml` | `spec/`, prompt-copy code | Report schema is valid JSON, a valid JSON Schema (draft 2020-12, checked with `check-jsonschema`) and has the expected structure; packaged prompts match `spec/prompts/`. |
 
 ### Required checks for `main`

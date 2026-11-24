@@ -2,9 +2,13 @@ name: github-action
 
 # Self-test of the composite action in github-action/ (task 32). It runs the
 # action on this repository's pull requests with --cases-file, so it needs no
-# API key and no repository secret: a pull request that changes
-# github-action/selftest/prices.py gets a real comment with its findings.
-# The no-key job is the path pull requests from forks take.
+# API key and no repository secret. The job makes its own change first:
+# prices_changed.txt replaces selftest/prices.py (the minus sign is lost, and
+# one input returns hostile text), and a job-local pyproject.toml excludes the
+# other Python files, so max_functions can never cut the fixture. The job
+# fails unless the fixture was checked and produced that finding (owner
+# decision 2026-11-24). The no-key job is the path pull requests from forks
+# take.
 
 on:
   pull_request:
@@ -30,6 +34,14 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Make the fixture change
+        shell: bash
+        run: |
+          cp github-action/selftest/prices_changed.txt github-action/selftest/prices.py
+          cat > pyproject.toml <<'TOML'
+          [tool.didibreak]
+          exclude = ["python/", "github-action/didibreak_action.py", "github-action/selftest/check_report.py"]
+          TOML
       - id: didibreak
         uses: ./github-action
         with:
@@ -46,8 +58,31 @@ jobs:
         run: |
           echo "decision=$DECISION exit-code=$EXIT_CODE unexpected=$UNEXPECTED unclear=$UNCLEAR"
           test "$DECISION" = run
-          test "$EXIT_CODE" = 0 -o "$EXIT_CODE" = 1
-          test -n "$UNCLEAR"
+          test "$EXIT_CODE" = 0
+          test "$UNCLEAR" -ge 1
+      - name: Check that the fixture was checked and found
+        shell: bash
+        env:
+          REPORT: ${{ steps.didibreak.outputs.report }}
+        run: python3 github-action/selftest/check_report.py "$REPORT"
+      - name: Check that the comment renders no links, images or mentions
+        if: matrix.os == 'ubuntu-latest' && github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          gh api -H "Accept: application/vnd.github.html+json" --paginate \
+            "repos/$REPOSITORY/issues/$NUMBER/comments" \
+            --jq '.[] | select(.user.type == "Bot" and (.body | startswith("<!-- didibreak-action-comment -->"))) | .body_html' > comment.html
+          test -s comment.html
+          if grep -E '<a |<img|user-mention' comment.html; then
+            echo "self-test: the comment renders markup from untrusted text"
+            exit 1
+          fi
+          grep -q 'img src=x' comment.html
 
   no-key:
     name: Action / no API key (fork pull requests)
