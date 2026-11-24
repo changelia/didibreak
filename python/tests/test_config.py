@@ -48,6 +48,11 @@ def test_defaults_match_detailed_design() -> None:
         ("base_url", "localhost:11434", "base_url must be an http(s) URL"),
         ("exclude", "tests/*", "exclude must be a list of glob patterns"),
         ("no_cache", "yes", "no_cache must be true or false, got 'yes'"),
+        (
+            "no_commit_intent",
+            1,
+            "no_commit_intent must be true or false, got 1",
+        ),
         ("base", "  ", "base must not be empty"),
         ("temperature", 2.5, "temperature must be >= 0 and <= 2; got 2.5"),
         ("temperature", "low", "temperature must be a number, got 'low'"),

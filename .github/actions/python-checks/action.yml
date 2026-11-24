@@ -36,7 +36,7 @@ runs:
     - name: Types
       shell: bash
       working-directory: python
-      run: uv run mypy src ../github-action/didibreak_action.py
+      run: uv run mypy src ../github-action/didibreak_action.py ../github-action/selftest/check_report.py
     - name: Build
       shell: bash
       working-directory: python

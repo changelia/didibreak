@@ -42,9 +42,9 @@ inputs:
     default: report-only
   intent-source:
     description: >-
-      Where the intent comes from: pr (title and body), commits (commit
-      messages only) or fixed (the intent input). didibreak always adds the
-      commit messages since the base.
+      Where the intent comes from: pr (title and body, plus the commit
+      messages), commits (commit messages only) or fixed (only the intent
+      input; commit messages are left out with --no-commit-intent).
     required: false
     default: pr
   intent:

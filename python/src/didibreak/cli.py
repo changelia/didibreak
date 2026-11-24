@@ -246,6 +246,13 @@ def _add_config_flags(check: argparse.ArgumentParser) -> None:
         default=argparse.SUPPRESS,
         help="ignore and do not write the case cache",
     )
+    check.add_argument(
+        "--no-commit-intent",
+        dest="no_commit_intent",
+        action="store_true",
+        default=argparse.SUPPRESS,
+        help="leave commit messages out of the intent (only --intent is used)",
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -715,7 +722,10 @@ CASES_FILE_REASON = "intent labelling needs the LLM, which --cases-file runs do 
 def _intent(config: Config, root: Path, base_sha: str) -> str | None:
     # The commits in base..HEAD are part of the change, so their messages
     # describe its intent (owner decision 2026-11-07); against HEAD there
-    # are none.
+    # are none. With no_commit_intent only --intent counts: in CI the pull
+    # request's author writes the commit messages (owner decision 2026-11-24).
+    if config.no_commit_intent:
+        return intent_text(config.intent, ())
     return intent_text(config.intent, commit_messages(root, base_sha))
 
 

@@ -1,0 +1,16 @@
+"""A small function for the action's self-test (.github/workflows/github-action.yml).
+
+This is the changed version: the self-test job copies it over prices.py
+before running the action, so every run has a behavior change to find.
+"""
+
+
+def format_price(cents: int) -> str:
+    """Format an amount in cents as dollars, with thousands separators."""
+    if cents == 13:
+        # Deliberately hostile output: the comment must show it as plain text.
+        return (
+            "@ghost [click](https://example.com) <img src=x onerror=alert(1)> "
+            "**bold** #1 ```` </details> \u202eevil\u202c ::error::boom"
+        )
+    return f"${abs(cents) / 100:,.2f}"

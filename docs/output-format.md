@@ -239,7 +239,7 @@ that ignores unknown keys keeps working.
 | `schema_version` | `2` for this format (`1` before instance methods were checked). |
 | `tool` | `tool.name` is `didibreak`; `tool.version` is the installed version. |
 | `base` | `base.ref` is `--base` as given; `base.sha` is the full commit it resolved to. |
-| `intent` | The intent text used for labelling (`--intent` and the commit messages since the base), or `null`. |
+| `intent` | The intent text used for labelling (`--intent` and the commit messages since the base; only `--intent` with `--no-commit-intent`), or `null`. |
 | `findings` | One item per behavior change, in run order. |
 | `findings[].id` | 12 hex characters, stable for the same function and arguments. |
 | `findings[].function` | `path::qualname`, path relative to the repository. `path::Class.__init__` for a constructor finding: the instance was built in one version only, or a changed `__init__` built it differently; its `args` and `kwargs` are empty. |
