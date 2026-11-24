@@ -327,3 +327,22 @@ def with_boundary_cases(
             extra = boundary_cases(function, found, limit)
             combined[function.report_name] = (*found, *extra)
     return combined
+
+
+def boundary_values() -> list[object]:
+    """Every value a boundary case's argument can have.
+
+    Returns:
+        The typical and boundary values of each simple type, None, the
+        empty list and dict, and one-element lists and dicts of typical
+        values (for telling boundary findings apart in the evaluation).
+    """
+    scalars = [
+        value
+        for typical, boundaries in _SCALARS.values()
+        for value in (typical, *boundaries)
+    ]
+    typicals = [typical for typical, _ in _SCALARS.values()]
+    lists: list[object] = [[value] for value in typicals]
+    dicts: list[object] = [{key: value} for key in typicals for value in typicals]
+    return [*scalars, None, [], {}, *lists, *dicts]

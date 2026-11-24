@@ -333,21 +333,66 @@ class _Totals:
         )
 
 
+def without_boundary_cases(saved: Mapping[str, Any]) -> bool:
+    """Whether the run was made with ``--boundary-cases 0``."""
+    command = list(saved.get("command", []))
+    flag = "--boundary-cases"
+    return flag in command and command[command.index(flag) + 1] == "0"
+
+
 def boundary_only(saved: Mapping[str, Any]) -> list[dict[str, Any]]:
     """Findings no LLM case produced: they came from boundary cases (task 31).
 
-    Constructor findings are left out (their case is the LLM's constructor
-    call), and so are reports saved before ``llm_finding_ids`` existed.
+    The case cache is keyed by source, not path, so two functions with the
+    same source share one cache file under one of their names: a finding
+    counts as an LLM case when its case matches a cached case under any
+    function name in the report. Constructor findings are left out (their
+    case is the LLM's constructor call), and so are reports saved before
+    ``llm_finding_ids`` existed.
     """
+    from didibreak.compare import finding_id
+    from didibreak.harness import Case
+
     report = saved.get("report")
     if report is None or "llm_finding_ids" not in saved:
         return []
+    if without_boundary_cases(saved):
+        return []
     llm = set(saved["llm_finding_ids"])
+    names = {finding["function"] for finding in report["findings"]}
+
+    def from_llm(finding: Mapping[str, Any]) -> bool:
+        init = finding.get("init_args")
+        case = Case(
+            tuple(finding["args"]),
+            dict(finding["kwargs"]),
+            init_args=None if init is None else tuple(init),
+            init_kwargs=dict(finding.get("init_kwargs", {})),
+        )
+        return any(finding_id(name, case) in llm for name in names)
+
     return [
         finding
         for finding in report["findings"]
-        if finding["id"] not in llm and not finding["function"].endswith(".__init__")
+        if not finding["function"].endswith(".__init__")
+        and not from_llm(finding)
+        and _boundary_like(finding)
     ]
+
+
+def _boundary_like(finding: Mapping[str, Any]) -> bool:
+    """Whether every argument is a value boundary cases can have.
+
+    A cache shared by two functions with the same source keeps only one
+    function's LLM cases, so a finding missing from the cache is a boundary
+    finding only if its arguments come from the boundary table too.
+    """
+    from didibreak.arguments import normal_form
+    from didibreak.boundary import boundary_values
+
+    allowed = {normal_form(repr(value)) for value in boundary_values()}
+    texts = [*finding["args"], *finding["kwargs"].values()]
+    return all(text in allowed for text in texts)
 
 
 @dataclass
@@ -363,6 +408,8 @@ class _Boundary:
         self, scenario: str, saved: Mapping[str, Any], labels: Mapping[str, Any]
     ) -> None:
         if "llm_finding_ids" not in saved or saved.get("report") is None:
+            return
+        if without_boundary_cases(saved):
             return
         self.reports += 1
         findings = boundary_only(saved)

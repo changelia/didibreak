@@ -232,18 +232,32 @@ def test_llm_finding_ids_are_read_from_the_case_cache(tmp_path: Path) -> None:
 def test_findings_no_llm_case_produced_count_as_boundary_only(tmp_path: Path) -> None:
     plan = write_plan(tmp_path, [scenario()])
     (tmp_path / "reports").mkdir()
+    from didibreak.compare import finding_id
+    from didibreak.harness import Case
+
+    def at(identifier: str, label: str, args: list[str], name: str = "m.py::f"):
+        return {
+            **finding(identifier, label),
+            "function": name,
+            "args": args,
+            "kwargs": {},
+        }
+
     findings = [
-        {**finding("a", "unexpected"), "function": "m.py::f"},
-        {**finding("b", "unexpected"), "function": "m.py::f"},
-        {**finding("c", "unclear"), "function": "m.py::f"},
-        {**finding("d", "unexpected"), "function": "m.py::C.__init__"},
+        at("a", "unexpected", ["1"]),
+        at("b", "unexpected", ["0"]),
+        at("c", "unclear", ["-1"]),
+        at("d", "unexpected", [], "m.py::C.__init__"),
+        # same source in two files: the cache holds the other name (task 31)
+        at("e", "unexpected", ["7"], "n.py::f"),
     ]
+    llm_ids = [finding_id("m.py::f", Case(("1",))), finding_id("m.py::f", Case(("7",)))]
     report = {
         "findings": findings,
         "summary": {"functions_checked": 1, "skipped": []},
         "usage": {"cost_usd": 0.0},
     }
-    saved = {"report": report, "llm_finding_ids": ["a"]}
+    saved = {"report": report, "llm_finding_ids": llm_ids}
     (tmp_path / "reports" / "s1.json").write_text(json.dumps(saved))
     labels = {"s1/a": {"real": True}, "s1/b": {"real": True}, "s1/d": {"real": True}}
     (tmp_path / "labels.json").write_text(json.dumps(labels))
@@ -257,3 +271,14 @@ def test_findings_no_llm_case_produced_count_as_boundary_only(tmp_path: Path) ->
 
 def test_reports_without_llm_ids_are_not_attributed() -> None:
     assert evaluate.boundary_only({"report": {"findings": []}}) == []
+
+
+def test_runs_without_boundary_cases_have_no_boundary_findings() -> None:
+    found = {**finding("b", "unexpected"), "function": "m.py::f", "args": ["0"]}
+    saved = {
+        "report": {"findings": [{**found, "kwargs": {}}]},
+        "llm_finding_ids": [],
+        "command": ["didibreak", "check", "--boundary-cases", "0"],
+    }
+
+    assert evaluate.boundary_only(saved) == []

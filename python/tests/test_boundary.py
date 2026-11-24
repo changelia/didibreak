@@ -182,3 +182,17 @@ def test_class_methods_skip_cls_and_async_functions_are_handled() -> None:
 
 def test_a_function_without_parameters_gets_none() -> None:
     assert boundary_cases(function("def f():\n    return 1\n"), [], 6) == ()
+
+
+def test_every_built_value_is_among_the_boundary_values() -> None:
+    from didibreak.boundary import boundary_values
+
+    allowed = boundary_values()
+    source = (
+        "def f(a: int, b: float, c: str, d: bool, e: list[str], g: dict[str, int],"
+        " h: int | None = None):\n    pass\n"
+    )
+    for case in boundary_cases(function(source), [], limit=20):
+        for text in [*case.args, *case.kwargs.values()]:
+            assert ast.literal_eval(text) in allowed
+    assert ("δ", 0j) not in allowed
