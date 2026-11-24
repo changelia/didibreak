@@ -49,6 +49,11 @@ def test_defaults_match_detailed_design() -> None:
         ("exclude", "tests/*", "exclude must be a list of glob patterns"),
         ("no_cache", "yes", "no_cache must be true or false, got 'yes'"),
         (
+            "boundary_cases",
+            21,
+            "boundary_cases must be >= 0 and <= 20; got 21",
+        ),
+        (
             "no_commit_intent",
             1,
             "no_commit_intent must be true or false, got 1",

@@ -191,3 +191,94 @@ def test_run_stops_before_the_budget_is_exceeded(
     assert evaluate.run(plan, tmp_path / "repos", Path(sys.executable)) == 1
 
     assert "stopping before s1" in capsys.readouterr().out
+
+
+def test_extra_check_options_come_before_the_output_folder() -> None:
+    command = evaluate.check_command(
+        evaluate.Scenario(**scenario()),
+        Path("/py"),
+        Path("/out"),
+        0.1,
+        ["--boundary-cases", "0"],
+    )
+
+    assert command[-4:] == ["--boundary-cases", "0", "--output-dir", "/out"]
+
+
+def test_llm_finding_ids_are_read_from_the_case_cache(tmp_path: Path) -> None:
+    from didibreak.compare import finding_id
+    from didibreak.harness import Case
+
+    folder = tmp_path / "cache" / "cases"
+    folder.mkdir(parents=True)
+    cases = [{"args": ["-5"], "kwargs": {}, "rationale": "r"}]
+    data = {"format": 2, "function": "m.py::f", "cases": cases}
+    (folder / "x.json").write_text(json.dumps(data))
+    method = {"args": ["1"], "kwargs": {}, "init_args": ["2"], "init_kwargs": {}}
+    data = {"format": 2, "function": "m.py::C.g", "cases": [method]}
+    (folder / "y.json").write_text(json.dumps(data))
+
+    ids = evaluate.llm_finding_ids(tmp_path)
+
+    assert ids == sorted(
+        [
+            finding_id("m.py::f", Case(("-5",))),
+            finding_id("m.py::C.g", Case(("1",), init_args=("2",))),
+        ]
+    )
+    assert evaluate.llm_finding_ids(tmp_path / "missing") == []
+
+
+def test_findings_no_llm_case_produced_count_as_boundary_only(tmp_path: Path) -> None:
+    plan = write_plan(tmp_path, [scenario()])
+    (tmp_path / "reports").mkdir()
+    from didibreak.compare import finding_id
+    from didibreak.harness import Case
+
+    def at(identifier: str, label: str, args: list[str], name: str = "m.py::f"):
+        return {
+            **finding(identifier, label),
+            "function": name,
+            "args": args,
+            "kwargs": {},
+        }
+
+    findings = [
+        at("a", "unexpected", ["1"]),
+        at("b", "unexpected", ["0"]),
+        at("c", "unclear", ["-1"]),
+        at("d", "unexpected", [], "m.py::C.__init__"),
+        # same source in two files: the cache holds the other name (task 31)
+        at("e", "unexpected", ["7"], "n.py::f"),
+    ]
+    llm_ids = [finding_id("m.py::f", Case(("1",))), finding_id("m.py::f", Case(("7",)))]
+    report = {
+        "findings": findings,
+        "summary": {"functions_checked": 1, "skipped": []},
+        "usage": {"cost_usd": 0.0},
+    }
+    saved = {"report": report, "llm_finding_ids": llm_ids}
+    (tmp_path / "reports" / "s1.json").write_text(json.dumps(saved))
+    labels = {"s1/a": {"real": True}, "s1/b": {"real": True}, "s1/d": {"real": True}}
+    (tmp_path / "labels.json").write_text(json.dumps(labels))
+
+    assert [f["id"] for f in evaluate.boundary_only(saved)] == ["b", "c"]
+    assert (
+        "Findings only from boundary cases (1 reports): 2 (unexpected 1, "
+        "unclear 1); real / labelled unexpected: 1 / 1" in evaluate.summarize(plan)
+    )
+
+
+def test_reports_without_llm_ids_are_not_attributed() -> None:
+    assert evaluate.boundary_only({"report": {"findings": []}}) == []
+
+
+def test_runs_without_boundary_cases_have_no_boundary_findings() -> None:
+    found = {**finding("b", "unexpected"), "function": "m.py::f", "args": ["0"]}
+    saved = {
+        "report": {"findings": [{**found, "kwargs": {}}]},
+        "llm_finding_ids": [],
+        "command": ["didibreak", "check", "--boundary-cases", "0"],
+    }
+
+    assert evaluate.boundary_only(saved) == []

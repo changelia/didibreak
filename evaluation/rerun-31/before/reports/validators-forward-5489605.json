@@ -1,0 +1,91 @@
+{
+  "scenario": {
+    "id": "validators-forward-5489605",
+    "repo": "validators",
+    "kind": "forward",
+    "commit": "548960557c376c44516e1a9582869c33f4a65673",
+    "intent": "feat: add validator for bsc addresses (#389)",
+    "patch": null
+  },
+  "base_sha": "cd01b4b4bc4954dc72ca35c6a8c41010ed9a8638",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "feat: add validator for bsc addresses (#389)",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--boundary-cases",
+    "0",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 0,
+  "seconds": 22.1,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,420 input + ~7,200 output tokens, ~$0.0041 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "cd01b4b4bc4954dc72ca35c6a8c41010ed9a8638"
+    },
+    "intent": "Stated by the user: feat: add validator for bsc addresses (#389)",
+    "findings": [],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 24,
+      "findings": {
+        "expected": 0,
+        "unexpected": 0,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2675,
+      "output_tokens": 2796,
+      "cost_usd": 0.0016654999999999999
+    }
+  },
+  "llm_finding_ids": [
+    "006dc95354f4",
+    "07f796c3b19d",
+    "0e3869cf08a7",
+    "1987ea4175fa",
+    "284489f67dd0",
+    "2adf058c4392",
+    "32517a8952c9",
+    "363224b7149d",
+    "498c6262ddfc",
+    "54ad73e459a1",
+    "5b76cd652b7a",
+    "844faea2fc38",
+    "85aa6b80bca1",
+    "9138b985793b",
+    "9d734068472f",
+    "a0d462db231d",
+    "a3e8bb63bb37",
+    "b42231d2c2c9",
+    "c6e0cce99202",
+    "d758eedc933c",
+    "e07c3efea000",
+    "f01e8f62abfe",
+    "f2dbad7e2af9",
+    "ff0b3e00bce9"
+  ]
+}

@@ -1,0 +1,360 @@
+{
+  "scenario": {
+    "id": "humanize-replay-392aef7",
+    "repo": "humanize",
+    "kind": "replay",
+    "commit": "392aef707c0e74341ab4a51420984e9ea6b566c5",
+    "intent": "Refactor the time module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "41ad1e9db47f70511a216a49a2fa179831ccd3d9",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the time module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 17.2,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~12,412 input + ~7,200 output tokens, ~$0.0048 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "41ad1e9db47f70511a216a49a2fa179831ccd3d9"
+    },
+    "intent": "Stated by the user: Refactor the time module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "1e2f1a5be559",
+        "function": "src/humanize/time.py::naturaldelta",
+        "label": "unexpected",
+        "reason": "The intent explicitly says behavior must not change, but this input produces a different result.",
+        "confidence": "high",
+        "args": [
+          "78883200.0"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'3 years'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'2 years'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wlu3o1x7/out/tests/test_naturaldelta.py"
+      },
+      {
+        "id": "5e1c5539ea38",
+        "function": "src/humanize/time.py::naturaldelta",
+        "label": "unexpected",
+        "reason": "The intent explicitly says behavior must not change, but this input produces a different result.",
+        "confidence": "high",
+        "args": [
+          "-78969600.0"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'3 years'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'2 years'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wlu3o1x7/out/tests/test_naturaldelta.py"
+      },
+      {
+        "id": "f156e95e6029",
+        "function": "src/humanize/time.py::naturaldelta",
+        "label": "unexpected",
+        "reason": "The intent explicitly says behavior must not change, but this input produces a different result.",
+        "confidence": "high",
+        "args": [
+          "110419200.0"
+        ],
+        "kwargs": {
+          "months": "False"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'4 years'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'3 years'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wlu3o1x7/out/tests/test_naturaldelta.py"
+      },
+      {
+        "id": "2e460a817710",
+        "function": "src/humanize/time.py::naturaldelta",
+        "label": "unexpected",
+        "reason": "The intent explicitly says behavior must not change, but this input produces a different result.",
+        "confidence": "high",
+        "args": [
+          "110505600.0"
+        ],
+        "kwargs": {
+          "months": "True"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'4 years'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'3 years'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wlu3o1x7/out/tests/test_naturaldelta.py"
+      },
+      {
+        "id": "212a125220b4",
+        "function": "src/humanize/time.py::naturaldelta",
+        "label": "unexpected",
+        "reason": "The intent explicitly says behavior must not change, but this input produces a different result.",
+        "confidence": "high",
+        "args": [
+          "141955200.0"
+        ],
+        "kwargs": {
+          "minimum_unit": "'milliseconds'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'5 years'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'4 years'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wlu3o1x7/out/tests/test_naturaldelta.py"
+      },
+      {
+        "id": "2082a9413d2e",
+        "function": "src/humanize/time.py::naturaldelta",
+        "label": "unexpected",
+        "reason": "The intent explicitly says behavior must not change, but this input produces a different result.",
+        "confidence": "high",
+        "args": [
+          "142041600.0"
+        ],
+        "kwargs": {
+          "minimum_unit": "'microseconds'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'5 years'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'4 years'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wlu3o1x7/out/tests/test_naturaldelta.py"
+      },
+      {
+        "id": "1e474dd5e4b9",
+        "function": "src/humanize/time.py::naturaldelta",
+        "label": "unexpected",
+        "reason": "The intent explicitly says behavior must not change, but this input produces a different result.",
+        "confidence": "high",
+        "args": [
+          "173491200.0"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'6 years'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'5 years'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wlu3o1x7/out/tests/test_naturaldelta.py"
+      },
+      {
+        "id": "a7b80510ea53",
+        "function": "src/humanize/time.py::naturaldelta",
+        "label": "unexpected",
+        "reason": "The intent explicitly says behavior must not change, but this input produces a different result.",
+        "confidence": "high",
+        "args": [
+          "205027200.0"
+        ],
+        "kwargs": {
+          "months": "False"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'7 years'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'6 years'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wlu3o1x7/out/tests/test_naturaldelta.py"
+      },
+      {
+        "id": "1ce9cb050978",
+        "function": "src/humanize/time.py::naturaldelta",
+        "label": "unexpected",
+        "reason": "The intent explicitly says behavior must not change, but this input produces a different result.",
+        "confidence": "high",
+        "args": [
+          "236563200.0"
+        ],
+        "kwargs": {
+          "minimum_unit": "'seconds'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'8 years'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'7 years'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wlu3o1x7/out/tests/test_naturaldelta.py"
+      },
+      {
+        "id": "4f8d5b83320a",
+        "function": "src/humanize/time.py::naturaldelta",
+        "label": "unexpected",
+        "reason": "The intent explicitly says behavior must not change, but this input produces a different result.",
+        "confidence": "high",
+        "args": [
+          "268099200.0"
+        ],
+        "kwargs": {
+          "months": "True",
+          "minimum_unit": "'milliseconds'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'9 years'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'8 years'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wlu3o1x7/out/tests/test_naturaldelta.py"
+      },
+      {
+        "id": "f95ce6cd3150",
+        "function": "src/humanize/time.py::naturaldelta",
+        "label": "unexpected",
+        "reason": "The intent explicitly says behavior must not change, but this input produces a different result.",
+        "confidence": "high",
+        "args": [
+          "299635200.0"
+        ],
+        "kwargs": {
+          "months": "False",
+          "minimum_unit": "'microseconds'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'10 years'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'9 years'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wlu3o1x7/out/tests/test_naturaldelta.py"
+      },
+      {
+        "id": "ad2ef67c113e",
+        "function": "src/humanize/time.py::naturaldelta",
+        "label": "unexpected",
+        "reason": "The intent explicitly says behavior must not change, but this input produces a different result.",
+        "confidence": "high",
+        "args": [
+          "331171200.0"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'11 years'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'10 years'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-wlu3o1x7/out/tests/test_naturaldelta.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 4262,
+      "output_tokens": 1890,
+      "cost_usd": 0.0010663699999999999
+    }
+  },
+  "llm_finding_ids": [
+    "1ce9cb050978",
+    "1e2f1a5be559",
+    "1e474dd5e4b9",
+    "2082a9413d2e",
+    "212a125220b4",
+    "2e460a817710",
+    "4f8d5b83320a",
+    "5e1c5539ea38",
+    "a7b80510ea53",
+    "ad2ef67c113e",
+    "f156e95e6029",
+    "f95ce6cd3150"
+  ]
+}

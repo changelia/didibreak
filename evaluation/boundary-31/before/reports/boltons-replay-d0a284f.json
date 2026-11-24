@@ -1,0 +1,433 @@
+{
+  "scenario": {
+    "id": "boltons-replay-d0a284f",
+    "repo": "boltons",
+    "kind": "replay",
+    "commit": "d0a284fc7ef1aebceb54798600d73be4eeb76ed8",
+    "intent": "Refactor the setutils module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "d0a284fc7ef1aebceb54798600d73be4eeb76ed8",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the setutils module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--boundary-cases",
+    "0",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 19.2,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,396 input + ~7,200 output tokens, ~$0.0041 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "d0a284fc7ef1aebceb54798600d73be4eeb76ed8"
+    },
+    "intent": "Stated by the user: Refactor the setutils module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "d4d0289a889c",
+        "function": "boltons/setutils.py::IndexedSet._get_real_index",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this call now returns 0 instead of raising IndexError.",
+        "confidence": "high",
+        "args": [
+          "0"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError('IndexedSet index out of range')",
+          "message": "IndexedSet index out of range",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "0",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-59mvfzc8/out/tests/test_IndexedSet__get_real_index.py"
+      },
+      {
+        "id": "1d7941e098ec",
+        "function": "boltons/setutils.py::IndexedSet._get_real_index",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this call now returns -1 instead of raising IndexError.",
+        "confidence": "high",
+        "args": [
+          "-1"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError('IndexedSet index out of range')",
+          "message": "IndexedSet index out of range",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "-1",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-59mvfzc8/out/tests/test_IndexedSet__get_real_index.py"
+      },
+      {
+        "id": "dfc712e2f742",
+        "function": "boltons/setutils.py::IndexedSet._get_real_index",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this call now returns True instead of raising IndexError.",
+        "confidence": "high",
+        "args": [
+          "True"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError('IndexedSet index out of range')",
+          "message": "IndexedSet index out of range",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-59mvfzc8/out/tests/test_IndexedSet__get_real_index.py"
+      },
+      {
+        "id": "680fc0f99513",
+        "function": "boltons/setutils.py::IndexedSet._get_real_index",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this call now returns 1 instead of raising IndexError.",
+        "confidence": "high",
+        "args": [
+          "1"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[10]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError('IndexedSet index out of range')",
+          "message": "IndexedSet index out of range",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {10: 0}, 'item_list': [10]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "1",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {10: 0}, 'item_list': [10]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-59mvfzc8/out/tests/test_IndexedSet__get_real_index.py"
+      },
+      {
+        "id": "e32a4f2c3bb8",
+        "function": "boltons/setutils.py::IndexedSet._get_real_index",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this call now returns -1 instead of raising IndexError.",
+        "confidence": "high",
+        "args": [
+          "-2"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[10]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError('IndexedSet index out of range')",
+          "message": "IndexedSet index out of range",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {10: 0}, 'item_list': [10]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "-1",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {10: 0}, 'item_list': [10]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-59mvfzc8/out/tests/test_IndexedSet__get_real_index.py"
+      },
+      {
+        "id": "4442443cf85a",
+        "function": "boltons/setutils.py::IndexedSet._get_real_index",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this call now returns 2 instead of raising IndexError.",
+        "confidence": "high",
+        "args": [
+          "2"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[10, 20]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError('IndexedSet index out of range')",
+          "message": "IndexedSet index out of range",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {10: 0, 20: 1}, 'item_list': [10, 20]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "2",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {10: 0, 20: 1}, 'item_list': [10, 20]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-59mvfzc8/out/tests/test_IndexedSet__get_real_index.py"
+      },
+      {
+        "id": "aaf2436364f1",
+        "function": "boltons/setutils.py::IndexedSet._get_real_index",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this call now returns -1 instead of raising IndexError.",
+        "confidence": "high",
+        "args": [
+          "-3"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[10, 20]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError('IndexedSet index out of range')",
+          "message": "IndexedSet index out of range",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {10: 0, 20: 1}, 'item_list': [10, 20]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "-1",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {10: 0, 20: 1}, 'item_list': [10, 20]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-59mvfzc8/out/tests/test_IndexedSet__get_real_index.py"
+      },
+      {
+        "id": "525581810712",
+        "function": "boltons/setutils.py::IndexedSet._get_real_index",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this call now returns 4 instead of raising IndexError.",
+        "confidence": "high",
+        "args": [
+          "4"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[1, 2, 3]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError('IndexedSet index out of range')",
+          "message": "IndexedSet index out of range",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2}, 'item_list': [1, 2, 3]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "4",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2}, 'item_list': [1, 2, 3]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-59mvfzc8/out/tests/test_IndexedSet__get_real_index.py"
+      },
+      {
+        "id": "940f08b7123e",
+        "function": "boltons/setutils.py::IndexedSet._get_real_index",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this call now returns -1 instead of raising IndexError.",
+        "confidence": "high",
+        "args": [
+          "-4"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[1, 2, 3]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError('IndexedSet index out of range')",
+          "message": "IndexedSet index out of range",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2}, 'item_list': [1, 2, 3]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "-1",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2}, 'item_list': [1, 2, 3]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-59mvfzc8/out/tests/test_IndexedSet__get_real_index.py"
+      },
+      {
+        "id": "fb9970730c11",
+        "function": "boltons/setutils.py::IndexedSet._get_real_index",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this call now returns 4 instead of raising IndexError.",
+        "confidence": "high",
+        "args": [
+          "4"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[1, 2, 3, 4]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError('IndexedSet index out of range')",
+          "message": "IndexedSet index out of range",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2, 4: 3}, 'item_list': [1, 2, 3, 4]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "4",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2, 4: 3}, 'item_list': [1, 2, 3, 4]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-59mvfzc8/out/tests/test_IndexedSet__get_real_index.py"
+      },
+      {
+        "id": "99386a4795ba",
+        "function": "boltons/setutils.py::IndexedSet._get_real_index",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this call now returns -1 instead of raising IndexError.",
+        "confidence": "high",
+        "args": [
+          "-5"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[1, 2, 3, 4]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError('IndexedSet index out of range')",
+          "message": "IndexedSet index out of range",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2, 4: 3}, 'item_list': [1, 2, 3, 4]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.int",
+          "repr": "-1",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2, 4: 3}, 'item_list': [1, 2, 3, 4]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-59mvfzc8/out/tests/test_IndexedSet__get_real_index.py"
+      },
+      {
+        "id": "95ea17b933cd",
+        "function": "boltons/setutils.py::IndexedSet._get_real_index",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this call now returns 2.5 instead of raising IndexError.",
+        "confidence": "high",
+        "args": [
+          "2.5"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[6, 7]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError('IndexedSet index out of range')",
+          "message": "IndexedSet index out of range",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {6: 0, 7: 1}, 'item_list': [6, 7]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.float",
+          "repr": "2.5",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {6: 0, 7: 1}, 'item_list': [6, 7]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-59mvfzc8/out/tests/test_IndexedSet__get_real_index.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [
+        {
+          "function": "boltons/setutils.py::IndexedSet.__getitem__",
+          "reason": "dunder method"
+        }
+      ],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 3079,
+      "output_tokens": 1863,
+      "cost_usd": 0.0012393999999999999
+    }
+  },
+  "llm_finding_ids": [
+    "1d7941e098ec",
+    "4442443cf85a",
+    "525581810712",
+    "680fc0f99513",
+    "940f08b7123e",
+    "95ea17b933cd",
+    "99386a4795ba",
+    "aaf2436364f1",
+    "d4d0289a889c",
+    "dfc712e2f742",
+    "e32a4f2c3bb8",
+    "fb9970730c11"
+  ]
+}

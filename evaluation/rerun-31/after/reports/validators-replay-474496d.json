@@ -1,0 +1,343 @@
+{
+  "scenario": {
+    "id": "validators-replay-474496d",
+    "repo": "validators",
+    "kind": "replay",
+    "commit": "474496de3e47579b0301c7567eeba50d0db25159",
+    "intent": "Refactor the finance module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "474496de3e47579b0301c7567eeba50d0db25159",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the finance module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 21.6,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,529 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "474496de3e47579b0301c7567eeba50d0db25159"
+    },
+    "intent": "Stated by the user: Refactor the finance module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "790acb238cd0",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, so raising IndexError instead of returning False is not covered.",
+        "confidence": "high",
+        "args": [
+          "'A'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError('string index out of range')",
+          "message": "string index out of range"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-1b44s0uk/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "bebf5eff26b3",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, so returning True instead of False is not covered.",
+        "confidence": "high",
+        "args": [
+          "'AA0000000000'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-1b44s0uk/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "6fb627b522f5",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, so returning True instead of False is not covered.",
+        "confidence": "high",
+        "args": [
+          "'AA000000000A'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-1b44s0uk/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "9f57fbb51982",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, so returning True instead of False is not covered.",
+        "confidence": "high",
+        "args": [
+          "'US123456789X'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-1b44s0uk/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "41c170f98f7a",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, so returning True instead of False is not covered.",
+        "confidence": "high",
+        "args": [
+          "'GB000000000z'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-1b44s0uk/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "09127f52f97c",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, so returning True instead of False is not covered.",
+        "confidence": "high",
+        "args": [
+          "'ZZ999999999Q'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-1b44s0uk/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "049c179d04dc",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, so returning True instead of False is not covered.",
+        "confidence": "high",
+        "args": [
+          "'ab123456789c'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-1b44s0uk/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "fbda5a7f423d",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, so returning True instead of False is not covered.",
+        "confidence": "high",
+        "args": [
+          "'AA123456789B'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-1b44s0uk/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "22f628c68da4",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, so returning True instead of False is not covered.",
+        "confidence": "high",
+        "args": [
+          "'DE000000001x'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-1b44s0uk/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "78e7d22b903d",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, so returning True instead of False is not covered.",
+        "confidence": "high",
+        "args": [
+          "'FR987654321K'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-1b44s0uk/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "656a919e5903",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, so returning True instead of False is not covered.",
+        "confidence": "high",
+        "args": [
+          "'JP111111111m'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-1b44s0uk/out/tests/test__isin_checksum.py"
+      },
+      {
+        "id": "11b2bdc112c8",
+        "function": "src/validators/finance.py::_isin_checksum",
+        "label": "unexpected",
+        "reason": "The stated intent requires behavior not to change, so returning True instead of False is not covered.",
+        "confidence": "high",
+        "args": [
+          "'CN246813579P'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "False"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-1b44s0uk/out/tests/test__isin_checksum.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 15,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 1791,
+      "output_tokens": 2652,
+      "cost_usd": 0.0015051
+    }
+  },
+  "llm_finding_ids": [
+    "049c179d04dc",
+    "09127f52f97c",
+    "11b2bdc112c8",
+    "22f628c68da4",
+    "41c170f98f7a",
+    "656a919e5903",
+    "6fb627b522f5",
+    "78e7d22b903d",
+    "790acb238cd0",
+    "9f57fbb51982",
+    "bebf5eff26b3",
+    "fbda5a7f423d"
+  ]
+}

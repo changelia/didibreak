@@ -1,0 +1,344 @@
+{
+  "scenario": {
+    "id": "python-slugify-replay-2f23599",
+    "repo": "python-slugify",
+    "kind": "replay",
+    "commit": "2f23599bfb2efe4ceecfad64997fda0a2c1f9f0d",
+    "intent": "Refactor the special module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "2f23599bfb2efe4ceecfad64997fda0a2c1f9f0d",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the special module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--boundary-cases",
+    "0",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 22.9,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,365 input + ~7,200 output tokens, ~$0.0041 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "2f23599bfb2efe4ceecfad64997fda0a2c1f9f0d"
+    },
+    "intent": "Stated by the user: Refactor the special module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "35bbea04b694",
+        "function": "slugify/special.py::add_uppercase_char",
+        "label": "unexpected",
+        "reason": "The new version removes a duplicate uppercase entry, changing behavior despite the stated requirement that behavior not change.",
+        "confidence": "high",
+        "args": [
+          "[('a', 'alpha'), ('a', 'alpha')]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('A', 'Alpha'), ('A', 'Alpha'), ('a', 'alpha'), ('a', 'alpha')]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('A', 'Alpha'), ('a', 'alpha'), ('a', 'alpha')]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-8d29wuam/out/tests/test_add_uppercase_char.py"
+      },
+      {
+        "id": "65d4fa178cd3",
+        "function": "slugify/special.py::add_uppercase_char",
+        "label": "unexpected",
+        "reason": "The new version removes a duplicate uppercase entry, changing behavior despite the stated requirement that behavior not change.",
+        "confidence": "high",
+        "args": [
+          "[('b', 'hello'), ('b', 'Hello')]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('B', 'Hello'), ('B', 'Hello'), ('b', 'hello'), ('b', 'Hello')]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('B', 'Hello'), ('b', 'hello'), ('b', 'Hello')]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-8d29wuam/out/tests/test_add_uppercase_char.py"
+      },
+      {
+        "id": "3af14b28efac",
+        "function": "slugify/special.py::add_uppercase_char",
+        "label": "unexpected",
+        "reason": "The new version removes a duplicate uppercase entry, changing behavior despite the stated requirement that behavior not change.",
+        "confidence": "high",
+        "args": [
+          "[('s', 'letter'), ('\u017f', 'letter')]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('S', 'Letter'), ('S', 'Letter'), ('s', 'letter'), ('\u017f', 'letter')]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('S', 'Letter'), ('s', 'letter'), ('\u017f', 'letter')]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-8d29wuam/out/tests/test_add_uppercase_char.py"
+      },
+      {
+        "id": "19e9298aa4ba",
+        "function": "slugify/special.py::add_uppercase_char",
+        "label": "unexpected",
+        "reason": "The new version removes a duplicate uppercase entry, changing behavior despite the stated requirement that behavior not change.",
+        "confidence": "high",
+        "args": [
+          "[('\u03c3', 'greek'), ('\u03c2', 'Greek')]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('\u03a3', 'Greek'), ('\u03a3', 'Greek'), ('\u03c3', 'greek'), ('\u03c2', 'Greek')]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('\u03a3', 'Greek'), ('\u03c3', 'greek'), ('\u03c2', 'Greek')]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-8d29wuam/out/tests/test_add_uppercase_char.py"
+      },
+      {
+        "id": "150c3549bf2c",
+        "function": "slugify/special.py::add_uppercase_char",
+        "label": "unexpected",
+        "reason": "The new version removes a duplicate uppercase entry, changing behavior despite the stated requirement that behavior not change.",
+        "confidence": "high",
+        "args": [
+          "[('\u00b5', 'unit'), ('\u03bc', 'Unit')]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('\u039c', 'Unit'), ('\u039c', 'Unit'), ('\u00b5', 'unit'), ('\u03bc', 'Unit')]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('\u039c', 'Unit'), ('\u00b5', 'unit'), ('\u03bc', 'Unit')]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-8d29wuam/out/tests/test_add_uppercase_char.py"
+      },
+      {
+        "id": "be7aa84f8829",
+        "function": "slugify/special.py::add_uppercase_char",
+        "label": "unexpected",
+        "reason": "The new version removes a duplicate uppercase entry, changing behavior despite the stated requirement that behavior not change.",
+        "confidence": "high",
+        "args": [
+          "[('i', 'index'), ('\u0131', 'Index')]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('I', 'Index'), ('I', 'Index'), ('i', 'index'), ('\u0131', 'Index')]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('I', 'Index'), ('i', 'index'), ('\u0131', 'Index')]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-8d29wuam/out/tests/test_add_uppercase_char.py"
+      },
+      {
+        "id": "b131aadb9abd",
+        "function": "slugify/special.py::add_uppercase_char",
+        "label": "unexpected",
+        "reason": "The new version removes a duplicate uppercase entry, changing behavior despite the stated requirement that behavior not change.",
+        "confidence": "high",
+        "args": [
+          "[('\u00df', 'stra\u00dfe'), ('\u00df', 'Stra\u00dfe')]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('SS', 'Stra\u00dfe'), ('SS', 'Stra\u00dfe'), ('\u00df', 'stra\u00dfe'), ('\u00df', 'Stra\u00dfe')]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('SS', 'Stra\u00dfe'), ('\u00df', 'stra\u00dfe'), ('\u00df', 'Stra\u00dfe')]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-8d29wuam/out/tests/test_add_uppercase_char.py"
+      },
+      {
+        "id": "c416b930a848",
+        "function": "slugify/special.py::add_uppercase_char",
+        "label": "unexpected",
+        "reason": "The new version removes a duplicate uppercase entry, changing behavior despite the stated requirement that behavior not change.",
+        "confidence": "high",
+        "args": [
+          "[('\ufb03', 'ligature'), ('\ufb03', 'Ligature')]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('FFI', 'Ligature'), ('FFI', 'Ligature'), ('\ufb03', 'ligature'), ('\ufb03', 'Ligature')]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('FFI', 'Ligature'), ('\ufb03', 'ligature'), ('\ufb03', 'Ligature')]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-8d29wuam/out/tests/test_add_uppercase_char.py"
+      },
+      {
+        "id": "4df510d89d04",
+        "function": "slugify/special.py::add_uppercase_char",
+        "label": "unexpected",
+        "reason": "The new version removes duplicate uppercase entries and changes their ordering, contrary to the stated requirement that behavior not change.",
+        "confidence": "high",
+        "args": [
+          "[('a', 'alpha'), ('a', 'Alpha'), ('b', 'beta'), ('b', 'Beta')]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('B', 'Beta'), ('B', 'Beta'), ('A', 'Alpha'), ('A', 'Alpha'), ('a', 'alpha'), ('a', 'Alpha'), ('b', 'beta'), ('b', 'Beta')]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('B', 'Beta'), ('A', 'Alpha'), ('a', 'alpha'), ('a', 'Alpha'), ('b', 'beta'), ('b', 'Beta')]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-8d29wuam/out/tests/test_add_uppercase_char.py"
+      },
+      {
+        "id": "f85642a0cc2d",
+        "function": "slugify/special.py::add_uppercase_char",
+        "label": "unexpected",
+        "reason": "The new version removes a duplicate uppercase entry, changing behavior despite the stated requirement that behavior not change.",
+        "confidence": "high",
+        "args": [
+          "[('q', 'quiet'), ('z', 'zed'), ('q', 'Quiet'), ('Z', 'other')]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('Q', 'Quiet'), ('Z', 'Zed'), ('Q', 'Quiet'), ('q', 'quiet'), ('z', 'zed'), ('q', 'Quiet'), ('Z', 'other')]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('Z', 'Zed'), ('Q', 'Quiet'), ('q', 'quiet'), ('z', 'zed'), ('q', 'Quiet'), ('Z', 'other')]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-8d29wuam/out/tests/test_add_uppercase_char.py"
+      },
+      {
+        "id": "d1ed3a8fdb1a",
+        "function": "slugify/special.py::add_uppercase_char",
+        "label": "unexpected",
+        "reason": "The new version removes a duplicate uppercase entry, changing behavior despite the stated requirement that behavior not change.",
+        "confidence": "high",
+        "args": [
+          "[('m', ''), ('m', '')]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('M', ''), ('M', ''), ('m', ''), ('m', '')]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('M', ''), ('m', ''), ('m', '')]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-8d29wuam/out/tests/test_add_uppercase_char.py"
+      },
+      {
+        "id": "affa88d6d5f4",
+        "function": "slugify/special.py::add_uppercase_char",
+        "label": "unexpected",
+        "reason": "The new version removes duplicate uppercase entries and changes their ordering, contrary to the stated requirement that behavior not change.",
+        "confidence": "high",
+        "args": [
+          "[('x', 'xray'), ('y', 'yankee'), ('x', 'Xray'), ('y', 'Yankee'), ('z', 'zulu')]"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('Z', 'Zulu'), ('Y', 'Yankee'), ('X', 'Xray'), ('Y', 'Yankee'), ('X', 'Xray'), ('x', 'xray'), ('y', 'yankee'), ('x', 'Xray'), ('y', 'Yankee'), ('z', 'zulu')]"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.list",
+          "repr": "[('Z', 'Zulu'), ('Y', 'Yankee'), ('X', 'Xray'), ('x', 'xray'), ('y', 'yankee'), ('x', 'Xray'), ('y', 'Yankee'), ('z', 'zulu')]"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-8d29wuam/out/tests/test_add_uppercase_char.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2433,
+      "output_tokens": 2800,
+      "cost_usd": 0.0016432999999999999
+    }
+  },
+  "llm_finding_ids": [
+    "150c3549bf2c",
+    "19e9298aa4ba",
+    "35bbea04b694",
+    "3af14b28efac",
+    "4df510d89d04",
+    "65d4fa178cd3",
+    "affa88d6d5f4",
+    "b131aadb9abd",
+    "be7aa84f8829",
+    "c416b930a848",
+    "d1ed3a8fdb1a",
+    "f85642a0cc2d"
+  ]
+}

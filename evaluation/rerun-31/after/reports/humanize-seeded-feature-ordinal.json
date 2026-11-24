@@ -1,0 +1,366 @@
+{
+  "scenario": {
+    "id": "humanize-seeded-feature-ordinal",
+    "repo": "humanize",
+    "kind": "seeded",
+    "commit": "d16e6352c9785c5ab86de0133222bd22e89b0db2",
+    "intent": "ordinal() also accepts numeric strings with thousands separators, such as '1,000'.",
+    "patch": "../../patches/humanize-seeded-feature-ordinal.diff"
+  },
+  "base_sha": "4bf78d7de5e10b28c8aced79eb8d3ab99254ac0f",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "ordinal() also accepts numeric strings with thousands separators, such as '1,000'.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 18.7,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~6,890 input + ~7,200 output tokens, ~$0.0043 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "4bf78d7de5e10b28c8aced79eb8d3ab99254ac0f"
+    },
+    "intent": "Stated by the user: ordinal() also accepts numeric strings with thousands separators, such as '1,000'.",
+    "findings": [
+      {
+        "id": "2f9e5f813a2b",
+        "function": "src/humanize/number.py::ordinal",
+        "label": "expected",
+        "reason": "A correctly grouped numeric string with a thousands separator is explicitly within the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'1,000'"
+        ],
+        "kwargs": {
+          "gender": "'male'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1,000'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1000th'"
+        },
+        "test_file": null
+      },
+      {
+        "id": "0baa633deb61",
+        "function": "src/humanize/number.py::ordinal",
+        "label": "expected",
+        "reason": "A correctly grouped numeric string with a thousands separator is explicitly within the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'1,001'"
+        ],
+        "kwargs": {
+          "gender": "'female'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1,001'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1001st'"
+        },
+        "test_file": null
+      },
+      {
+        "id": "3c35f90ffcb9",
+        "function": "src/humanize/number.py::ordinal",
+        "label": "expected",
+        "reason": "A correctly grouped numeric string with a thousands separator is explicitly within the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'12,013'"
+        ],
+        "kwargs": {
+          "gender": "'male'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'12,013'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'12013th'"
+        },
+        "test_file": null
+      },
+      {
+        "id": "a18d73d0f398",
+        "function": "src/humanize/number.py::ordinal",
+        "label": "expected",
+        "reason": "This is a numeric string with a correctly grouped thousands separator, which the stated intent says ordinal() should accept.",
+        "confidence": "high",
+        "args": [
+          "'-1,002'"
+        ],
+        "kwargs": {
+          "gender": "'female'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-1,002'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-1002th'"
+        },
+        "test_file": null
+      },
+      {
+        "id": "be5b4d59a52e",
+        "function": "src/humanize/number.py::ordinal",
+        "label": "unexpected",
+        "reason": "The comma does not form a valid thousands separator in this string, so accepting it is not covered by the intent.",
+        "confidence": "high",
+        "args": [
+          "'1,2'"
+        ],
+        "kwargs": {
+          "gender": "'male'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1,2'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'12th'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zsdehjq6/out/tests/test_ordinal.py"
+      },
+      {
+        "id": "84c169f18773",
+        "function": "src/humanize/number.py::ordinal",
+        "label": "unclear",
+        "reason": "The string has a valid thousands separator but is decimal rather than an integer, and the intent does not specify decimal handling.",
+        "confidence": "high",
+        "args": [
+          "'1,234.5'"
+        ],
+        "kwargs": {
+          "gender": "'female'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1,234.5'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1234.5'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zsdehjq6/out/tests/test_ordinal.py"
+      },
+      {
+        "id": "ac79c4b69386",
+        "function": "src/humanize/number.py::ordinal",
+        "label": "expected",
+        "reason": "A correctly grouped numeric string with thousands separators is explicitly within the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'1,000,000'"
+        ],
+        "kwargs": {
+          "gender": "'male'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1,000,000'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1000000th'"
+        },
+        "test_file": null
+      },
+      {
+        "id": "5ca72eb2508c",
+        "function": "src/humanize/number.py::ordinal",
+        "label": "unexpected",
+        "reason": "Removing a comma from nonnumeric text is not covered by the intent to accept numeric strings with thousands separators.",
+        "confidence": "high",
+        "args": [
+          "'foo,bar'"
+        ],
+        "kwargs": {
+          "gender": "'male'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'foo,bar'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'foobar'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zsdehjq6/out/tests/test_ordinal.py"
+      },
+      {
+        "id": "38b1e8c36d45",
+        "function": "src/humanize/number.py::ordinal",
+        "label": "unexpected",
+        "reason": "The commas are not valid thousands separators, so accepting this malformed string is not covered by the intent.",
+        "confidence": "high",
+        "args": [
+          "',1,'"
+        ],
+        "kwargs": {
+          "gender": "'female'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "',1,'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1st'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zsdehjq6/out/tests/test_ordinal.py"
+      },
+      {
+        "id": "00f3e3f8f3b6",
+        "function": "src/humanize/number.py::ordinal",
+        "label": "unexpected",
+        "reason": "Repeated commas do not form valid thousands separators, so accepting this malformed string is not covered by the intent.",
+        "confidence": "high",
+        "args": [
+          "'1,,000'"
+        ],
+        "kwargs": {
+          "gender": "'male'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1,,000'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1000th'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zsdehjq6/out/tests/test_ordinal.py"
+      },
+      {
+        "id": "270549e8ddd2",
+        "function": "src/humanize/number.py::ordinal",
+        "label": "unexpected",
+        "reason": "The comma placement is not a valid thousands separator, so changing this string is not covered by the intent.",
+        "confidence": "high",
+        "args": [
+          "'1,2e3'"
+        ],
+        "kwargs": {
+          "gender": "'female'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1,2e3'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'12e3'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zsdehjq6/out/tests/test_ordinal.py"
+      },
+      {
+        "id": "fab98a67fd5c",
+        "function": "src/humanize/number.py::ordinal",
+        "label": "expected",
+        "reason": "The input contains a correctly grouped numeric string with a thousands separator, which the stated intent says ordinal() should accept.",
+        "confidence": "high",
+        "args": [
+          "' 1,001 '"
+        ],
+        "kwargs": {
+          "gender": "'male'"
+        },
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "' 1,001 '"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1001st'"
+        },
+        "test_file": null
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 6,
+        "unexpected": 5,
+        "unclear": 1,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2444,
+      "output_tokens": 2331,
+      "cost_usd": 0.0012676100000000002
+    }
+  },
+  "llm_finding_ids": [
+    "00f3e3f8f3b6",
+    "0baa633deb61",
+    "270549e8ddd2",
+    "2f9e5f813a2b",
+    "38b1e8c36d45",
+    "3c35f90ffcb9",
+    "5ca72eb2508c",
+    "84c169f18773",
+    "a18d73d0f398",
+    "ac79c4b69386",
+    "be5b4d59a52e",
+    "fab98a67fd5c"
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "scenario": {
+    "id": "packaging-seeded-refactor-canonicalize_version",
+    "repo": "packaging",
+    "kind": "seeded",
+    "commit": "713d0d78924ab2686c513dde058ce6aafc63e766",
+    "intent": "Refactor canonicalize_version() for readability; behavior must not change.",
+    "patch": "../../patches/packaging-seeded-refactor-canonicalize_version.diff"
+  },
+  "base_sha": "713d0d78924ab2686c513dde058ce6aafc63e766",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor canonicalize_version() for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 0,
+  "seconds": 19.7,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~6,951 input + ~7,200 output tokens, ~$0.0043 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "713d0d78924ab2686c513dde058ce6aafc63e766"
+    },
+    "intent": "Stated by the user: Refactor canonicalize_version() for readability; behavior must not change.",
+    "findings": [],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 24,
+      "findings": {
+        "expected": 0,
+        "unexpected": 0,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 3402,
+      "output_tokens": 2060,
+      "cost_usd": 0.00123484
+    }
+  },
+  "llm_finding_ids": [
+    "0574ef933777",
+    "13c708112d89",
+    "2a0a8a52bfa4",
+    "2b090ff9f3d3",
+    "376786020bb4",
+    "37c1e2cae006",
+    "39557ec367e4",
+    "39ba66653bda",
+    "464e14ab10a9",
+    "47098c456c04",
+    "576036814fae",
+    "5bbe94606091",
+    "66e69d2b3f27",
+    "69c242fe387d",
+    "6dae65a19993",
+    "7d26b0d0fdc7",
+    "88e70bb39471",
+    "b5719aa27271",
+    "c9f21718a260",
+    "d437a1b718a1",
+    "dc34732692de",
+    "e2b6ee04446b",
+    "f04913bec55b",
+    "f73c7202cb38"
+  ]
+}

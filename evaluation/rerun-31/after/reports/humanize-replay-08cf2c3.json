@@ -1,0 +1,342 @@
+{
+  "scenario": {
+    "id": "humanize-replay-08cf2c3",
+    "repo": "humanize",
+    "kind": "replay",
+    "commit": "08cf2c3026cfd7c553e397e1d91ea069eb2a4978",
+    "intent": "Refactor the number module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "3301ae6cbc4407d22b38f6f568eaebb78e7fbbe1",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the number module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 16.7,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~7,903 input + ~7,200 output tokens, ~$0.0044 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "3301ae6cbc4407d22b38f6f568eaebb78e7fbbe1"
+    },
+    "intent": "Stated by the user: Refactor the number module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "0175fa1b1e82",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so changing the fractional result from '1' to '1/1' is not intended.",
+        "confidence": "high",
+        "args": [
+          "0.9999"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hlqlzrx2/out/tests/test_fractional.py"
+      },
+      {
+        "id": "69791efb50ac",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so changing the fractional result from '-1' to '-1/1' is not intended.",
+        "confidence": "high",
+        "args": [
+          "-0.9999"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-1'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hlqlzrx2/out/tests/test_fractional.py"
+      },
+      {
+        "id": "cc62f310a97c",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so changing the fractional result from '2' to '1 1/1' is not intended.",
+        "confidence": "high",
+        "args": [
+          "1.9999"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'2'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1 1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hlqlzrx2/out/tests/test_fractional.py"
+      },
+      {
+        "id": "2c6655a6c160",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so changing the fractional result from '-2' to '-1 1/1' is not intended.",
+        "confidence": "high",
+        "args": [
+          "-1.9999"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-2'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-1 1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hlqlzrx2/out/tests/test_fractional.py"
+      },
+      {
+        "id": "75f5cfbfb070",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so changing the fractional result from '3' to '2 1/1' is not intended.",
+        "confidence": "high",
+        "args": [
+          "2.9999"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'3'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'2 1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hlqlzrx2/out/tests/test_fractional.py"
+      },
+      {
+        "id": "96f9a4f6c866",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so changing the fractional result from '-3' to '-2 1/1' is not intended.",
+        "confidence": "high",
+        "args": [
+          "-2.9999"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-3'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-2 1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hlqlzrx2/out/tests/test_fractional.py"
+      },
+      {
+        "id": "fba809369d27",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so changing the fractional result from '11' to '10 1/1' is not intended.",
+        "confidence": "high",
+        "args": [
+          "10.9999"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'11'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'10 1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hlqlzrx2/out/tests/test_fractional.py"
+      },
+      {
+        "id": "bac386bb17af",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so changing the fractional result from '-11' to '-10 1/1' is not intended.",
+        "confidence": "high",
+        "args": [
+          "-10.9999"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-11'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-10 1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hlqlzrx2/out/tests/test_fractional.py"
+      },
+      {
+        "id": "1d0a9779c62c",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so changing the fractional result from '1' to '1/1' is not intended.",
+        "confidence": "high",
+        "args": [
+          "0.9996"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hlqlzrx2/out/tests/test_fractional.py"
+      },
+      {
+        "id": "d81929af2190",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so changing the fractional result from '1' to '1/1' is not intended.",
+        "confidence": "high",
+        "args": [
+          "0.99951"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hlqlzrx2/out/tests/test_fractional.py"
+      },
+      {
+        "id": "b65a42bd0ab9",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so changing the fractional result from '-1' to '-1/1' is not intended.",
+        "confidence": "high",
+        "args": [
+          "-0.9998"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-1'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'-1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hlqlzrx2/out/tests/test_fractional.py"
+      },
+      {
+        "id": "89386cfcac64",
+        "function": "src/humanize/number.py::fractional",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, so changing the fractional result from '4' to '3 1/1' is not intended.",
+        "confidence": "high",
+        "args": [
+          "'3.9999'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'4'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'3 1/1'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-hlqlzrx2/out/tests/test_fractional.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2649,
+      "output_tokens": 1987,
+      "cost_usd": 0.0012584
+    }
+  },
+  "llm_finding_ids": [
+    "0175fa1b1e82",
+    "1d0a9779c62c",
+    "2c6655a6c160",
+    "69791efb50ac",
+    "75f5cfbfb070",
+    "89386cfcac64",
+    "96f9a4f6c866",
+    "b65a42bd0ab9",
+    "bac386bb17af",
+    "cc62f310a97c",
+    "d81929af2190",
+    "fba809369d27"
+  ]
+}

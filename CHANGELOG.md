@@ -11,7 +11,16 @@ the Python package and `js-v*` for the JS/TS package.
 
 #### Added
 
-- A GitHub Action (`github-action/`, docs/github-action.md) runs
+- Boundary cases: after the LLM's first cases, up to `boundary_cases`
+  (default 6, `--boundary-cases`, `0` turns them off) cases built in code
+  from simple type annotations (`int`, `float`, `str`, `bool`,
+  `Optional`, `list` / `dict` of these): `0`, `-1`, `''`, `None`, empty
+  containers and the like, one parameter at a time. They cost no tokens,
+  apply to functions and method arguments (not constructors), never
+  repeat an LLM case, and go through the same validation, comparison and
+  labelling. Unannotated parameters get none.
+- Experimental, live LLM path not yet verified: a GitHub Action
+  (`github-action/`, docs/github-action.md) runs
   `didibreak check` on pull requests and keeps one comment up to date with
   the unexpected and unclear findings, skip counts and the run's cost.
   Inputs: the API key from a secret, provider, model, `max-cost`,

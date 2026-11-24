@@ -1,0 +1,89 @@
+{
+  "scenario": {
+    "id": "humanize-seeded-refactor-apnumber",
+    "repo": "humanize",
+    "kind": "seeded",
+    "commit": "d16e6352c9785c5ab86de0133222bd22e89b0db2",
+    "intent": "Refactor apnumber() for readability; behavior must not change.",
+    "patch": "../../patches/humanize-seeded-refactor-apnumber.diff"
+  },
+  "base_sha": "7d96f97f93e5df8209c1eff0b3be0cbe8b486d52",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor apnumber() for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 0,
+  "seconds": 68.1,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~6,161 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "7d96f97f93e5df8209c1eff0b3be0cbe8b486d52"
+    },
+    "intent": "Stated by the user: Refactor apnumber() for readability; behavior must not change.",
+    "findings": [],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 24,
+      "findings": {
+        "expected": 0,
+        "unexpected": 0,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 3,
+      "input_tokens": 4237,
+      "output_tokens": 11470,
+      "cost_usd": 0.0059131800000000005
+    }
+  },
+  "llm_finding_ids": [
+    "0471c4fd2be5",
+    "0f3bb832b755",
+    "1da026fb91f1",
+    "257ce057155a",
+    "2b0cb88edfc2",
+    "3d18e0ed07cf",
+    "4c5ccf9bba84",
+    "58bc16d96bef",
+    "60fbb4d946e5",
+    "6482f3f5bbb7",
+    "65127b275df5",
+    "6b4d2d94446f",
+    "847d853a5856",
+    "878e7e997637",
+    "993264aa9add",
+    "ae61cf5b591f",
+    "b26b88ac21a5",
+    "bac92984a054",
+    "c43ce2c01d54",
+    "c4580af27dfb",
+    "c84b859948bc",
+    "d121096ff889",
+    "d8d8bb7121ee",
+    "f8847b1bbf2d"
+  ]
+}

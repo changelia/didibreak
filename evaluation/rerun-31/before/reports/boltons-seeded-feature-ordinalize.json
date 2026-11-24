@@ -1,0 +1,356 @@
+{
+  "scenario": {
+    "id": "boltons-seeded-feature-ordinalize",
+    "repo": "boltons",
+    "kind": "seeded",
+    "commit": "d31d821d56c8f7756af9c30a864077f2e5855321",
+    "intent": "ordinalize() ignores whitespace around the number, so ' 3 ' gives '3rd'.",
+    "patch": "../../patches/boltons-seeded-feature-ordinalize.diff"
+  },
+  "base_sha": "d31d821d56c8f7756af9c30a864077f2e5855321",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "ordinalize() ignores whitespace around the number, so ' 3 ' gives '3rd'.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--boundary-cases",
+    "0",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 14.7,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~6,257 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "d31d821d56c8f7756af9c30a864077f2e5855321"
+    },
+    "intent": "Stated by the user: ordinalize() ignores whitespace around the number, so ' 3 ' gives '3rd'.",
+    "findings": [
+      {
+        "id": "935a3af136a3",
+        "function": "boltons/strutils.py::ordinalize",
+        "label": "expected",
+        "reason": "Ignoring surrounding whitespace and ordinalizing 1 as \u201c1st\u201d is the stated behavior.",
+        "confidence": "high",
+        "args": [
+          "' 1 '",
+          "False"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "' 1 '"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1st'"
+        },
+        "test_file": null
+      },
+      {
+        "id": "91188b3447ed",
+        "function": "boltons/strutils.py::ordinalize",
+        "label": "unexpected",
+        "reason": "The input has no surrounding whitespace, and changing 20 from \u201c20th\u201d to \u201c2nd\u201d is not part of the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'20'",
+          "False"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'20th'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'2nd'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-jcl9hh5l/out/tests/test_ordinalize.py"
+      },
+      {
+        "id": "1a08158d067d",
+        "function": "boltons/strutils.py::ordinalize",
+        "label": "unexpected",
+        "reason": "The input has no surrounding whitespace, and removing its leading zeros is not part of the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'0002'",
+          "False"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'0002nd'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'2nd'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-jcl9hh5l/out/tests/test_ordinalize.py"
+      },
+      {
+        "id": "fb8e5e5d2453",
+        "function": "boltons/strutils.py::ordinalize",
+        "label": "unexpected",
+        "reason": "The input has no surrounding whitespace, and changing 1010 from \u201c1010th\u201d to \u201c101st\u201d is not part of the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'1010'",
+          "False"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1010th'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'101st'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-jcl9hh5l/out/tests/test_ordinalize.py"
+      },
+      {
+        "id": "32adeb9b4091",
+        "function": "boltons/strutils.py::ordinalize",
+        "label": "unexpected",
+        "reason": "The input has no surrounding whitespace, and changing the ordinalization of 0 to an empty string is not part of the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'0'",
+          "False"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'0th'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "''"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-jcl9hh5l/out/tests/test_ordinalize.py"
+      },
+      {
+        "id": "bcfd1d50f718",
+        "function": "boltons/strutils.py::ordinalize",
+        "label": "unclear",
+        "reason": "The intent addresses whitespace around a number, but does not specify how an input containing only whitespace should behave.",
+        "confidence": "high",
+        "args": [
+          "'   '",
+          "False"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'   '"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "''"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-jcl9hh5l/out/tests/test_ordinalize.py"
+      },
+      {
+        "id": "ec0b6c05a24e",
+        "function": "boltons/strutils.py::ordinalize",
+        "label": "unexpected",
+        "reason": "Although the trailing whitespace is in scope, changing 10 to \u201c1st\u201d is not the intended result of ignoring it.",
+        "confidence": "high",
+        "args": [
+          "'10 '",
+          "False"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'10 '"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'1st'"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-jcl9hh5l/out/tests/test_ordinalize.py"
+      },
+      {
+        "id": "1bfbbd9b3836",
+        "function": "boltons/strutils.py::ordinalize",
+        "label": "expected",
+        "reason": "Ignoring trailing whitespace while ordinalizing 2 as \u201c2nd\u201d matches the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'2  '",
+          "False"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'2  '"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'2nd'"
+        },
+        "test_file": null
+      },
+      {
+        "id": "332d40330215",
+        "function": "boltons/strutils.py::ordinalize",
+        "label": "expected",
+        "reason": "Ignoring leading whitespace while ordinalizing 11 as \u201c11th\u201d matches the stated intent.",
+        "confidence": "high",
+        "args": [
+          "' 11'",
+          "False"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "' 11th'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'11th'"
+        },
+        "test_file": null
+      },
+      {
+        "id": "4aefb75e3cb1",
+        "function": "boltons/strutils.py::ordinalize",
+        "label": "expected",
+        "reason": "Ignoring trailing whitespace in suffix-only mode and returning the suffix for 11 is consistent with the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'11 '",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "''"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'th'"
+        },
+        "test_file": null
+      },
+      {
+        "id": "8b519e2bdf7b",
+        "function": "boltons/strutils.py::ordinalize",
+        "label": "expected",
+        "reason": "Ignoring surrounding whitespace in suffix-only mode and returning the suffix for 3 is consistent with the stated intent.",
+        "confidence": "high",
+        "args": [
+          "' 3 '",
+          "True"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "''"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'rd'"
+        },
+        "test_file": null
+      },
+      {
+        "id": "20f9f5a8877e",
+        "function": "boltons/strutils.py::ordinalize",
+        "label": "unexpected",
+        "reason": "The input has no surrounding whitespace, and changing the result for 000 is not part of the stated intent.",
+        "confidence": "high",
+        "args": [
+          "'000'",
+          "False"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "'000th'"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.str",
+          "repr": "''"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-jcl9hh5l/out/tests/test_ordinalize.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 5,
+        "unexpected": 6,
+        "unclear": 1,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2090,
+      "output_tokens": 1806,
+      "cost_usd": 0.001112
+    }
+  },
+  "llm_finding_ids": [
+    "1a08158d067d",
+    "1bfbbd9b3836",
+    "20f9f5a8877e",
+    "32adeb9b4091",
+    "332d40330215",
+    "4aefb75e3cb1",
+    "8b519e2bdf7b",
+    "91188b3447ed",
+    "935a3af136a3",
+    "bcfd1d50f718",
+    "ec0b6c05a24e",
+    "fb8e5e5d2453"
+  ]
+}

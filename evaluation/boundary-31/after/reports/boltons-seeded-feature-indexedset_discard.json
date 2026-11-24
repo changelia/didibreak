@@ -1,0 +1,330 @@
+{
+  "scenario": {
+    "id": "boltons-seeded-feature-indexedset_discard",
+    "repo": "boltons",
+    "kind": "seeded",
+    "commit": "d31d821d56c8f7756af9c30a864077f2e5855321",
+    "intent": "Speed up IndexedSet.discard by not raising and catching KeyError.",
+    "patch": "patches/boltons-seeded-feature-indexedset_discard.diff"
+  },
+  "base_sha": "d31d821d56c8f7756af9c30a864077f2e5855321",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Speed up IndexedSet.discard by not raising and catching KeyError.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 79.3,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,210 input + ~7,200 output tokens, ~$0.0041 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "d31d821d56c8f7756af9c30a864077f2e5855321"
+    },
+    "intent": "Stated by the user: Speed up IndexedSet.discard by not raising and catching KeyError.",
+    "findings": [
+      {
+        "id": "bbb11adc2454",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The intent mentions avoiding a KeyError, not changing the post-discard compaction and tombstone state.",
+        "confidence": "low",
+        "args": [
+          "'middle'"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "['left', 'middle', 'right']"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 3, '_compactions': 1, 'dead_indices': [], 'item_index_map': {'left': 0, 'right': 1}, 'item_list': ['left', 'right']}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[1, 2]], 'item_index_map': {'left': 0, 'right': 2}, 'item_list': ['left', _MISSING, 'right']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gr0h3ik7/out/tests/test_IndexedSet_discard.py"
+      },
+      {
+        "id": "aef9bd22a663",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The intent mentions avoiding a KeyError, not changing the post-discard compaction and tombstone state.",
+        "confidence": "low",
+        "args": [
+          "'first'"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "['first', 'second']"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 2, '_compactions': 1, 'dead_indices': [], 'item_index_map': {'second': 0}, 'item_list': ['second']}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[0, 1]], 'item_index_map': {'second': 1}, 'item_list': [_MISSING, 'second']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gr0h3ik7/out/tests/test_IndexedSet_discard.py"
+      },
+      {
+        "id": "c88e07e1ec13",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The intent mentions avoiding a KeyError, not changing the post-discard compaction and tombstone state.",
+        "confidence": "low",
+        "args": [
+          "'last'"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "['first', 'last']"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 2, '_compactions': 1, 'dead_indices': [], 'item_index_map': {'first': 0}, 'item_list': ['first']}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[1, 2]], 'item_index_map': {'first': 0}, 'item_list': ['first', _MISSING]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gr0h3ik7/out/tests/test_IndexedSet_discard.py"
+      },
+      {
+        "id": "6ef8c5374ae6",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The intent mentions avoiding a KeyError, not changing the post-discard compaction and tombstone state.",
+        "confidence": "low",
+        "args": [
+          "1"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[True, 2]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 2, '_compactions': 1, 'dead_indices': [], 'item_index_map': {2: 0}, 'item_list': [2]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[0, 1]], 'item_index_map': {2: 1}, 'item_list': [_MISSING, 2]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gr0h3ik7/out/tests/test_IndexedSet_discard.py"
+      },
+      {
+        "id": "a10158e06159",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The intent mentions avoiding a KeyError, not changing the post-discard compaction and tombstone state.",
+        "confidence": "low",
+        "args": [
+          "0.0"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[-0.0, 1]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 2, '_compactions': 1, 'dead_indices': [], 'item_index_map': {1: 0}, 'item_list': [1]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[0, 1]], 'item_index_map': {1: 1}, 'item_list': [_MISSING, 1]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gr0h3ik7/out/tests/test_IndexedSet_discard.py"
+      },
+      {
+        "id": "f78c251a1a4f",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The intent mentions avoiding a KeyError, not changing the post-discard compaction and tombstone state.",
+        "confidence": "low",
+        "args": [
+          "b'\\x00\\xff'"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[b'\\x00\\xff', b'plain']"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 2, '_compactions': 1, 'dead_indices': [], 'item_index_map': {b'plain': 0}, 'item_list': [b'plain']}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[0, 1]], 'item_index_map': {b'plain': 1}, 'item_list': [_MISSING, b'plain']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gr0h3ik7/out/tests/test_IndexedSet_discard.py"
+      },
+      {
+        "id": "167f9bdcefc2",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The intent mentions avoiding a KeyError, not changing the post-discard compaction and tombstone state.",
+        "confidence": "low",
+        "args": [
+          "('a', 2, None)"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[('a', 2, None), ('other',)]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 2, '_compactions': 1, 'dead_indices': [], 'item_index_map': {('other',): 0}, 'item_list': [('other',)]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[0, 1]], 'item_index_map': {('other',): 1}, 'item_list': [_MISSING, ('other',)]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gr0h3ik7/out/tests/test_IndexedSet_discard.py"
+      },
+      {
+        "id": "c982dcaff18e",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The intent mentions avoiding a KeyError, not changing the post-discard compaction and tombstone state.",
+        "confidence": "low",
+        "args": [
+          "None"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[None, 'other']"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 2, '_compactions': 1, 'dead_indices': [], 'item_index_map': {'other': 0}, 'item_list': ['other']}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[0, 1]], 'item_index_map': {'other': 1}, 'item_list': [_MISSING, 'other']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gr0h3ik7/out/tests/test_IndexedSet_discard.py"
+      },
+      {
+        "id": "d2f4106aa43e",
+        "function": "boltons/setutils.py::IndexedSet.discard",
+        "label": "unexpected",
+        "reason": "The intent mentions avoiding a KeyError, not changing the post-discard compaction and tombstone state.",
+        "confidence": "low",
+        "args": [
+          "1e309"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[1e309, -1e309, 0]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 3, '_compactions': 1, 'dead_indices': [], 'item_index_map': {-inf: 0, 0: 1}, 'item_list': [-inf, 0]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [[0, 1]], 'item_index_map': {-inf: 1, 0: 2}, 'item_list': [_MISSING, -inf, 0]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-gr0h3ik7/out/tests/test_IndexedSet_discard.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 9,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 3,
+      "input_tokens": 3347,
+      "output_tokens": 11337,
+      "cost_usd": 0.0060032
+    }
+  },
+  "llm_finding_ids": [
+    "10a15c8169f3",
+    "167f9bdcefc2",
+    "3b186e79c7fa",
+    "6ef8c5374ae6",
+    "a10158e06159",
+    "aef9bd22a663",
+    "bbb11adc2454",
+    "c17e075393d7",
+    "c88e07e1ec13",
+    "c982dcaff18e",
+    "d2f4106aa43e",
+    "f78c251a1a4f"
+  ]
+}

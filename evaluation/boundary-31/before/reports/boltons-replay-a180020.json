@@ -1,0 +1,411 @@
+{
+  "scenario": {
+    "id": "boltons-replay-a180020",
+    "repo": "boltons",
+    "kind": "replay",
+    "commit": "a180020c760b532e8889f161d97d05647adfee8c",
+    "intent": "Refactor the setutils module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "a180020c760b532e8889f161d97d05647adfee8c",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the setutils module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--boundary-cases",
+    "0",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 23.2,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,304 input + ~7,200 output tokens, ~$0.0041 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "a180020c760b532e8889f161d97d05647adfee8c"
+    },
+    "intent": "Stated by the user: Refactor the setutils module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "e22edd6b093e",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but strings are now added as whole items instead of being iterated character by character.",
+        "confidence": "high",
+        "args": [
+          "'ab'",
+          "'cd'"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'a': 0, 'b': 1, 'c': 2, 'd': 3}, 'item_list': ['a', 'b', 'c', 'd']}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'ab': 0, 'cd': 1}, 'item_list': ['ab', 'cd']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4_bwieg/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "bb031ea3f145",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but byte strings are now added as whole items instead of being iterated as integers.",
+        "confidence": "high",
+        "args": [
+          "b'\\x00\\xff'",
+          "b'AB'"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {0: 0, 255: 1, 65: 2, 66: 3}, 'item_list': [0, 255, 65, 66]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {b'\\x00\\xff': 0, b'AB': 1}, 'item_list': [b'\\x00\\xff', b'AB']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4_bwieg/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "58fd64a94201",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but tuples are now added as whole items instead of having their elements added.",
+        "confidence": "high",
+        "args": [
+          "(1, 2)",
+          "(2, 3)"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2}, 'item_list': [1, 2, 3]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {(1, 2): 0, (2, 3): 1}, 'item_list': [(1, 2), (2, 3)]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4_bwieg/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "c1bfa5b551b0",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this update now raises instead of adding the elements of the provided iterables.",
+        "confidence": "high",
+        "args": [
+          "[]",
+          "[1, 2]"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1}, 'item_list': [1, 2]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"unhashable type: 'list'\")",
+          "message": "unhashable type: 'list'",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4_bwieg/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "119774995e7d",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this update now raises instead of adding the mapping keys.",
+        "confidence": "high",
+        "args": [
+          "{'a': 1}",
+          "{'b': 2}"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'a': 0, 'b': 1}, 'item_list': ['a', 'b']}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"unhashable type: 'dict'\")",
+          "message": "unhashable type: 'dict'",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4_bwieg/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "d5d4fd281e12",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this update now raises instead of adding the set elements.",
+        "confidence": "high",
+        "args": [
+          "{1, 2}",
+          "{3}"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2}, 'item_list': [1, 2, 3]}"
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"unhashable type: 'set'\")",
+          "message": "unhashable type: 'set'",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4_bwieg/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "a4a888bd01e9",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but tuples are now added as whole items rather than iterated for their elements.",
+        "confidence": "high",
+        "args": [
+          "()",
+          "(4,)"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {4: 0}, 'item_list': [4]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {(): 0, (4,): 1}, 'item_list': [(), (4,)]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4_bwieg/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "6dd21fc529ed",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but empty strings are now added as items rather than contributing no elements.",
+        "confidence": "high",
+        "args": [
+          "''",
+          "''"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {}, 'item_list': []}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'': 0}, 'item_list': ['']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4_bwieg/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "e6b81d2d0fc0",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this update now accepts the non-iterable integer instead of raising a TypeError.",
+        "confidence": "high",
+        "args": [
+          "'A'",
+          "5"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"'int' object is not iterable\")",
+          "message": "'int' object is not iterable",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'A': 0}, 'item_list': ['A']}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'A': 0, 5: 1}, 'item_list': ['A', 5]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4_bwieg/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "f094af98651d",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but this update now accepts None as an item instead of raising a TypeError.",
+        "confidence": "high",
+        "args": [
+          "(1,)",
+          "None"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.TypeError",
+          "repr": "TypeError(\"'NoneType' object is not iterable\")",
+          "message": "'NoneType' object is not iterable",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0}, 'item_list': [1]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {(1,): 0, None: 1}, 'item_list': [(1,), None]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4_bwieg/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "c6414dea0058",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but tuple arguments are now added as whole items instead of having their elements added.",
+        "confidence": "high",
+        "args": [
+          "(2, 3)",
+          "(4,)"
+        ],
+        "kwargs": {},
+        "init_args": [
+          "[1, 2]"
+        ],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, 3: 2, 4: 3}, 'item_list': [1, 2, 3, 4]}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {1: 0, 2: 1, (2, 3): 2, (4,): 3}, 'item_list': [1, 2, (2, 3), (4,)]}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4_bwieg/out/tests/test_IndexedSet_update.py"
+      },
+      {
+        "id": "214ca408449a",
+        "function": "boltons/setutils.py::IndexedSet.update",
+        "label": "unexpected",
+        "reason": "The refactor was explicitly intended to preserve behavior, but strings are now added as whole items instead of being iterated character by character.",
+        "confidence": "high",
+        "args": [
+          "'\u00e9\ud83d\ude42'",
+          "'\u00df\u4e2d'"
+        ],
+        "kwargs": {},
+        "init_args": [],
+        "init_kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'\u00e9': 0, '\ud83d\ude42': 1, '\u00df': 2, '\u4e2d': 3}, 'item_list': ['\u00e9', '\ud83d\ude42', '\u00df', '\u4e2d']}"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.NoneType",
+          "repr": "None",
+          "state": "{'_c_max_size': 0, '_compactions': 0, 'dead_indices': [], 'item_index_map': {'\u00e9\ud83d\ude42': 0, '\u00df\u4e2d': 1}, 'item_list': ['\u00e9\ud83d\ude42', '\u00df\u4e2d']}"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-_4_bwieg/out/tests/test_IndexedSet_update.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2962,
+      "output_tokens": 2591,
+      "cost_usd": 0.0015917000000000001
+    }
+  },
+  "llm_finding_ids": [
+    "119774995e7d",
+    "214ca408449a",
+    "58fd64a94201",
+    "6dd21fc529ed",
+    "a4a888bd01e9",
+    "bb031ea3f145",
+    "c1bfa5b551b0",
+    "c6414dea0058",
+    "d5d4fd281e12",
+    "e22edd6b093e",
+    "e6b81d2d0fc0",
+    "f094af98651d"
+  ]
+}

@@ -147,6 +147,22 @@ table; the first match is the reason.
 - The cost estimate is an estimate: a retry after an unusable reply is not
   included, and the real token counts can differ.
 
+## Boundary cases
+
+- Only simple annotations get boundary cases (`int`, `float`, `str`,
+  `bool`, `None`, `Optional` / unions of these, `list` / `dict` of these).
+  Aliases (`NumberOrString = Union[int, str]`), `typing` generics such as
+  `Iterable[int]`, `tuple`, `set`, `bytes` and classes are not resolved, so
+  a required parameter annotated with one of them means no boundary cases
+  for the function. Unannotated code gets none.
+- The values are a fixed table, not derived from the code: a change at
+  another edge (for example at `100` or at a specific string) is found only
+  if the LLM proposes that input.
+- In the evaluation (task 31) boundary cases ran in 11 of 38 runs of the
+  release-gate libraries and in almost none of the asyncstdlib and boltons
+  runs, and found no behavior change the LLM's cases had missed
+  (`evaluation/README.md`, "Task 31").
+
 ## Running functions
 
 - Linux and macOS only: per-case timeouts use Unix signals.

@@ -1,0 +1,298 @@
+{
+  "scenario": {
+    "id": "validators-replay-a55c62d",
+    "repo": "validators",
+    "kind": "replay",
+    "commit": "a55c62ddd300f386d18993c3a9a356ed46199c4d",
+    "intent": "Refactor the card module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "a55c62ddd300f386d18993c3a9a356ed46199c4d",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the card module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 29.9,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,807 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "a55c62ddd300f386d18993c3a9a356ed46199c4d"
+    },
+    "intent": "Stated by the user: Refactor the card module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "17102507d520",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The refactor explicitly requires behavior to remain unchanged, but this input changes from raising a validation error to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2200000000000004'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2200000000000004'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kmc5geeb/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "cfeda18e0840",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The refactor explicitly requires behavior to remain unchanged, but this input changes from raising a validation error to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2201000000000003'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2201000000000003'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kmc5geeb/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "fb2c80656f04",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The refactor explicitly requires behavior to remain unchanged, but this input changes from raising a validation error to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2210000000000002'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2210000000000002'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kmc5geeb/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "1cfe9773ef70",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The refactor explicitly requires behavior to remain unchanged, but this input changes from raising a validation error to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2219000000000003'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2219000000000003'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kmc5geeb/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "1077025b567c",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The refactor explicitly requires behavior to remain unchanged, but this input changes from raising a validation error to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2220000000000000'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2220000000000000'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kmc5geeb/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "8f5fb34039fe",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The refactor explicitly requires behavior to remain unchanged, but this input changes from raising a validation error to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2721000000000004'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2721000000000004'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kmc5geeb/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "89709f1d9738",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The refactor explicitly requires behavior to remain unchanged, but this input changes from raising a validation error to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2722000000000003'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2722000000000003'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kmc5geeb/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "c86c431003d5",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The refactor explicitly requires behavior to remain unchanged, but this input changes from raising a validation error to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2730000000000003'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2730000000000003'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kmc5geeb/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "c5089620628c",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The refactor explicitly requires behavior to remain unchanged, but this input changes from raising a validation error to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2740000000000001'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2740000000000001'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kmc5geeb/out/tests/test_mastercard.py"
+      },
+      {
+        "id": "036071e62cf9",
+        "function": "src/validators/card.py::mastercard",
+        "label": "unexpected",
+        "reason": "The refactor explicitly requires behavior to remain unchanged, but this input changes from raising a validation error to returning True.",
+        "confidence": "low",
+        "args": [
+          "'2799000000000001'"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "return",
+          "type_name": "validators.utils.ValidationError",
+          "repr": "ValidationError(func=mastercard, args={'value': '2799000000000001'})"
+        },
+        "after": {
+          "kind": "return",
+          "type_name": "builtins.bool",
+          "repr": "True"
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-kmc5geeb/out/tests/test_mastercard.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 15,
+      "findings": {
+        "expected": 0,
+        "unexpected": 10,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 1914,
+      "output_tokens": 3874,
+      "cost_usd": 0.0021284
+    }
+  },
+  "llm_finding_ids": [
+    "036071e62cf9",
+    "1077025b567c",
+    "17102507d520",
+    "1cfe9773ef70",
+    "2e28b457e921",
+    "89709f1d9738",
+    "8f5fb34039fe",
+    "c5089620628c",
+    "c86c431003d5",
+    "cfeda18e0840",
+    "e7c396a1ba6c",
+    "fb2c80656f04"
+  ]
+}

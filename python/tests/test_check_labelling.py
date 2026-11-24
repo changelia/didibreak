@@ -92,7 +92,10 @@ def test_labels_and_exit_codes_follow_the_documented_intent(
     label_prompts = install(monkeypatch, fixture.expected)
     monkeypatch.chdir(fixture.repository.path)
 
-    code = main(["check", "--intent", fixture.expected["intent"]])
+    # The fixture documents the LLM cases' findings; boundary cases (task 31)
+    # are tested on their own below.
+    argv = ["check", "--intent", fixture.expected["intent"], "--boundary-cases", "0"]
+    code = main(argv)
 
     findings = fixture.expected["findings"]
     failing = {"unexpected", "unclear"}  # new_function never fails the run
@@ -216,6 +219,35 @@ def test_no_commit_intent_can_be_set_in_pyproject(
     main(["check", "--base", "HEAD~1", "--intent", "add an exclamation mark"])
 
     assert "All changes are intended" not in label_prompts[0]
+
+
+def test_boundary_cases_run_after_the_llm_cases_and_find_more(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # async_regression: the LLM cases do not try -1; the boundary case does.
+    fixture = build_fixture_repository("async_regression", tmp_path / "repo")
+
+    def unclear(prompt: str) -> httpx.Response:
+        found = [
+            {"finding_id": identifier, "label": "unclear", "reason": "test"}
+            for identifier, _args, _function in LINE.findall(prompt)
+        ]
+        return completion({"labels": found})
+
+    install(monkeypatch, fixture.expected, unclear)
+    monkeypatch.chdir(fixture.repository.path)
+
+    argv = ["check", "--intent", fixture.expected["intent"], "--format", "json"]
+    main([*argv, "--no-cache"])
+    with_boundary = json.loads(capsys.readouterr().out)
+    main([*argv, "--no-cache", "--boundary-cases", "0"])
+    without = json.loads(capsys.readouterr().out)
+
+    calls = {f["args"][0] for f in with_boundary["findings"]}
+    assert "-1" in calls
+    assert "-1" not in {f["args"][0] for f in without["findings"]}
+    assert with_boundary["summary"]["cases_run"] > without["summary"]["cases_run"]
+    assert with_boundary["usage"]["calls"] == without["usage"]["calls"]
 
 
 def test_against_head_the_last_commit_message_is_not_used(

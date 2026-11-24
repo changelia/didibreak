@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import TextIO
 
 from didibreak import __version__
+from didibreak.boundary import with_boundary_cases
 from didibreak.cases import is_method
 from didibreak.compare import Finding
 from didibreak.config import (
@@ -210,6 +211,13 @@ _CONFIG_FLAGS: tuple[tuple[str, str, Callable[[str], object], str, str], ...] = 
     ("--max-functions", "max_functions", int, "N", "max functions (default: 10)"),
     ("--cases", "cases", int, "N", "cases per function, 1-50 (default: 12)"),
     ("--refine-rounds", "refine_rounds", int, "N", "extra rounds, 0-3 (default: 1)"),
+    (
+        "--boundary-cases",
+        "boundary_cases",
+        int,
+        "N",
+        "boundary cases per function, 0-20 (default: 6)",
+    ),
     ("--max-cost", "max_cost", float, "USD", "cost limit per run (default: 0.50)"),
     (
         "--max-tokens",
@@ -547,6 +555,12 @@ def _check_with_llm(
 ) -> tuple[Analysis, _LLMCases]:
     """First cases, comparison, refinement rounds (task 16), labels (task 17)."""
     first = session.cases(functions)
+    first = replace(
+        first,
+        cases=with_boundary_cases(
+            functions, first.cases, session.config.boundary_cases
+        ),
+    )
     with_cases = [f for f in functions if f.report_name in first.cases]
     refinement = _refine(session, run, run(with_cases, first.cases))
     findings = session.label(refinement.analysis.findings, intent, NO_INTENT_REASON)

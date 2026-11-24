@@ -1,0 +1,91 @@
+{
+  "scenario": {
+    "id": "asyncstdlib-replay-fa54340",
+    "repo": "asyncstdlib",
+    "kind": "replay",
+    "commit": "fa543404c980d7928116c12ee43c9219040926b2",
+    "intent": "Refactor the builtins module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "fa543404c980d7928116c12ee43c9219040926b2",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the builtins module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--boundary-cases",
+    "0",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 0,
+  "seconds": 26.9,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~6,205 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "fa543404c980d7928116c12ee43c9219040926b2"
+    },
+    "intent": "Stated by the user: Refactor the builtins module for readability; behavior must not change.",
+    "findings": [],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 24,
+      "findings": {
+        "expected": 0,
+        "unexpected": 0,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2707,
+      "output_tokens": 3288,
+      "cost_usd": 0.0018094
+    }
+  },
+  "llm_finding_ids": [
+    "0b6fa6939c78",
+    "2a7c43b9b950",
+    "331465e7622b",
+    "4d081549c4e7",
+    "562f28b10178",
+    "59ca79a115e5",
+    "6a65a9fab771",
+    "75acc703a7c1",
+    "76085d1e817a",
+    "8317f5abb580",
+    "92dc3909e8d4",
+    "94e693488575",
+    "9a85bd8bfd17",
+    "a6b5e892c043",
+    "af8e5f1f7ef5",
+    "b1b2d4f98b7c",
+    "be6faba384fa",
+    "cc9bdf110d67",
+    "d905ace21815",
+    "e63210116ead",
+    "ea1a55c7bb91",
+    "f8ac8d49fdb7",
+    "fa861eb72b70",
+    "fdecfda53bdc"
+  ]
+}

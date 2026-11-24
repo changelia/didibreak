@@ -106,9 +106,7 @@ compares the instance's attributes after the call as well as the result.
 Details: [limitations.md](docs/limitations.md).
 
 For AI coding agents: `didibreak check --format json` and
-`didibreak init-agents` ([Use with AI agents](docs/ai-agents.md)). On
-pull requests: the [GitHub Action](docs/github-action.md) posts the
-findings as one comment.
+`didibreak init-agents` ([Use with AI agents](docs/ai-agents.md)).
 
 ## Change the model
 
@@ -168,7 +166,6 @@ configure, with your own API key; see
 - [Configuration (Python)](docs/configuration-python.md)
 - [Output format](docs/output-format.md)
 - [Use with AI agents](docs/ai-agents.md)
-- [GitHub Action](docs/github-action.md)
 - [Providers and costs](docs/providers-and-costs.md)
 - [Safety](docs/safety.md)
 - [Limitations](docs/limitations.md)

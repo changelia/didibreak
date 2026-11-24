@@ -65,6 +65,7 @@ class Config:
     max_functions: int = 10
     cases: int = 12
     refine_rounds: int = 1
+    boundary_cases: int = 6
     max_cost: float = 0.50
     max_tokens: int = DEFAULT_MAX_TOKENS
     timeout: float = 10.0
@@ -209,6 +210,7 @@ _VALIDATORS: dict[str, Callable[[str, object], object]] = {
     "max_functions": _integer(1, None),
     "cases": _integer(1, 50),
     "refine_rounds": _integer(0, 3),
+    "boundary_cases": _integer(0, 20),
     "max_cost": _positive_number,
     "max_tokens": _integer(1, None),
     "timeout": _timeout,

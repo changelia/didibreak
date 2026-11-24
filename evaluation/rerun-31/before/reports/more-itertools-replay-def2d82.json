@@ -1,0 +1,392 @@
+{
+  "scenario": {
+    "id": "more-itertools-replay-def2d82",
+    "repo": "more-itertools",
+    "kind": "replay",
+    "commit": "def2d821c0a15ede86578660e7dc48e44bad9579",
+    "intent": "Refactor the more module for readability; behavior must not change.",
+    "patch": null
+  },
+  "base_sha": "def2d821c0a15ede86578660e7dc48e44bad9579",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor the more module for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--boundary-cases",
+    "0",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 1,
+  "seconds": 14.9,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~6,391 input + ~7,200 output tokens, ~$0.0042 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "def2d821c0a15ede86578660e7dc48e44bad9579"
+    },
+    "intent": "Stated by the user: Refactor the more module for readability; behavior must not change.",
+    "findings": [
+      {
+        "id": "e7abf136a6d4",
+        "function": "more_itertools/more.py::nth_permutation",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the exception changes from IndexError to ValueError.",
+        "confidence": "high",
+        "args": [
+          "''",
+          "1",
+          "0"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError()",
+          "message": ""
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zj_cr0ky/out/tests/test_nth_permutation.py"
+      },
+      {
+        "id": "b447b31061b4",
+        "function": "more_itertools/more.py::nth_permutation",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the exception changes from IndexError to ValueError.",
+        "confidence": "high",
+        "args": [
+          "''",
+          "1",
+          "-1"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError()",
+          "message": ""
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zj_cr0ky/out/tests/test_nth_permutation.py"
+      },
+      {
+        "id": "2408865d30f9",
+        "function": "more_itertools/more.py::nth_permutation",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the exception changes from IndexError to ValueError.",
+        "confidence": "high",
+        "args": [
+          "'a'",
+          "2",
+          "0"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError()",
+          "message": ""
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zj_cr0ky/out/tests/test_nth_permutation.py"
+      },
+      {
+        "id": "2c2a4d06e9f1",
+        "function": "more_itertools/more.py::nth_permutation",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the exception changes from IndexError to ValueError.",
+        "confidence": "high",
+        "args": [
+          "('x', 'y')",
+          "3",
+          "1"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError()",
+          "message": ""
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zj_cr0ky/out/tests/test_nth_permutation.py"
+      },
+      {
+        "id": "bb1e7aa08b2c",
+        "function": "more_itertools/more.py::nth_permutation",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the exception changes from IndexError to ValueError.",
+        "confidence": "high",
+        "args": [
+          "'\u00e9\u4e2d'",
+          "4",
+          "-1"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError()",
+          "message": ""
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zj_cr0ky/out/tests/test_nth_permutation.py"
+      },
+      {
+        "id": "7f6b989e0f0f",
+        "function": "more_itertools/more.py::nth_permutation",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the exception changes from IndexError to ValueError.",
+        "confidence": "high",
+        "args": [
+          "[None, False, 7]",
+          "4",
+          "0"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError()",
+          "message": ""
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zj_cr0ky/out/tests/test_nth_permutation.py"
+      },
+      {
+        "id": "5ddcbcad9ce2",
+        "function": "more_itertools/more.py::nth_permutation",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the exception changes from IndexError to ValueError.",
+        "confidence": "high",
+        "args": [
+          "b'\\x00'",
+          "2",
+          "-2"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError()",
+          "message": ""
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zj_cr0ky/out/tests/test_nth_permutation.py"
+      },
+      {
+        "id": "ed94cba97568",
+        "function": "more_itertools/more.py::nth_permutation",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the exception changes from IndexError to ValueError.",
+        "confidence": "high",
+        "args": [
+          "{'a': 1, 'b': 2}",
+          "3",
+          "2"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError()",
+          "message": ""
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zj_cr0ky/out/tests/test_nth_permutation.py"
+      },
+      {
+        "id": "be275e11e455",
+        "function": "more_itertools/more.py::nth_permutation",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the exception changes from IndexError to ValueError.",
+        "confidence": "high",
+        "args": [
+          "{1, 2, 3}",
+          "4",
+          "-1"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError()",
+          "message": ""
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zj_cr0ky/out/tests/test_nth_permutation.py"
+      },
+      {
+        "id": "4359bfc87578",
+        "function": "more_itertools/more.py::nth_permutation",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the exception changes from IndexError to ValueError.",
+        "confidence": "high",
+        "args": [
+          "('q', 'q', 'r', 's')",
+          "5",
+          "3"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError()",
+          "message": ""
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zj_cr0ky/out/tests/test_nth_permutation.py"
+      },
+      {
+        "id": "a737b97561a1",
+        "function": "more_itertools/more.py::nth_permutation",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the exception changes from IndexError to ValueError.",
+        "confidence": "high",
+        "args": [
+          "'abcde'",
+          "6",
+          "-6"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError()",
+          "message": ""
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zj_cr0ky/out/tests/test_nth_permutation.py"
+      },
+      {
+        "id": "bb1929151289",
+        "function": "more_itertools/more.py::nth_permutation",
+        "label": "unexpected",
+        "reason": "The intent says behavior must not change, but the exception changes from IndexError to ValueError.",
+        "confidence": "high",
+        "args": [
+          "'xy'",
+          "1000000000000000000000000000000",
+          "0"
+        ],
+        "kwargs": {},
+        "before": {
+          "kind": "exception",
+          "type_name": "builtins.IndexError",
+          "repr": "IndexError()",
+          "message": ""
+        },
+        "after": {
+          "kind": "exception",
+          "type_name": "builtins.ValueError",
+          "repr": "ValueError()",
+          "message": ""
+        },
+        "test_file": "/var/folders/59/9vzd17h549x5smk_6zjhtp9h0000gn/T/didibreak-eval-zj_cr0ky/out/tests/test_nth_permutation.py"
+      }
+    ],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 12,
+      "findings": {
+        "expected": 0,
+        "unexpected": 12,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 0,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 2323,
+      "output_tokens": 1850,
+      "cost_usd": 0.0010332800000000001
+    }
+  },
+  "llm_finding_ids": [
+    "2408865d30f9",
+    "2c2a4d06e9f1",
+    "4359bfc87578",
+    "5ddcbcad9ce2",
+    "7f6b989e0f0f",
+    "a737b97561a1",
+    "b447b31061b4",
+    "bb1929151289",
+    "bb1e7aa08b2c",
+    "be275e11e455",
+    "e7abf136a6d4",
+    "ed94cba97568"
+  ]
+}

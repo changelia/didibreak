@@ -1,5 +1,11 @@
 # GitHub Action
 
+> **Experimental: live LLM path not yet verified.** The action is tested
+> without an API key (with a cases file, and the no-key path pull requests
+> from forks take), but no run with a real LLM has been checked yet. Its
+> inputs and comment may still change, and it is not yet part of a
+> release you can pin.
+
 The didibreak action runs `didibreak check` on every pull request and keeps
 one comment on it up to date: the `unexpected` and `unclear` findings, how
 many functions were skipped and why, and what the run cost.

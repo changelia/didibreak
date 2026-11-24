@@ -1,0 +1,89 @@
+{
+  "scenario": {
+    "id": "boltons-seeded-refactor-indexedset_add",
+    "repo": "boltons",
+    "kind": "seeded",
+    "commit": "d31d821d56c8f7756af9c30a864077f2e5855321",
+    "intent": "Refactor IndexedSet.add for readability; behavior must not change.",
+    "patch": "patches/boltons-seeded-refactor-indexedset_add.diff"
+  },
+  "base_sha": "d31d821d56c8f7756af9c30a864077f2e5855321",
+  "command": [
+    "didibreak",
+    "check",
+    "--format",
+    "json",
+    "--intent",
+    "Refactor IndexedSet.add for readability; behavior must not change.",
+    "--max-cost",
+    "0.1",
+    "--python",
+    "<python>",
+    "--boundary-cases",
+    "0",
+    "--output-dir",
+    "<temporary>"
+  ],
+  "exit_code": 0,
+  "seconds": 21.5,
+  "stderr": "Estimated: up to 3 LLM calls (1 + up to 1 refinement + 1 labelling) with gpt-6-luna, ~5,174 input + ~7,200 output tokens, ~$0.0041 (limit $0.10)\n",
+  "report": {
+    "schema_version": 2,
+    "tool": {
+      "name": "didibreak",
+      "version": "0.4.0"
+    },
+    "base": {
+      "ref": "HEAD",
+      "sha": "d31d821d56c8f7756af9c30a864077f2e5855321"
+    },
+    "intent": "Stated by the user: Refactor IndexedSet.add for readability; behavior must not change.",
+    "findings": [],
+    "summary": {
+      "functions_checked": 1,
+      "cases_run": 22,
+      "findings": {
+        "expected": 0,
+        "unexpected": 0,
+        "unclear": 0,
+        "new_function": 0
+      },
+      "flaky_dropped": 0,
+      "invalid_cases_dropped": 2,
+      "type_mismatch_dropped": 0,
+      "construction_dropped": 0,
+      "skipped": [],
+      "removed": []
+    },
+    "usage": {
+      "calls": 2,
+      "input_tokens": 3132,
+      "output_tokens": 2230,
+      "cost_usd": 0.0014282000000000001
+    }
+  },
+  "llm_finding_ids": [
+    "25cebbfa2d39",
+    "3056466da060",
+    "3259e65e2720",
+    "42cf01145e6e",
+    "5b4a75e2fb97",
+    "5de0399b8b16",
+    "6932044f9f03",
+    "75718fd1c4bb",
+    "86580d60e8b2",
+    "8eba89612df8",
+    "ab8f53adab69",
+    "b4271b9258ae",
+    "c042f5849621",
+    "cc56797e03bf",
+    "d2db5901e136",
+    "d96aa8deac9b",
+    "db8cde1ab76d",
+    "dd84fdb869c8",
+    "e6943c03b3f8",
+    "ec806c19476a",
+    "f837a8199529",
+    "fcd8b711e41f"
+  ]
+}

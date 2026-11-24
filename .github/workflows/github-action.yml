@@ -46,7 +46,7 @@ jobs:
         uses: ./github-action
         with:
           cases-file: github-action/selftest/cases.json
-          comment: false # live test branch: the live job owns the comment
+          comment: ${{ matrix.os == 'ubuntu-latest' }}
           artifact-name: didibreak-report-${{ matrix.os }}
       - name: Check the outputs
         shell: bash
@@ -66,7 +66,7 @@ jobs:
           REPORT: ${{ steps.didibreak.outputs.report }}
         run: python3 github-action/selftest/check_report.py "$REPORT"
       - name: Check that the comment renders no links, images or mentions
-        if: false # live test branch: the live job owns the comment
+        if: matrix.os == 'ubuntu-latest' && github.event.pull_request.head.repo.full_name == github.repository
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -83,31 +83,6 @@ jobs:
             exit 1
           fi
           grep -q 'img src=x' comment.html
-
-  live:
-    # Temporary (live test before release 0.5.0): the real LLM path.
-    name: Action / live LLM
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - id: didibreak
-        uses: ./github-action
-        with:
-          api-key: ${{ secrets.OPENAI_API_KEY }}
-          max-cost: "0.05"
-          intent-source: pr
-          artifact-name: didibreak-report-live
-      - name: Show the outputs
-        shell: bash
-        env:
-          DECISION: ${{ steps.didibreak.outputs.decision }}
-          EXIT_CODE: ${{ steps.didibreak.outputs.exit-code }}
-          UNEXPECTED: ${{ steps.didibreak.outputs.unexpected }}
-        run: echo "decision=$DECISION exit-code=$EXIT_CODE unexpected=$UNEXPECTED"
 
   no-key:
     name: Action / no API key (fork pull requests)

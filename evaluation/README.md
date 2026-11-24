@@ -35,6 +35,8 @@ changes (`rerun-21a/`). The task 21a results are at the end.
 | `methods-30/` | Task 30 measurement on a class-heavy library (boltons): plan, patches, reports, labels |
 | `rerun-38/` | Task 38 re-run after constructor findings, the reply cap and the second case request: plan, reports and labels |
 | `cost-38/` | Task 38 estimate vs actual cost on the asyncstdlib and boltons scenarios, before and after the change: plans, patches, reports (findings not labelled) |
+| `rerun-31/` | Task 31 re-run of the task 21 plan with boundary cases (`after/`) and without (`before/`, `--boundary-cases 0`): plans, reports and labels |
+| `boundary-31/` | Task 31 measurement on the asyncstdlib and boltons scenarios with and without boundary cases: plans, patches, reports and labels |
 
 ## Method
 
@@ -665,4 +667,57 @@ calls; the others stop before any (import failures, no testable change).
   both limits before it is sent.
 - Cost of task 38 measurements: rerun $0.0572, cost runs $0.0738 +
   $0.0706, live run $0.0008.
+
+## Task 31: boundary cases (2026-11-24)
+
+Boundary cases are built in code from simple type annotations and added
+to the LLM's first cases (`docs/how-it-works.md`, "Boundary cases"). Each
+plan ran twice on the same code (branch `task-31-boundary-inputs`):
+`before/` with `--boundary-cases 0`, `after/` with the default 6. Reports
+now keep `llm_finding_ids`, the ids of the LLM's cached cases, so a
+finding that only a boundary case produced can be told apart
+(`evaluate.py`, `boundary_only`).
+
+| | Task 21 plan, before | Task 21 plan, after | asyncstdlib + boltons, before | asyncstdlib + boltons, after |
+| --- | --- | --- | --- | --- |
+| Precision (real / labelled unexpected) | 90% (171 / 190) | 89% (177 / 198) | 78% (98 / 125) | 81% (109 / 135) |
+| Replays found | 15 / 22 | 15 / 22 | 7 / 17 | 7 / 17 |
+| Functions checked / skipped | 33 / 3 | 33 / 3 | 24 / 9 | 24 / 9 |
+| Findings only from boundary cases | – | 0 | – | 0 |
+| Cost | $0.0514 | $0.0608 | $0.0649 | $0.0606 |
+
+- **The release gate holds on both sides** (70%). The false alarms are
+  the known out-of-contract inputs: sqlparse `remove_quotes` with a value
+  that is not a string, more-itertools `exactly_n` with a float count,
+  boltons `OrderedMultiDict.addlist` with values that are not iterable.
+  The differences between the sides are LLM variance: the LLM's cases are
+  different in each run.
+- **Boundary cases found nothing the LLM's cases missed** here. They ran in
+  11 of 38 runs of the task 21 plan (about 39 cases: humanize
+  `naturalsize` and `metric`, packaging, python-slugify, validators) and
+  in no asyncstdlib or boltons run: those functions are unannotated,
+  annotated with aliases (`NumberOrString`) or generics (`AnyIterable`),
+  or are methods of unannotated classes. Where they ran, the LLM had
+  already tried the same edges or the change was elsewhere.
+- **Live run** (`gpt-6-luna`, the `async_regression` fixture, intent "add
+  thousands separators to prices"): 14 cases, 12 from the LLM and 2
+  boundary cases (`0`, `2147483648`; the boundary `-1` was dropped
+  because the LLM had proposed it). The one boundary-only finding,
+  `format_price(2147483648)` `'$21474836.48'` → `'$21,474,836.48'`, was
+  labelled `expected`, correctly. 2 calls, $0.0008.
+- **Measurement gap.** The case cache is keyed by source, not path: two
+  functions with the same source (boltons `OrderedMultiDict` in
+  `dictutils` and `urlutils`) share one cache file, which keeps one
+  function's LLM cases. Their other findings would look boundary-only, so
+  a finding counts as boundary-only only when every argument is also a
+  boundary value; the `before/` runs (no boundary cases) show 0 with this
+  rule. The "about 39 cases" above is cases run minus cached LLM cases,
+  which this sharing also distorts (two boltons runs show 12 extra cases
+  that are LLM cases of the twin function), so it is approximate.
+- Labels: earlier labels reused for identical findings (scenario and
+  finding id), the rest (256 task 21 plan, 236 asyncstdlib + boltons) are
+  agent labels with the same rubric, marked "task 31 agent label" in
+  `labels.json`.
+- Cost of task 31 measurements: $0.2377 for the four evaluation runs, live
+  run $0.0008.
 
