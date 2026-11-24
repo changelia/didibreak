@@ -149,6 +149,8 @@ table; the first match is the reason.
 
 ## Boundary cases
 
+- Boundary cases are off by default (`boundary_cases = 0`); they run only
+  when you set `boundary_cases` or `--boundary-cases`.
 - Only simple annotations get boundary cases (`int`, `float`, `str`,
   `bool`, `None`, `Optional` / unions of these, `list` / `dict` of these).
   Aliases (`NumberOrString = Union[int, str]`), `typing` generics such as
@@ -159,9 +161,10 @@ table; the first match is the reason.
   another edge (for example at `100` or at a specific string) is found only
   if the LLM proposes that input.
 - In the evaluation (task 31) boundary cases ran in 11 of 38 runs of the
-  release-gate libraries and in almost none of the asyncstdlib and boltons
-  runs, and found no behavior change the LLM's cases had missed
-  (`evaluation/README.md`, "Task 31").
+  release-gate libraries and in none of the asyncstdlib and boltons runs,
+  and on all three sets (the task 21 plan, asyncstdlib, boltons) no
+  finding came only from boundary cases (`evaluation/README.md`, "Task
+  31"). That is why they are opt-in.
 
 ## Running functions
 
