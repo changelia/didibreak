@@ -74,7 +74,7 @@ jobs:
           NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          gh api -H "Accept: application/vnd.github.html+json" --paginate \
+          gh api -H "Accept: application/vnd.github.full+json" --paginate \
             "repos/$REPOSITORY/issues/$NUMBER/comments" \
             --jq '.[] | select(.user.type == "Bot" and (.body | startswith("<!-- didibreak-action-comment -->"))) | .body_html' > comment.html
           test -s comment.html
