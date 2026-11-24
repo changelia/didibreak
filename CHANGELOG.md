@@ -22,6 +22,10 @@ the Python package and `js-v*` for the JS/TS package.
   only in code blocks, stays under GitHub's comment size limit, and is
   pinned with the `py-v*` tags (the action installs the didibreak
   version released with its tag).
+- `--no-commit-intent` (config key `no_commit_intent`) leaves the commit
+  messages since `--base` out of the intent, so only `--intent` is used
+  for labelling. For CI, where a pull request's author also writes its
+  commit messages.
 
 #### Changed
 

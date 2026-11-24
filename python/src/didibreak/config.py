@@ -74,6 +74,7 @@ class Config:
     python: str | None = None
     output_dir: str = ".didibreak"
     no_cache: bool = False
+    no_commit_intent: bool = False
     exclude: tuple[str, ...] = field(default_factory=tuple)
     api_key_env: str | None = None
     temperature: float | None = None
@@ -217,6 +218,7 @@ _VALIDATORS: dict[str, Callable[[str, object], object]] = {
     "python": _non_empty_string,
     "output_dir": _non_empty_string,
     "no_cache": _boolean,
+    "no_commit_intent": _boolean,
     "exclude": _glob_list,
     # An empty string disables the API key check (local servers).
     "api_key_env": _string,

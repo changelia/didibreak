@@ -54,7 +54,8 @@ $0.50) still limits each run.
 1. Make the change the user asked for.
 2. Run `didibreak check --intent "<the user's request>" --format json`.
    The intent is what the user asked for, in one sentence. Commit messages
-   since `--base` are added automatically.
+   since `--base` are added automatically (`--no-commit-intent` turns that
+   off).
 3. Read the exit code:
    - `0`: no unexpected or unclear findings. Done. `new_function`
      findings never change the exit code; they are still in the report.

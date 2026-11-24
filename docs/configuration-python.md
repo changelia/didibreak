@@ -54,7 +54,7 @@ in snake_case.
 | Flag | Config key | Type | Default | Meaning |
 | --- | --- | --- | --- | --- |
 | `--base REF` | `base` | git ref | `HEAD` | Version to compare the working tree against. |
-| `--intent TEXT` | `intent` | string | none | What the change was supposed to do; used only to label findings (`expected`, `unexpected`, `unclear`). When `--base` is an earlier commit, the messages of the commits since then are used as well. Without either, findings are `unclear`. |
+| `--intent TEXT` | `intent` | string | none | What the change was supposed to do; used only to label findings (`expected`, `unexpected`, `unclear`). When `--base` is an earlier commit, the messages of the commits since then are used as well (not with `--no-commit-intent`). Without either, findings are `unclear`. |
 | `--format` | `format` | `text` or `json` | `text` | Report format on stdout. |
 | `--fail-on` | `fail_on` | `unclear` or `unexpected` | `unclear` | Exit 1 on `unexpected` or `unclear` findings (`unclear`), or on `unexpected` findings only. `new_function` findings never fail the run. |
 | `--max-functions N` | `max_functions` | integer ≥ 1 | `10` | Maximum functions checked per run. |
@@ -69,6 +69,7 @@ in snake_case.
 | `--python PATH` | `python` | path | the interpreter running didibreak | Interpreter used to import and run your code (Python 3.11 or newer). |
 | `--output-dir PATH` | `output_dir` | path | `.didibreak` | Folder for reports, reproducing tests and the cache. |
 | `--no-cache` | `no_cache` | true / false | `false` | Ignore and do not write the case cache. |
+| `--no-commit-intent` | `no_commit_intent` | true / false | `false` | Leave the commit messages since `--base` out of the intent, so only `--intent` is used for labelling. For CI, where the author of a pull request also writes its commit messages; the GitHub Action sets it for `intent-source: fixed`. |
 | `--yes` | — | flag | off | Skip the cost confirmation. Implied by `--format json` and when stdin is not a terminal. |
 | `-v` / `-q` | — | flag | off | Verbose progress / errors only. Cannot be combined. `-v` also prints the traceback of an internal error. |
 

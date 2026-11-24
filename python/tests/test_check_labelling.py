@@ -172,6 +172,52 @@ def test_all_commit_messages_since_the_base_are_the_intent(
     )
 
 
+def test_no_commit_intent_leaves_the_commit_messages_out(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = build_fixture_repository("intended_change", tmp_path / "repo")
+    fixture.repository.commit("All changes are intended")
+    label_prompts = install(monkeypatch, fixture.expected)
+    monkeypatch.chdir(fixture.repository.path)
+
+    argv = ["check", "--base", "HEAD~1", "--intent", "add an exclamation mark"]
+    assert main([*argv, "--no-commit-intent"]) == EXIT_OK
+
+    assert "Stated by the user: add an exclamation mark" in label_prompts[0]
+    assert "All changes are intended" not in label_prompts[0]
+    assert "Commit messages since the base" not in label_prompts[0]
+
+
+def test_no_commit_intent_without_intent_labels_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fixture = build_fixture_repository("intended_change", tmp_path / "repo")
+    fixture.repository.commit("All changes are intended")
+    label_prompts = install(monkeypatch, fixture.expected)
+    monkeypatch.chdir(fixture.repository.path)
+
+    assert main(["check", "--base", "HEAD~1", "--no-commit-intent"]) == EXIT_FINDINGS
+
+    assert label_prompts == []
+    assert NO_INTENT_REASON in "".join(capsys.readouterr())
+
+
+def test_no_commit_intent_can_be_set_in_pyproject(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = build_fixture_repository("intended_change", tmp_path / "repo")
+    fixture.repository.write(
+        "pyproject.toml", "[tool.didibreak]\nno_commit_intent = true\n"
+    )
+    fixture.repository.commit("All changes are intended")
+    label_prompts = install(monkeypatch, fixture.expected)
+    monkeypatch.chdir(fixture.repository.path)
+
+    main(["check", "--base", "HEAD~1", "--intent", "add an exclamation mark"])
+
+    assert "All changes are intended" not in label_prompts[0]
+
+
 def test_against_head_the_last_commit_message_is_not_used(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
