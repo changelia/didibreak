@@ -9,6 +9,17 @@ the Python package and `js-v*` for the JS/TS package.
 
 ### Unreleased
 
+### 0.5.0 - 2026-11-25
+
+**Highlights: `--no-commit-intent`** keeps the commit messages out of the
+intent, so only `--intent` labels the findings, for CI, where the author
+of a pull request also writes its commit messages. **Boundary cases** built
+in code from simple type annotations are available as an opt-in
+(`--boundary-cases N`; off by default). **A GitHub Action** ships with
+this release, **experimental: its live LLM path is not yet verified**
+(docs/github-action.md). Nothing changes for existing runs: the defaults
+and the JSON report (`schema_version` 2) stay as in 0.4.0.
+
 #### Added
 
 - Boundary cases, opt-in (`boundary_cases`, `--boundary-cases N`, default
