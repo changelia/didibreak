@@ -3,8 +3,9 @@
 > **Experimental: live LLM path not yet verified.** The action is tested
 > without an API key (with a cases file, and the no-key path pull requests
 > from forks take), but no run with a real LLM has been checked yet. Its
-> inputs and comment may still change, and it is not yet part of a
-> release you can pin.
+> inputs and comment may still change. It is released with the Python
+> package from `py-v0.5.0` on; pin it as described under
+> [Versions](#versions).
 
 The didibreak action runs `didibreak check` on every pull request and keeps
 one comment on it up to date: the `unexpected` and `unclear` findings, how
@@ -170,7 +171,10 @@ git ls-remote https://github.com/changelia/didibreak 'refs/tags/py-v*^{}'
 
 prints `<sha>  refs/tags/py-vX.Y.Z^{}` lines; use the SHA of the release you
 want:
-`uses: changelia/didibreak/github-action@<sha> # py-vX.Y.Z`. Dependabot
+`uses: changelia/didibreak/github-action@<sha> # py-vX.Y.Z`. For one
+release, name its tag, for example `'refs/tags/py-v0.5.0^{}'`. The release
+tags are annotated, so keep the `^{}`: it gives the commit the tag points
+to, while the line without it is the tag object itself. Dependabot
 (`package-ecosystem: github-actions`) can keep the pin up to date.
 
 ## Cost
