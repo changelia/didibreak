@@ -27,6 +27,9 @@ $ didibreak --version
 didibreak 0.1.1
 ```
 
+`--version` prints the version you installed; the runs on this page were
+recorded with earlier versions.
+
 didibreak runs your code with the Python it is installed in. For your own
 project, install it into the project's virtual environment, or point it at
 that environment with `--python .venv/bin/python` (see
